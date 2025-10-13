@@ -36,9 +36,6 @@ export default function TaskBoardPage() {
           return false;
         }
       }
-      if (filters.assignee === 'unassigned' && ticket.assignedToId !== null) {
-        return false;
-      }
 
       // Location filter
       if (filters.location !== 'all' && !ticket.location.startsWith(filters.location)) {
