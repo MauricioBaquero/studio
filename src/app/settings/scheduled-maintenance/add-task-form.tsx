@@ -84,6 +84,8 @@ export function AddTaskForm({
     onOpenChange(false);
     form.reset();
   };
+  
+  const frequency = form.watch('frequency');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -193,6 +195,45 @@ export function AddTaskForm({
                 </FormItem>
               )}
             />
+             {frequency === 'Monthly' && (
+              <div className="grid grid-cols-2 gap-4">
+                <FormItem>
+                    <FormLabel>Week of Month</FormLabel>
+                    <Select>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select week" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            <SelectItem value="1">First</SelectItem>
+                            <SelectItem value="2">Second</SelectItem>
+                            <SelectItem value="3">Third</SelectItem>
+                            <SelectItem value="4">Fourth</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </FormItem>
+                <FormItem>
+                    <FormLabel>Day of Week</FormLabel>
+                    <Select>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select day" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            <SelectItem value="1">Monday</SelectItem>
+                            <SelectItem value="2">Tuesday</SelectItem>
+                            <SelectItem value="3">Wednesday</SelectItem>
+                            <SelectItem value="4">Thursday</SelectItem>
+                            <SelectItem value="5">Friday</SelectItem>
+                            <SelectItem value="6">Saturday</SelectItem>
+                            <SelectItem value="0">Sunday</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </FormItem>
+              </div>
+            )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
