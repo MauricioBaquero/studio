@@ -18,7 +18,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Calendar, MapPin, Tag } from 'lucide-react';
+import { Calendar, CheckCircle, MapPin, Tag } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -99,9 +99,12 @@ export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCa
   return (
     <>
       <Card 
-        className="hover:shadow-md transition-shadow cursor-pointer"
+        className="hover:shadow-md transition-shadow cursor-pointer relative"
         onClick={handleOpenDialog}
       >
+        {ticket.status === 'Completed' && (
+          <CheckCircle className="absolute top-2 right-2 h-5 w-5 text-green-500" />
+        )}
         <CardHeader>
           <CardTitle className="text-base font-bold font-headline truncate">
             {ticket.title}
