@@ -1,4 +1,4 @@
-import { getUsers, USER_ROLES } from "@/lib/data";
+import { getUsers, USER_ROLES, UserRole } from "@/lib/data";
 import {
   Table,
   TableBody,
@@ -17,12 +17,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Badge, BadgeProps } from "@/components/ui/badge";
 
-const roleVariant: { [key: string]: "default" | "secondary" | "outline" } = {
-  Admin: "default",
-  Staff: "secondary",
-  Viewer: "outline",
+const roleColors: Record<UserRole, BadgeProps['color']> = {
+  Admin: "purple",
+  Staff: "yellow",
+  Viewer: "pink",
 };
 
 export default function UsersPage() {
@@ -61,7 +61,7 @@ export default function UsersPage() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={roleVariant[user.role] || "secondary"}>
+                  <Badge color={roleColors[user.role] || "gray"}>
                     {user.role}
                   </Badge>
                 </TableCell>
