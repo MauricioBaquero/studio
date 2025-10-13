@@ -24,6 +24,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { TicketDetailsDialog } from './ticket-details-dialog';
+import { cn } from '@/lib/utils';
 
 const claimSayings = [
   "I'll take this one!",
@@ -53,6 +54,8 @@ export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCa
   const category = getCategoryById(ticket.categoryId);
   const parentCategory = category?.parentId ? getCategoryById(category.parentId) : null;
   const color = getCategoryColor(ticket.categoryId);
+
+  const isAssignedToOtherUser = ticket.assignedToId && ticket.assignedToId !== currentUser.id;
   
   const handleClaimTask = () => {
     const updatedTicket: Ticket = { 
@@ -84,6 +87,7 @@ export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCa
   };
 
   const handleOpenDialog = (e: React.MouseEvent) => {
+    if (isAssignedToOtherUser) return;
     // Don't open dialog if the claim button was clicked
     if ((e.target as HTMLElement).closest('button')) {
         return;
@@ -99,7 +103,10 @@ export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCa
   return (
     <>
       <Card 
-        className="hover:shadow-md transition-shadow cursor-pointer relative"
+        className={cn(
+          "relative transition-shadow",
+          !isAssignedToOtherUser && "hover:shadow-md cursor-pointer"
+        )}
         onClick={handleOpenDialog}
       >
         {ticket.status === 'Completed' && (
