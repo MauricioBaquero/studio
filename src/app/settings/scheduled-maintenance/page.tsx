@@ -28,6 +28,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AddTaskForm } from "./add-task-form";
 
+const WEEK_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const WEEK_OF_MONTH = ["", "First", "Second", "Third", "Fourth"];
+
+
 export default function ScheduledMaintenancePage() {
   const tasks = getRecurringTasks();
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -47,6 +51,16 @@ export default function ScheduledMaintenancePage() {
     setEditingTask(null);
     setIsFormOpen(false);
   };
+
+  const getFrequencyDetails = (task: RecurringTask) => {
+    if (task.frequency === 'Weekly' && task.dayOfWeek !== undefined) {
+      return `(${WEEK_DAYS[task.dayOfWeek]})`;
+    }
+    if (task.frequency === 'Monthly' && task.weekOfMonth !== undefined && task.dayOfWeek !== undefined) {
+      return `(${WEEK_OF_MONTH[task.weekOfMonth]} ${WEEK_DAYS[task.dayOfWeek]})`;
+    }
+    return '';
+  }
 
 
   return (
@@ -87,7 +101,9 @@ export default function ScheduledMaintenancePage() {
                         "-"
                       )}
                     </TableCell>
-                    <TableCell>{task.frequency}</TableCell>
+                    <TableCell>
+                      {task.frequency} <span className="text-muted-foreground">{getFrequencyDetails(task)}</span>
+                    </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

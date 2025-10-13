@@ -41,6 +41,8 @@ const recurringTaskSchema = z.object({
   categoryId: z.string().min(1, 'Category is required'),
   subcategoryId: z.string().min(1, 'Subcategory is required'),
   frequency: z.enum(RECURRING_FREQUENCIES),
+  dayOfWeek: z.coerce.number().optional(),
+  weekOfMonth: z.coerce.number().optional(),
 });
 
 type RecurringTaskFormValues = z.infer<typeof recurringTaskSchema>;
@@ -73,19 +75,14 @@ export function AddTaskForm({
 
   const form = useForm<RecurringTaskFormValues>({
     resolver: zodResolver(recurringTaskSchema),
-    defaultValues: isEditMode
-      ? {
-          title: editingTask.title,
-          categoryId: getParentCategoryId(editingTask.categoryId) || '',
-          subcategoryId: editingTask.categoryId,
-          frequency: editingTask.frequency,
-        }
-      : {
-          title: '',
-          categoryId: '',
-          subcategoryId: '',
-          frequency: 'Daily',
-        },
+    defaultValues: {
+      title: '',
+      categoryId: '',
+      subcategoryId: '',
+      frequency: 'Daily',
+      dayOfWeek: undefined,
+      weekOfMonth: undefined,
+    },
   });
   
   useEffect(() => {
@@ -96,6 +93,8 @@ export function AddTaskForm({
             categoryId: parentId || '',
             subcategoryId: editingTask.categoryId,
             frequency: editingTask.frequency,
+            dayOfWeek: editingTask.dayOfWeek,
+            weekOfMonth: editingTask.weekOfMonth,
         });
         setSelectedParent(parentId);
     } else {
@@ -104,6 +103,8 @@ export function AddTaskForm({
             categoryId: '',
             subcategoryId: '',
             frequency: 'Daily',
+            dayOfWeek: undefined,
+            weekOfMonth: undefined,
         });
         setSelectedParent(null);
     }
@@ -236,63 +237,81 @@ export function AddTaskForm({
               )}
             />
              {frequency === 'Weekly' && (
-                <FormItem>
-                    <FormLabel>Day of Week</FormLabel>
-                    <Select>
-                        <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select day" />
-                        </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            <SelectItem value="1">Monday</SelectItem>
-                            <SelectItem value="2">Tuesday</SelectItem>
-                            <SelectItem value="3">Wednesday</SelectItem>
-                            <SelectItem value="4">Thursday</SelectItem>
-                            <SelectItem value="5">Friday</SelectItem>
-                            <SelectItem value="6">Saturday</SelectItem>
-                            <SelectItem value="0">Sunday</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </FormItem>
+                <FormField
+                    control={form.control}
+                    name="dayOfWeek"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Day of Week</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value?.toString()}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select day" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="1">Monday</SelectItem>
+                                    <SelectItem value="2">Tuesday</SelectItem>
+                                    <SelectItem value="3">Wednesday</SelectItem>
+                                    <SelectItem value="4">Thursday</SelectItem>
+                                    <SelectItem value="5">Friday</SelectItem>
+                                    <SelectItem value="6">Saturday</SelectItem>
+                                    <SelectItem value="0">Sunday</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </FormItem>
+                    )}
+                />
             )}
             {frequency === 'Monthly' && (
               <div className="grid grid-cols-2 gap-4">
-                <FormItem>
-                    <FormLabel>Week of Month</FormLabel>
-                    <Select>
-                        <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select week" />
-                        </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            <SelectItem value="1">First</SelectItem>
-                            <SelectItem value="2">Second</SelectItem>
-                            <SelectItem value="3">Third</SelectItem>
-                            <SelectItem value="4">Fourth</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </FormItem>
-                <FormItem>
-                    <FormLabel>Day of Week</FormLabel>
-                    <Select>
-                        <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select day" />
-                        </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            <SelectItem value="1">Monday</SelectItem>
-                            <SelectItem value="2">Tuesday</SelectItem>
-                            <SelectItem value="3">Wednesday</SelectItem>
-                            <SelectItem value="4">Thursday</SelectItem>
-                            <SelectItem value="5">Friday</SelectItem>
-                            <SelectItem value="6">Saturday</SelectItem>
-                            <SelectItem value="0">Sunday</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </FormItem>
+                 <FormField
+                    control={form.control}
+                    name="weekOfMonth"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Week of Month</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value?.toString()}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select week" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="1">First</SelectItem>
+                                    <SelectItem value="2">Second</SelectItem>
+                                    <SelectItem value="3">Third</SelectItem>
+                                    <SelectItem value="4">Fourth</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="dayOfWeek"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Day of Week</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value?.toString()}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select day" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="1">Monday</SelectItem>
+                                    <SelectItem value="2">Tuesday</SelectItem>
+                                    <SelectItem value="3">Wednesday</SelectItem>
+                                    <SelectItem value="4">Thursday</SelectItem>
+                                    <SelectItem value="5">Friday</SelectItem>
+                                    <SelectItem value="6">Saturday</SelectItem>
+                                    <SelectItem value="0">Sunday</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </FormItem>
+                    )}
+                />
               </div>
             )}
             <DialogFooter>

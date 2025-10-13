@@ -42,6 +42,8 @@ export interface RecurringTask {
   categoryId: string;
   frequency: RecurringFrequency;
   lastCompleted: Date | null;
+  dayOfWeek?: number; // Sunday - Saturday : 0 - 6
+  weekOfMonth?: number; // 1-4
 }
 
 // Mock Data
@@ -78,8 +80,8 @@ const tickets: Ticket[] = [
 
 const recurringTasks: RecurringTask[] = [
     { id: "rec-1", title: "Daily Restroom Checks", categoryId: "sub-1-2", frequency: "Daily", lastCompleted: addDays(new Date(), -1) },
-    { id: "rec-2", title: "Weekly Lobby Cleaning", categoryId: "sub-1-6", frequency: "Weekly", lastCompleted: addWeeks(new Date(), -1) },
-    { id: "rec-3", title: "Monthly AC Filter Change", categoryId: "sub-1-1", frequency: "Monthly", lastCompleted: addMonths(new Date(), -1) },
+    { id: "rec-2", title: "Weekly Lobby Cleaning", categoryId: "sub-1-6", frequency: "Weekly", lastCompleted: addWeeks(new Date(), -1), dayOfWeek: 1 },
+    { id: "rec-3", title: "Monthly AC Filter Change", categoryId: "sub-1-1", frequency: "Monthly", lastCompleted: addMonths(new Date(), -1), weekOfMonth: 2, dayOfWeek: 2 },
 ];
 
 // Data Accessor Functions
