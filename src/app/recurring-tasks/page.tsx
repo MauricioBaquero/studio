@@ -16,9 +16,9 @@ export default function RecurringTasksPage() {
   const tasks = getRecurringTasks();
 
   return (
-    <div>
+    <div className="flex flex-col h-full">
       <h1 className="text-3xl font-bold font-headline mb-6">Recurring Tasks</h1>
-      <Card>
+      <Card className="flex-1">
         <CardHeader>
           <CardTitle>Scheduled Maintenance</CardTitle>
         </CardHeader>
