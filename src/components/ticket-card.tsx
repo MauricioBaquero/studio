@@ -1,4 +1,4 @@
-import { Ticket, getUserById, getCategoryById } from "@/lib/data";
+import { Ticket, getUserById, getCategoryById, getCategoryColor } from "@/lib/data";
 import {
   Card,
   CardContent,
@@ -20,6 +20,7 @@ export default function TicketCard({ ticket }: TicketCardProps) {
   const assignedUser = getUserById(ticket.assignedToId);
   const category = getCategoryById(ticket.categoryId);
   const parentCategory = category?.parentId ? getCategoryById(category.parentId) : null;
+  const color = getCategoryColor(ticket.categoryId);
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -33,8 +34,8 @@ export default function TicketCard({ ticket }: TicketCardProps) {
         <div className="flex items-center gap-2 text-muted-foreground">
           <Tag className="h-4 w-4" />
           <div className="flex flex-wrap gap-1">
-            {parentCategory && <Badge variant="secondary">{parentCategory.name}</Badge>}
-            {category && <Badge variant="secondary">{category.name}</Badge>}
+            {parentCategory && <Badge color={color}>{parentCategory.name}</Badge>}
+            {category && <Badge color={color}>{category.name}</Badge>}
           </div>
         </div>
         <div className="flex items-center gap-2 text-muted-foreground">

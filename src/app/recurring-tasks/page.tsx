@@ -8,6 +8,7 @@ import {
   RecurringTask,
   getCurrentUser,
   User,
+  getCategoryColor,
 } from "@/lib/data";
 import {
   Table,
@@ -63,6 +64,7 @@ export default function RecurringTasksPage() {
                 {pendingTasks.length > 0 ? (
                   pendingTasks.map((task) => {
                     const category = getCategoryById(task.categoryId);
+                    const color = getCategoryColor(task.categoryId);
                     const nextDueDate = getNextDueDate(task);
                     return (
                       <TableRow key={task.id}>
@@ -78,7 +80,7 @@ export default function RecurringTasksPage() {
                         </TableCell>
                         <TableCell>
                           {category ? (
-                            <Badge variant="secondary">{category.name}</Badge>
+                            <Badge color={color}>{category.name}</Badge>
                           ) : (
                             "-"
                           )}
@@ -116,6 +118,7 @@ export default function RecurringTasksPage() {
                 {completedTasks.length > 0 ? (
                   completedTasks.map((task) => {
                     const category = getCategoryById(task.categoryId);
+                    const color = getCategoryColor(task.categoryId);
                     return (
                       <TableRow key={task.id}>
                         <TableCell className="font-medium">
@@ -123,7 +126,7 @@ export default function RecurringTasksPage() {
                         </TableCell>
                         <TableCell>
                           {category ? (
-                            <Badge variant="secondary">{category.name}</Badge>
+                            <Badge color={color}>{category.name}</Badge>
                           ) : (
                             "-"
                           )}

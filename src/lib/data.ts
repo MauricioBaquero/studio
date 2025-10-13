@@ -9,6 +9,8 @@ export const TICKET_STATUSES: TicketStatus[] = ["Not Started", "In Progress", "P
 export type RecurringFrequency = "Daily" | "Weekly" | "Monthly";
 export const RECURRING_FREQUENCIES: RecurringFrequency[] = ["Daily", "Weekly", "Monthly"];
 
+export const CATEGORY_COLORS = ["red", "orange", "yellow", "green", "blue", "purple", "gray"];
+export type CategoryColor = (typeof CATEGORY_COLORS)[number];
 
 export interface User {
   id: string;
@@ -22,6 +24,7 @@ export interface Category {
   id: string;
   name: string;
   parentId: string | null;
+  color?: CategoryColor;
 }
 
 export interface Ticket {
@@ -55,7 +58,7 @@ const users: User[] = [
 ];
 
 const categories: Category[] = [
-  { id: "cat-1", name: "Interior Maintenance & Cleaning", parentId: null },
+  { id: "cat-1", name: "Interior Maintenance & Cleaning", parentId: null, color: "blue" },
   { id: "sub-1-1", name: "Check AC units", parentId: "cat-1" },
   { id: "sub-1-2", name: "Clean restrooms", parentId: "cat-1" },
   { id: "sub-1-3", name: "Clean electrical rooms", parentId: "cat-1" },
@@ -64,7 +67,7 @@ const categories: Category[] = [
   { id: "sub-1-6", name: "Floor repairs", parentId: "cat-1" },
   { id: "sub-1-7", name: "Building repairs", parentId: "cat-1" },
 
-  { id: "cat-2", name: "Exterior Maintenance", parentId: null },
+  { id: "cat-2", name: "Exterior Maintenance", parentId: null, color: "green" },
   { id: "sub-2-1", name: "Landscaping", parentId: "cat-2" },
   { id: "sub-2-2", name: "Parking lot cleaning", parentId: "cat-2" },
   { id: "sub-2-3", name: "Window washing", parentId: "cat-2" },
@@ -93,6 +96,14 @@ export const getCategories = () => categories;
 export const getParentCategories = () => categories.filter(c => c.parentId === null);
 export const getSubCategories = (parentId: string) => categories.filter(c => c.parentId === parentId);
 export const getCategoryById = (id: string) => categories.find(c => c.id === id);
+export const getCategoryColor = (categoryId: string): CategoryColor | 'gray' => {
+    let category = getCategoryById(categoryId);
+    if (category?.parentId) {
+        category = getCategoryById(category.parentId);
+    }
+    return category?.color || 'gray';
+}
+
 
 export const getTickets = () => tickets;
 export const getTicketById = (id: string) => tickets.find(t => t.id === id);

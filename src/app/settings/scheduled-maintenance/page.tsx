@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { getRecurringTasks, getCategoryById, getParentCategories, getSubCategories, RecurringTask } from "@/lib/data";
+import { getRecurringTasks, getCategoryById, getParentCategories, getSubCategories, RecurringTask, getCategoryColor } from "@/lib/data";
 import {
   Card,
   CardContent,
@@ -91,12 +91,13 @@ export default function ScheduledMaintenancePage() {
             <TableBody>
               {tasks.map((task) => {
                 const category = getCategoryById(task.categoryId);
+                const color = getCategoryColor(task.categoryId);
                 return (
                   <TableRow key={task.id}>
                     <TableCell className="font-medium">{task.title}</TableCell>
                     <TableCell>
                       {category ? (
-                        <Badge variant="secondary">{category.name}</Badge>
+                        <Badge color={color}>{category.name}</Badge>
                       ) : (
                         "-"
                       )}
