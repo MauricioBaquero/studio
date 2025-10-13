@@ -122,7 +122,7 @@ export default function TicketCard({ ticket: initialTicket }: TicketCardProps) {
             )}
 
             {ticket.status === 'Not Started' && !ticket.assignedToId && (
-                <Button variant="secondary" size="sm" onClick={handleClaimTask}>
+                <Button variant="success" size="sm" onClick={handleClaimTask}>
                    {claimSaying}
                 </Button>
             )}
