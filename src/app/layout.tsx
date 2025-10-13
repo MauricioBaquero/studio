@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import { Sidebar, SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/layout/sidebar';
-import Header from '@/components/layout/header';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
 export const metadata: Metadata = {
   title: 'FacilityFlow',
@@ -29,7 +29,9 @@ export default function RootLayout({
           <div className="flex min-h-screen">
             <AppSidebar />
             <div className="flex flex-1 flex-col">
-              <Header />
+              <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
+                <SidebarTrigger />
+              </header>
               <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
                 {children}
               </main>
