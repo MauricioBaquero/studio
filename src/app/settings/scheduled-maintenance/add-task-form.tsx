@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -31,9 +32,8 @@ import { Button } from '@/components/ui/button';
 import {
   Category,
   RECURRING_FREQUENCIES,
-  RecurringFrequency,
+  RecurringTask,
 } from '@/lib/data';
-import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 const recurringTaskSchema = z.object({
@@ -50,6 +50,7 @@ interface AddTaskFormProps {
   onOpenChange: (open: boolean) => void;
   parentCategories: Category[];
   allSubcategories: Category[];
+  editingTask: RecurringTask | null;
 }
 
 export function AddTaskForm({
@@ -57,32 +58,71 @@ export function AddTaskForm({
   onOpenChange,
   parentCategories,
   allSubcategories,
+  editingTask,
 }: AddTaskFormProps) {
   const { toast } = useToast();
-  const [selectedParent, setSelectedParent] = useState<string | null>(null);
+  const isEditMode = !!editingTask;
+
+  const getParentCategoryId = (subcategoryId: string) => {
+    return allSubcategories.find(sub => sub.id === subcategoryId)?.parentId || null;
+  }
+
+  const [selectedParent, setSelectedParent] = useState<string | null>(
+    isEditMode ? getParentCategoryId(editingTask.categoryId) : null
+  );
 
   const form = useForm<RecurringTaskFormValues>({
     resolver: zodResolver(recurringTaskSchema),
-    defaultValues: {
-      title: '',
-      categoryId: '',
-      subcategoryId: '',
-      frequency: 'Daily',
-    },
+    defaultValues: isEditMode
+      ? {
+          title: editingTask.title,
+          categoryId: getParentCategoryId(editingTask.categoryId) || '',
+          subcategoryId: editingTask.categoryId,
+          frequency: editingTask.frequency,
+        }
+      : {
+          title: '',
+          categoryId: '',
+          subcategoryId: '',
+          frequency: 'Daily',
+        },
   });
+  
+  useEffect(() => {
+    if (editingTask) {
+        const parentId = getParentCategoryId(editingTask.categoryId);
+        form.reset({
+            title: editingTask.title,
+            categoryId: parentId || '',
+            subcategoryId: editingTask.categoryId,
+            frequency: editingTask.frequency,
+        });
+        setSelectedParent(parentId);
+    } else {
+        form.reset({
+            title: '',
+            categoryId: '',
+            subcategoryId: '',
+            frequency: 'Daily',
+        });
+        setSelectedParent(null);
+    }
+  }, [editingTask, form, allSubcategories]);
 
-  const subcategoryOptions = selectedParent
-    ? allSubcategories.filter((sub) => sub.parentId === selectedParent)
-    : [];
+
+  const subcategoryOptions = useMemo(() => {
+    return selectedParent
+      ? allSubcategories.filter((sub) => sub.parentId === selectedParent)
+      : [];
+  }, [selectedParent, allSubcategories]);
 
   const onSubmit = (data: RecurringTaskFormValues) => {
-    console.log('New Recurring Task:', data);
+    console.log(isEditMode ? 'Update Recurring Task:' : 'New Recurring Task:', data);
     toast({
       title: 'Success!',
-      description: 'New recurring task has been created.',
+      description: `Recurring task has been ${isEditMode ? 'updated' : 'created'}.`,
     });
     onOpenChange(false);
-    form.reset();
   };
   
   const frequency = form.watch('frequency');
@@ -91,9 +131,9 @@ export function AddTaskForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add New Recurring Task</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Edit' : 'Add New'} Recurring Task</DialogTitle>
           <DialogDescription>
-            Fill out the form below to create a new scheduled maintenance task.
+            Fill out the form below to {isEditMode ? 'update the' : 'create a new'} scheduled maintenance task.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -123,7 +163,7 @@ export function AddTaskForm({
                       setSelectedParent(value);
                       form.setValue('subcategoryId', ''); // Reset subcategory
                     }}
-                    defaultValue={field.value}
+                    value={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -177,7 +217,7 @@ export function AddTaskForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Frequency</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a frequency" />
@@ -259,7 +299,7 @@ export function AddTaskForm({
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit">Create Task</Button>
+              <Button type="submit">{isEditMode ? 'Update Task' : 'Create Task'}</Button>
             </DialogFooter>
           </form>
         </Form>

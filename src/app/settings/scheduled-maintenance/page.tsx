@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-import { getRecurringTasks, getCategoryById, getParentCategories, getSubCategories } from "@/lib/data";
+import { getRecurringTasks, getCategoryById, getParentCategories, getSubCategories, RecurringTask } from "@/lib/data";
 import {
   Card,
   CardContent,
@@ -31,10 +31,23 @@ import { AddTaskForm } from "./add-task-form";
 export default function ScheduledMaintenancePage() {
   const tasks = getRecurringTasks();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<RecurringTask | null>(null);
+
   const parentCategories = getParentCategories();
   const allSubcategories = parentCategories.reduce((acc, parent) => {
     return [...acc, ...getSubCategories(parent.id)];
   }, []);
+
+  const handleOpenForm = (task: RecurringTask | null) => {
+    setEditingTask(task);
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setEditingTask(null);
+    setIsFormOpen(false);
+  };
+
 
   return (
     <>
@@ -46,7 +59,7 @@ export default function ScheduledMaintenancePage() {
               Add, edit, or remove recurring tasks.
             </CardDescription>
           </div>
-          <Button onClick={() => setIsFormOpen(true)}>
+          <Button onClick={() => handleOpenForm(null)}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Add Task
           </Button>
@@ -83,7 +96,7 @@ export default function ScheduledMaintenancePage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleOpenForm(task)}>Edit</DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive">
                             Delete
                           </DropdownMenuItem>
@@ -99,9 +112,10 @@ export default function ScheduledMaintenancePage() {
       </Card>
       <AddTaskForm 
         open={isFormOpen} 
-        onOpenChange={setIsFormOpen}
+        onOpenChange={handleCloseForm}
         parentCategories={parentCategories}
         allSubcategories={allSubcategories}
+        editingTask={editingTask}
       />
     </>
   );
