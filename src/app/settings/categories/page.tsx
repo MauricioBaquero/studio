@@ -66,12 +66,6 @@ export default function CategoriesPage() {
                           </div>
                        </li>
                     ))}
-                    <li className="pl-2 pt-2">
-                      <Button variant="ghost" className="text-muted-foreground">
-                        <PlusCircle className="mr-2 h-4 w-4"/>
-                        Add Subcategory
-                      </Button>
-                    </li>
                   </ul>
                 </AccordionContent>
               </AccordionItem>
