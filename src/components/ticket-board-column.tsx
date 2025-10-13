@@ -13,7 +13,14 @@ const statusColors: { [key: string]: string } = {
   "Not Started": "bg-gray-400",
   "In Progress": "bg-blue-400",
   "Pending Review": "bg-yellow-400",
-  Completed: "bg-green-400",
+  "Completed": "bg-green-400",
+};
+
+const statusEmojis: { [key: string]: string } = {
+  "Not Started": "⚪️",
+  "In Progress": "🏃‍♂️",
+  "Pending Review": "👀",
+  "Completed": "🏁",
 };
 
 export default function TicketBoardColumn({
@@ -31,7 +38,7 @@ export default function TicketBoardColumn({
               statusColors[status] || "bg-gray-300"
             )}
           ></span>
-          {status}
+          {status} {statusEmojis[status]}
           <span className="ml-auto text-sm font-normal text-muted-foreground bg-muted rounded-full px-2 py-0.5">
             {tickets.length}
           </span>
