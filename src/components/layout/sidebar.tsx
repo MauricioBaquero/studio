@@ -76,7 +76,7 @@ export default function AppSidebar() {
             <UserNav />
         </div>
         <div className="p-4 text-center text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
-          Facilities App 2025 designed by WeAreFTL
+          Designed with ❤️ 2025 WeAreFTL
         </div>
       </SidebarFooter>
     </Sidebar>
