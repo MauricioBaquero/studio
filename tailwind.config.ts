@@ -16,7 +16,7 @@ export default {
     extend: {
       fontFamily: {
         body: ['"Lexend"', 'sans-serif'],
-        headline: ['"Rye"', 'sans-serif'],
+        headline: ['"Fugaz One"', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {
