@@ -12,6 +12,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -35,6 +36,8 @@ interface TicketFormProps {
   allSubcategories: Category[];
   locations: Location[];
 }
+
+const MINIMUM_NOTICE_DAYS = 7;
 
 export function TicketForm({ parentCategories, allSubcategories, locations }: TicketFormProps) {
   const { toast } = useToast();
@@ -284,9 +287,12 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
                     <DatePicker 
                         value={field.value}
                         onSelect={field.onChange}
-                        fromDate={addDays(new Date(), 7)} // Default minimum 7 days
+                        fromDate={addDays(new Date(), MINIMUM_NOTICE_DAYS)}
                     />
                   </FormControl>
+                  <FormDescription>
+                    A minimum of {MINIMUM_NOTICE_DAYS} days notice is required for new tickets.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
