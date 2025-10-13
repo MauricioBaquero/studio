@@ -18,7 +18,9 @@ export default function SettingsLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const activeTab = TABS.find(tab => pathname.startsWith(tab.href))?.value || "general";
+  // Find the most specific match by sorting tabs by href length descending
+  const activeTab = TABS.slice().sort((a, b) => b.href.length - a.href.length).find(tab => pathname.startsWith(tab.href))?.value || "general";
+
 
   return (
     <div className="space-y-6">
