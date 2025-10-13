@@ -1,6 +1,8 @@
+
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -298,7 +300,10 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
               )}
             />
           </CardContent>
-          <CardFooter className="flex justify-end p-6 border-t">
+          <CardFooter className="flex justify-end p-6 border-t gap-2">
+            <Button variant="outline" asChild>
+                <Link href="/">Cancel</Link>
+            </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Submitting..." : "Submit Ticket"}
             </Button>
