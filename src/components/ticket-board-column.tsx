@@ -17,7 +17,7 @@ const statusColors: { [key: string]: string } = {
 };
 
 const statusEmojis: { [key: string]: string } = {
-  "Not Started": "⚪️",
+  "Not Started": "⌛",
   "In Progress": "💪",
   "Pending Review": "👀",
   "Completed": "🏁",
