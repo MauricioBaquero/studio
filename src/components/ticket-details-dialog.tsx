@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import {
   Ticket,
@@ -47,11 +47,18 @@ export function TicketDetailsDialog({
   onUpdate,
 }: TicketDetailsDialogProps) {
   const { toast } = useToast();
-  const currentUser = getCurrentUser();
   const [currentStatus, setCurrentStatus] = useState<TicketStatus>(ticket.status);
   const [completionPhoto, setCompletionPhoto] = useState<string | null>(ticket.completionPhotoUrl || null);
   const [comments, setComments] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      setCurrentStatus(ticket.status);
+      setCompletionPhoto(ticket.completionPhotoUrl || null);
+      setComments('');
+    }
+  }, [open, ticket]);
   
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -65,7 +72,25 @@ export function TicketDetailsDialog({
   };
 
   const handleUpdate = () => {
-    // This function is now empty as the status is not editable.
+    const updatedTicketData: Partial<Ticket> = {
+        completionPhotoUrl: completionPhoto,
+        // In a real app, you would also save the comments.
+        // For now, we just log it.
+    };
+    
+    if (comments) {
+        console.log(`Comment added for ticket ${ticket.id}: ${comments}`);
+    }
+
+    const newTicketState = { ...ticket, ...updatedTicketData };
+    updateTicket(ticket.id, newTicketState);
+    onUpdate(newTicketState);
+
+    toast({
+        title: "Ticket Updated",
+        description: "Your changes have been saved."
+    });
+
     onOpenChange(false);
   };
   
@@ -117,20 +142,44 @@ export function TicketDetailsDialog({
                 </Select>
             </div>
           </div>
-          {ticket.completionPhotoUrl && (
-            <div className="space-y-2">
+          
+           <div className="space-y-2">
               <Label>Completion Photo</Label>
-              <div className="relative">
+              {completionPhoto ? (
+                <div className="relative">
                   <Image
-                    src={ticket.completionPhotoUrl}
+                    src={completionPhoto}
                     alt="Completion photo"
                     width={600}
                     height={400}
                     className="rounded-md object-cover aspect-video"
                   />
-              </div>
+                   <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 h-6 w-6"
+                    onClick={() => setCompletionPhoto(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div>
+                  <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Photo
+                  </Button>
+                  <Input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    onChange={handleFileChange}
+                    accept="image/*"
+                  />
+                </div>
+              )}
             </div>
-          )}
+
           <div className="space-y-2">
             <Label htmlFor="comments">Add Comments</Label>
             <Textarea 
@@ -143,8 +192,9 @@ export function TicketDetailsDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
+            Cancel
           </Button>
+          <Button onClick={handleUpdate}>Save Changes</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
