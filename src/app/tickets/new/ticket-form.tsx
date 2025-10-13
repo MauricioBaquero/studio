@@ -62,10 +62,33 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
     return locations.find(l => l.id === selectedLocationId);
   }, [selectedLocationId, locations]);
 
+  const floorOptions = useMemo(() => {
+    if (!selectedLocation || !selectedLocation.numberOfFloors || selectedLocation.numberOfFloors <= 0) {
+      return [];
+    }
+    const floors = [{ value: "none", label: "None (whole site)" }];
+    for (let i = 1; i <= selectedLocation.numberOfFloors; i++) {
+      floors.push({ value: `floor-${i}`, label: `Floor ${i}` });
+    }
+    return floors;
+  }, [selectedLocation]);
+
+
   async function onSubmit(values: z.infer<typeof ticketSchema>) {
     setIsSubmitting(true);
     const locationName = getLocationById(values.locationId)?.name;
-    const fullLocation = (locationName && values.locationDetail) ? `${locationName}, ${values.locationDetail}` : locationName;
+
+    let locationDetailDisplay = "";
+    if (values.locationDetail) {
+      const floorOption = floorOptions.find(f => f.value === values.locationDetail);
+      if (floorOption && floorOption.value !== 'none') {
+        locationDetailDisplay = floorOption.label;
+      } else if (floorOption?.value !== 'none') {
+        locationDetailDisplay = values.locationDetail;
+      }
+    }
+    
+    const fullLocation = [locationName, locationDetailDisplay].filter(Boolean).join(', ');
 
     const ticketData = {
         ...values,
@@ -190,6 +213,7 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
                     onValueChange={(value) => {
                         field.onChange(value);
                         setSelectedLocationId(value);
+                        form.setValue('locationDetail', '');
                     }}
                     defaultValue={field.value}
                   >
@@ -216,11 +240,22 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
                     name="locationDetail"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Floor / Room Number</FormLabel>
-                        <FormControl>
-                            <Input placeholder={`e.g., Floor ${selectedLocation.numberOfFloors} or Room 101`} {...field} />
-                        </FormControl>
-                        <FormMessage />
+                          <FormLabel>Floor</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a floor" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {floorOptions.map((floor) => (
+                                <SelectItem key={floor.value} value={floor.value}>
+                                  {floor.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
                         </FormItem>
                     )}
                 />
