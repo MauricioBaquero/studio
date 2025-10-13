@@ -1,4 +1,12 @@
-import { getRecurringTasks, getCategoryById, getNextDueDate } from "@/lib/data";
+"use client";
+
+import { useState } from "react";
+import {
+  getRecurringTasks,
+  getCategoryById,
+  getNextDueDate,
+  RecurringTask,
+} from "@/lib/data";
 import {
   Table,
   TableBody,
@@ -13,48 +21,120 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 
 export default function RecurringTasksPage() {
-  const tasks = getRecurringTasks();
+  const allTasks = getRecurringTasks();
+  const [pendingTasks, setPendingTasks] = useState<RecurringTask[]>(allTasks);
+  const [completedTasks, setCompletedTasks] = useState<RecurringTask[]>([]);
+
+  const handleTaskCheck = (taskId: string) => {
+    const taskToMove = pendingTasks.find((task) => task.id === taskId);
+    if (taskToMove) {
+      setPendingTasks(pendingTasks.filter((task) => task.id !== taskId));
+      setCompletedTasks([...completedTasks, taskToMove]);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full">
       <h1 className="text-3xl font-bold font-headline mb-6">Recurring Tasks</h1>
-      <Card className="flex-1">
-        <CardHeader>
-          <CardTitle>Scheduled Maintenance</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[50px]"></TableHead>
-                <TableHead>Task</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Frequency</TableHead>
-                <TableHead>Next Due Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tasks.map((task) => {
-                const category = getCategoryById(task.categoryId);
-                const nextDueDate = getNextDueDate(task);
-                return (
-                  <TableRow key={task.id}>
-                    <TableCell className="text-center">
-                       <Checkbox id={`task-${task.id}`} aria-label={`Complete ${task.title}`} />
+      <div className="grid md:grid-cols-2 gap-6 flex-1">
+        <Card className="flex flex-col">
+          <CardHeader>
+            <CardTitle>Scheduled Maintenance</CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50px]"></TableHead>
+                  <TableHead>Task</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Next Due Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pendingTasks.length > 0 ? (
+                  pendingTasks.map((task) => {
+                    const category = getCategoryById(task.categoryId);
+                    const nextDueDate = getNextDueDate(task);
+                    return (
+                      <TableRow key={task.id}>
+                        <TableCell className="text-center">
+                          <Checkbox
+                            id={`task-${task.id}`}
+                            aria-label={`Complete ${task.title}`}
+                            onCheckedChange={() => handleTaskCheck(task.id)}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {task.title}
+                        </TableCell>
+                        <TableCell>
+                          {category ? (
+                            <Badge variant="secondary">{category.name}</Badge>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                        <TableCell>{format(nextDueDate, "PPP")}</TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-24 text-center">
+                      All tasks completed!
                     </TableCell>
-                    <TableCell className="font-medium">{task.title}</TableCell>
-                    <TableCell>
-                      {category ? <Badge variant="secondary">{category.name}</Badge> : "-"}
-                    </TableCell>
-                    <TableCell>{task.frequency}</TableCell>
-                    <TableCell>{format(nextDueDate, "PPP")}</TableCell>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+        <Card className="flex flex-col">
+          <CardHeader>
+            <CardTitle>Completed Today</CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Task</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Completed</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {completedTasks.length > 0 ? (
+                  completedTasks.map((task) => {
+                    const category = getCategoryById(task.categoryId);
+                    return (
+                      <TableRow key={task.id}>
+                        <TableCell className="font-medium">
+                          {task.title}
+                        </TableCell>
+                        <TableCell>
+                          {category ? (
+                            <Badge variant="secondary">{category.name}</Badge>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                        <TableCell>{format(new Date(), "PPP")}</TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3} className="h-24 text-center">
+                      No tasks completed yet.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
