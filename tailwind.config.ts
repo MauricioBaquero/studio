@@ -15,8 +15,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['"PT Sans"', 'sans-serif'],
-        headline: ['"PT Sans"', 'sans-serif'],
+        body: ['"Lexend"', 'sans-serif'],
+        headline: ['"Vast Shadow"', 'cursive'],
         code: ['monospace'],
       },
       colors: {
