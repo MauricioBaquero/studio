@@ -144,7 +144,7 @@ export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCa
                 </Button>
             )}
 
-            {ticket.status === 'In Progress' && (
+            {ticket.status === 'In Progress' && ticket.assignedToId === currentUser.id && (
                 <Button variant="outline" size="sm" onClick={handleReadyForReview}>
                    Ready for Review
                 </Button>
