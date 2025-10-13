@@ -6,20 +6,15 @@ import TicketBoardColumn from "@/components/ticket-board-column";
 
 interface TicketBoardProps {
     initialTickets: Ticket[];
+    onTicketUpdate: (ticket: Ticket) => void;
 }
 
-export default function TicketBoard({ initialTickets }: TicketBoardProps) {
+export default function TicketBoard({ initialTickets, onTicketUpdate }: TicketBoardProps) {
   const [tickets, setTickets] = useState(initialTickets);
 
   useEffect(() => {
     setTickets(initialTickets);
   }, [initialTickets]);
-
-  const handleTicketUpdate = (updatedTicket: Ticket) => {
-    setTickets(currentTickets => 
-      currentTickets.map(t => t.id === updatedTicket.id ? updatedTicket : t)
-    );
-  };
 
   const ticketsByStatus = TICKET_STATUSES.reduce((acc, status) => {
     acc[status] = tickets.filter((ticket) => ticket.status === status);
@@ -33,7 +28,7 @@ export default function TicketBoard({ initialTickets }: TicketBoardProps) {
           key={status}
           status={status}
           tickets={ticketsByStatus[status]}
-          onTicketUpdate={handleTicketUpdate}
+          onTicketUpdate={onTicketUpdate}
         />
       ))}
     </div>
