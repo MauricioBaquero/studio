@@ -69,6 +69,20 @@ export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCa
     });
   };
 
+  const handleReadyForReview = () => {
+    const updatedTicket: Ticket = {
+      ...ticket,
+      status: 'Pending Review' as const,
+    };
+    updateTicket(ticket.id, updatedTicket);
+    setTicket(updatedTicket);
+    onUpdate(updatedTicket);
+    toast({
+      title: 'Task Ready for Review!',
+      description: `"${ticket.title}" is now pending review.`,
+    });
+  };
+
   const handleOpenDialog = (e: React.MouseEvent) => {
     // Don't open dialog if the claim button was clicked
     if ((e.target as HTMLElement).closest('button')) {
@@ -127,6 +141,12 @@ export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCa
             {ticket.status === 'Not Started' && !ticket.assignedToId && (
                 <Button variant="success" size="sm" onClick={handleClaimTask}>
                    {claimSaying}
+                </Button>
+            )}
+
+            {ticket.status === 'In Progress' && (
+                <Button variant="outline" size="sm" onClick={handleReadyForReview}>
+                   Ready for Review
                 </Button>
             )}
         </CardFooter>
