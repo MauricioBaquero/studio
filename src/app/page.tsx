@@ -1,11 +1,20 @@
-import { getTickets } from "@/lib/data";
+"use client";
+
+import { useState, useEffect } from 'react';
+import { getTickets, Ticket } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
 import TicketBoard from "@/components/ticket-board";
 
 export default function TaskBoardPage() {
-  const tickets = getTickets();
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  
+  useEffect(() => {
+    // This is to ensure the client-side state matches the server
+    // and re-renders when data changes.
+    setTickets(getTickets());
+  }, []);
 
   return (
     <div className="flex flex-col h-full gap-6">

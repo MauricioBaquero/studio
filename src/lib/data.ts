@@ -40,9 +40,10 @@ export interface Ticket {
   status: TicketStatus;
   location: string;
   categoryId: string;
-  assignedToId: string;
+  assignedToId: string | null;
   requestedCompletionDate: Date;
   createdAt: Date;
+  completionPhotoUrl?: string | null;
 }
 
 export interface RecurringTask {
@@ -86,12 +87,12 @@ const locations: Location[] = [
     { id: 'loc-4', name: 'Exterior - Parking Lot' },
 ];
 
-const tickets: Ticket[] = [
-  { id: "T-001", title: "Restroom A needs cleaning", description: "Men's restroom on the 2nd floor has a paper towel overflow.", status: "Not Started", location: "Building A, 2nd Floor", categoryId: "sub-1-2", assignedToId: "user-2", requestedCompletionDate: addDays(new Date(), 2), createdAt: new Date() },
+let tickets: Ticket[] = [
+  { id: "T-001", title: "Restroom A needs cleaning", description: "Men's restroom on the 2nd floor has a paper towel overflow.", status: "Not Started", location: "Building A, 2nd Floor", categoryId: "sub-1-2", assignedToId: null, requestedCompletionDate: addDays(new Date(), 2), createdAt: new Date() },
   { id: "T-002", title: "AC Unit 5 not cooling", description: "The AC unit in conference room 5 is only blowing warm air.", status: "In Progress", location: "Building B, Conference Room 5", categoryId: "sub-1-1", assignedToId: "user-3", requestedCompletionDate: addDays(new Date(), 1), createdAt: addDays(new Date(), -1) },
-  { id: "T-003", title: "Broken door handle", description: "The main entrance door handle is loose and about to fall off.", status: "Pending Review", location: "Main Lobby", categoryId: "sub-1-7", assignedToId: "user-2", requestedCompletionDate: addDays(new Date(), 3), createdAt: addDays(new Date(), -2) },
+  { id: "T-003", title: "Broken door handle", description: "The main entrance door handle is loose and about to fall off.", status: "Pending Review", location: "Main Lobby", categoryId: "sub-1-7", assignedToId: "user-2", requestedCompletionDate: addDays(new Date(), 3), createdAt: addDays(new Date(), -2), completionPhotoUrl: "https://picsum.photos/seed/work/600/400" },
   { id: "T-004", title: "Carpet stain in hallway", description: "Large coffee stain near the elevators on the 3rd floor.", status: "Completed", location: "Building A, 3rd Floor Hallway", categoryId: "sub-1-5", assignedToId: "user-3", requestedCompletionDate: addDays(new Date(), -5), createdAt: addDays(new Date(), -7) },
-  { id: "T-005", title: "Low on toilet paper", description: "Supply closet in Room 290 is running low on toilet paper rolls.", status: "Not Started", location: "Room 290", categoryId: "sub-1-4", assignedToId: "user-2", requestedCompletionDate: addDays(new Date(), 7), createdAt: new Date() },
+  { id: "T-005", title: "Low on toilet paper", description: "Supply closet in Room 290 is running low on toilet paper rolls.", status: "Not Started", location: "Room 290", categoryId: "sub-1-4", assignedToId: null, requestedCompletionDate: addDays(new Date(), 7), createdAt: new Date() },
 ];
 
 const recurringTasks: RecurringTask[] = [
@@ -102,7 +103,7 @@ const recurringTasks: RecurringTask[] = [
 
 // Data Accessor Functions
 export const getUsers = () => users;
-export const getUserById = (id: string) => users.find(u => u.id === id);
+export const getUserById = (id: string | null) => users.find(u => u.id === id);
 export const getCurrentUser = () => users[0]; // For demo, always return the first user
 
 export const getCategories = () => categories;
@@ -122,6 +123,13 @@ export const getLocationById = (id: string) => locations.find(l => l.id === id);
 
 export const getTickets = () => tickets;
 export const getTicketById = (id: string) => tickets.find(t => t.id === id);
+
+export const updateTicket = (id: string, updatedTicketData: Partial<Ticket>) => {
+    const ticketIndex = tickets.findIndex(t => t.id === id);
+    if (ticketIndex !== -1) {
+        tickets[ticketIndex] = { ...tickets[ticketIndex], ...updatedTicketData };
+    }
+};
 
 export const getRecurringTasks = () => recurringTasks;
 export const getNextDueDate = (task: RecurringTask): Date => {
