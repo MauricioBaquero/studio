@@ -30,6 +30,7 @@ export interface Category {
 export interface Location {
   id: string;
   name: string;
+  numberOfFloors?: number;
 }
 
 export interface Ticket {
@@ -79,11 +80,10 @@ const categories: Category[] = [
 ];
 
 const locations: Location[] = [
-    { id: 'loc-1', name: 'Building A, 1st Floor' },
-    { id: 'loc-2', name: 'Building A, 2nd Floor' },
-    { id: 'loc-3', name: 'Building B, Conference Room 1' },
-    { id: 'loc-4', name: 'Main Lobby' },
-    { id: 'loc-5', name: 'Exterior - Parking Lot' },
+    { id: 'loc-1', name: 'Building A', numberOfFloors: 5 },
+    { id: 'loc-2', name: 'Building B', numberOfFloors: 3 },
+    { id: 'loc-3', name: 'Main Lobby' },
+    { id: 'loc-4', name: 'Exterior - Parking Lot' },
 ];
 
 const tickets: Ticket[] = [

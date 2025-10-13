@@ -46,6 +46,7 @@ export function LocationForm({
     resolver: zodResolver(locationSchema),
     defaultValues: {
       name: "",
+      numberOfFloors: 0,
     },
   });
 
@@ -53,10 +54,12 @@ export function LocationForm({
     if (location) {
       form.reset({
         name: location.name,
+        numberOfFloors: location.numberOfFloors || 0,
       });
     } else {
       form.reset({
         name: "",
+        numberOfFloors: 0,
       });
     }
   }, [location, form]);
@@ -89,8 +92,24 @@ export function LocationForm({
                 <FormItem>
                   <FormLabel>Location Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Building A, Room 201" {...field} />
+                    <Input placeholder="e.g., Building A" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="numberOfFloors"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Number of Floors</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="e.g., 5" {...field} />
+                  </FormControl>
+                   <p className="text-sm text-muted-foreground">
+                      Leave as 0 or empty if not applicable (e.g. for exterior locations).
+                    </p>
                   <FormMessage />
                 </FormItem>
               )}

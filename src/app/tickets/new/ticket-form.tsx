@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { addDays } from "date-fns";
 import { ticketSchema } from "@/lib/schemas";
-import { Category, Location } from "@/lib/data";
+import { Category, Location, getLocationById } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import {
@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useToast } from "@/hooks/use-toast";
@@ -38,6 +39,7 @@ interface TicketFormProps {
 export function TicketForm({ parentCategories, allSubcategories, locations }: TicketFormProps) {
   const { toast } = useToast();
   const [selectedParent, setSelectedParent] = useState<string | null>(null);
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof ticketSchema>>({
@@ -46,7 +48,8 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
       categoryId: "",
       subcategoryId: "",
       description: "",
-      location: "",
+      locationId: "",
+      locationDetail: "",
     },
   });
 
@@ -54,10 +57,27 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
     ? allSubcategories.filter((sub) => sub.parentId === selectedParent)
     : [];
 
+  const selectedLocation = useMemo(() => {
+    if (!selectedLocationId) return null;
+    return locations.find(l => l.id === selectedLocationId);
+  }, [selectedLocationId, locations]);
+
   async function onSubmit(values: z.infer<typeof ticketSchema>) {
     setIsSubmitting(true);
+    const locationName = getLocationById(values.locationId)?.name;
+    const fullLocation = (locationName && values.locationDetail) ? `${locationName}, ${values.locationDetail}` : locationName;
+
+    const ticketData = {
+        ...values,
+        location: fullLocation || values.locationId, // Fallback to id if name not found
+    };
+
+    console.log(ticketData);
+
     try {
-        await createTicketAction(values);
+        // This is a temporary type assertion. The `createTicketAction` expects a `location` string
+        // but our schema has changed. We'll adjust the action later.
+        await createTicketAction(ticketData as any);
         toast({
             title: "Success!",
             description: "Your ticket has been created.",
@@ -68,6 +88,7 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
             description: "Failed to create ticket. Please try again.",
             variant: "destructive"
         });
+    } finally {
         setIsSubmitting(false);
     }
   }
@@ -161,12 +182,15 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
             </div>
              <FormField
               control={form.control}
-              name="location"
+              name="locationId"
               render={({ field }) => (
                  <FormItem>
                   <FormLabel>Location</FormLabel>
                   <Select
-                    onValueChange={field.onChange}
+                    onValueChange={(value) => {
+                        field.onChange(value);
+                        setSelectedLocationId(value);
+                    }}
                     defaultValue={field.value}
                   >
                     <FormControl>
@@ -176,7 +200,7 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
                     </FormControl>
                     <SelectContent>
                       {locations.map((loc) => (
-                        <SelectItem key={loc.id} value={loc.name}>
+                        <SelectItem key={loc.id} value={loc.id}>
                           {loc.name}
                         </SelectItem>
                       ))}
@@ -186,11 +210,40 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
                 </FormItem>
               )}
             />
+             {selectedLocation && selectedLocation.numberOfFloors && selectedLocation.numberOfFloors > 0 ? (
+                <FormField
+                    control={form.control}
+                    name="locationDetail"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Floor / Room Number</FormLabel>
+                        <FormControl>
+                            <Input placeholder={`e.g., Floor ${selectedLocation.numberOfFloors} or Room 101`} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+             ) : (
+                <FormField
+                    control={form.control}
+                    name="locationDetail"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Additional Details (optional)</FormLabel>
+                        <FormControl>
+                            <Input placeholder="e.g., Near the main entrance" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+             )}
              <FormField
               control={form.control}
               name="requestedCompletionDate"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="md:col-span-2">
                   <FormLabel>Requested Completion Date</FormLabel>
                   <FormControl>
                     <DatePicker 

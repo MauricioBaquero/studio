@@ -62,6 +62,7 @@ export default function LocationsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Location Name</TableHead>
+                <TableHead>Number of Floors</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -69,6 +70,7 @@ export default function LocationsPage() {
               {locations.map((location) => (
                 <TableRow key={location.id}>
                   <TableCell className="font-medium">{location.name}</TableCell>
+                  <TableCell>{location.numberOfFloors > 0 ? location.numberOfFloors : 'N/A'}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
