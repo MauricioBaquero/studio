@@ -66,7 +66,7 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
     if (!selectedLocation || !selectedLocation.numberOfFloors || selectedLocation.numberOfFloors <= 0) {
       return [];
     }
-    const floors = [{ value: "none", label: "None (whole site)" }];
+    const floors = [{ value: "none", label: "None" }];
     for (let i = 1; i <= selectedLocation.numberOfFloors; i++) {
       floors.push({ value: `floor-${i}`, label: `Floor ${i}` });
     }
