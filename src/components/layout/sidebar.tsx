@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building, LayoutDashboard, Repeat, Settings } from "lucide-react";
+import { Building, LayoutDashboard, GanttChartSquare, Repeat, Settings } from "lucide-react";
 import {
   Sidebar,
   SidebarHeader,
@@ -16,7 +16,8 @@ import { cn } from "@/lib/utils";
 import { UserNav } from "../user-nav";
 
 const menuItems = [
-  { href: "/", label: "Task Board", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/", label: "Task Board", icon: GanttChartSquare },
   { href: "/recurring-tasks", label: "Recurring Tasks", icon: Repeat },
 ];
 
@@ -27,6 +28,7 @@ export default function AppSidebar() {
 
   const isActive = (path: string) => {
     if (path === "/") return pathname === "/";
+    if (path === "/dashboard") return pathname === "/dashboard";
     return pathname.startsWith(path);
   };
 

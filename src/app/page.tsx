@@ -1,6 +1,4 @@
 import { getTickets } from "@/lib/data";
-import { TaskStatusChart } from "@/components/task-status-chart";
-import { TaskTypeChart } from "@/components/task-type-chart";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
@@ -19,11 +17,6 @@ export default function TaskBoardPage() {
             New Ticket
           </Link>
         </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <TaskStatusChart tickets={tickets} />
-        <TaskTypeChart tickets={tickets} />
       </div>
 
       <TicketBoard tickets={tickets} />
