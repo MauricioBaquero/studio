@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { UserNav } from "../user-nav";
+import { ThemeToggle } from "../theme-toggle";
 
 const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -58,6 +59,9 @@ export default function AppSidebar() {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
+        <div className="p-2 flex justify-center group-data-[collapsible=icon]:-ml-2">
+          <ThemeToggle />
+        </div>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
