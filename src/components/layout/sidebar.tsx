@@ -13,6 +13,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { UserNav } from "../user-nav";
 
 const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -70,6 +71,9 @@ export default function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+        <div className="p-2 flex justify-center group-data-[collapsible=icon]:-ml-2">
+            <UserNav />
+        </div>
       </SidebarFooter>
     </Sidebar>
   );

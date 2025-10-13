@@ -1,5 +1,4 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { UserNav } from "@/components/user-nav";
 
 export default function Header() {
   return (
@@ -8,7 +7,7 @@ export default function Header() {
         <SidebarTrigger />
       </div>
       <div className="flex w-full items-center justify-end">
-        <UserNav />
+        {/* UserNav is now in the sidebar */}
       </div>
     </header>
   );
