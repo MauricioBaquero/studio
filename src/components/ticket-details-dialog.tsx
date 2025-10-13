@@ -32,7 +32,6 @@ import { Textarea } from './ui/textarea';
 import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface TicketDetailsDialogProps {
   open: boolean;
