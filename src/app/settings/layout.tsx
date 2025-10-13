@@ -8,6 +8,7 @@ const TABS = [
   { value: "general", label: "General", href: "/settings" },
   { value: "users", label: "Users", href: "/settings/users" },
   { value: "categories", label: "Categories", href: "/settings/categories" },
+  { value: "scheduled-maintenance", label: "Scheduled Maintenance", href: "/settings/scheduled-maintenance" },
 ];
 
 export default function SettingsLayout({
