@@ -52,10 +52,6 @@ export function TicketDetailsDialog({
   const [completionPhoto, setCompletionPhoto] = useState<string | null>(ticket.completionPhotoUrl || null);
   const [comments, setComments] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const canEditStatus =
-    ticket.assignedToId === currentUser.id &&
-    (ticket.status === 'In Progress' || ticket.status === 'Pending Review');
   
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -69,28 +65,7 @@ export function TicketDetailsDialog({
   };
 
   const handleUpdate = () => {
-    if (currentStatus === 'Pending Review' && !completionPhoto) {
-      toast({
-        title: 'Photo Required',
-        description: 'Please upload a photo of the completed work.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const updatedTicket: Ticket = {
-      ...ticket,
-      status: currentStatus,
-      completionPhotoUrl: completionPhoto,
-      // In a real app, you would save comments to a history log
-    };
-    updateTicket(ticket.id, updatedTicket);
-    onUpdate(updatedTicket);
-
-    toast({
-      title: 'Ticket Updated',
-      description: `Ticket status set to "${currentStatus}".`,
-    });
+    // This function is now empty as the status is not editable.
     onOpenChange(false);
   };
   
@@ -127,7 +102,7 @@ export function TicketDetailsDialog({
                  <Select 
                     value={currentStatus} 
                     onValueChange={(value) => setCurrentStatus(value as TicketStatus)}
-                    disabled={!canEditStatus}
+                    disabled={true}
                 >
                     <SelectTrigger className="w-full">
                         <SelectValue placeholder="Set status" />
@@ -142,46 +117,18 @@ export function TicketDetailsDialog({
                 </Select>
             </div>
           </div>
-          {currentStatus === 'Pending Review' && (
+          {ticket.completionPhotoUrl && (
             <div className="space-y-2">
-              <Label htmlFor="completion-photo">Completion Photo</Label>
-              {completionPhoto ? (
-                <div className="relative">
-                    <Image
-                      src={completionPhoto}
-                      alt="Completion photo"
-                      width={600}
-                      height={400}
-                      className="rounded-md object-cover aspect-video"
-                    />
-                    <Button 
-                        variant="destructive" 
-                        size="icon" 
-                        className="absolute top-2 right-2 h-7 w-7"
-                        onClick={() => setCompletionPhoto(null)}
-                    >
-                        <X className="h-4 w-4"/>
-                    </Button>
-                </div>
-              ) : (
-                <div 
-                    className="flex justify-center items-center p-6 border-2 border-dashed rounded-md cursor-pointer hover:border-primary"
-                    onClick={() => fileInputRef.current?.click()}
-                >
-                    <div className="text-center space-y-1">
-                        <Upload className="mx-auto h-8 w-8 text-muted-foreground"/>
-                        <p className="text-sm text-muted-foreground">Click to upload a photo</p>
-                    </div>
-                </div>
-              )}
-              <Input 
-                id="completion-photo"
-                ref={fileInputRef} 
-                type="file" 
-                className="hidden" 
-                accept="image/*"
-                onChange={handleFileChange}
-              />
+              <Label>Completion Photo</Label>
+              <div className="relative">
+                  <Image
+                    src={ticket.completionPhotoUrl}
+                    alt="Completion photo"
+                    width={600}
+                    height={400}
+                    className="rounded-md object-cover aspect-video"
+                  />
+              </div>
             </div>
           )}
           <div className="space-y-2">
@@ -198,7 +145,6 @@ export function TicketDetailsDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
           </Button>
-          <Button onClick={handleUpdate} disabled={ticket.status === currentStatus}>Update Ticket</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
