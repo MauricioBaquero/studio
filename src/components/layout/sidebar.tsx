@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { UserNav } from "../user-nav";
 
 const menuItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/", label: "Task Board", icon: LayoutDashboard },
   { href: "/recurring-tasks", label: "Recurring Tasks", icon: Repeat },
 ];
 
