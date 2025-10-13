@@ -16,7 +16,7 @@ export default {
     extend: {
       fontFamily: {
         body: ['"Lexend"', 'sans-serif'],
-        headline: ['"Vast Shadow"', 'cursive'],
+        headline: ['"Silkscreen"', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {
