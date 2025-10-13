@@ -31,8 +31,10 @@ export default function TaskBoardPage() {
   const filteredTickets = useMemo(() => {
     return tickets.filter(ticket => {
       // Assignee filter
-      if (filters.assignee === 'me' && ticket.assignedToId !== currentUser.id) {
-        return false;
+      if (filters.assignee === 'me') {
+        if (ticket.assignedToId !== currentUser.id && ticket.assignedToId !== null) {
+          return false;
+        }
       }
       if (filters.assignee === 'unassigned' && ticket.assignedToId !== null) {
         return false;
