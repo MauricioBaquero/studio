@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const TABS = [
   { value: "general", label: "General", href: "/settings" },
@@ -35,8 +35,10 @@ export default function SettingsLayout({
             </TabsTrigger>
           ))}
         </TabsList>
+        <TabsContent value={activeTab} className="pt-4">
+          {children}
+        </TabsContent>
       </Tabs>
-      <div className="pt-4">{children}</div>
     </div>
   );
 }
