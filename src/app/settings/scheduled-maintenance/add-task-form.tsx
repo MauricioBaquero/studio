@@ -195,7 +195,28 @@ export function AddTaskForm({
                 </FormItem>
               )}
             />
-             {frequency === 'Monthly' && (
+             {frequency === 'Weekly' && (
+                <FormItem>
+                    <FormLabel>Day of Week</FormLabel>
+                    <Select>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select day" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            <SelectItem value="1">Monday</SelectItem>
+                            <SelectItem value="2">Tuesday</SelectItem>
+                            <SelectItem value="3">Wednesday</SelectItem>
+                            <SelectItem value="4">Thursday</SelectItem>
+                            <SelectItem value="5">Friday</SelectItem>
+                            <SelectItem value="6">Saturday</SelectItem>
+                            <SelectItem value="0">Sunday</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </FormItem>
+            )}
+            {frequency === 'Monthly' && (
               <div className="grid grid-cols-2 gap-4">
                 <FormItem>
                     <FormLabel>Week of Month</FormLabel>
