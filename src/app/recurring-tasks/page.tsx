@@ -6,6 +6,8 @@ import {
   getCategoryById,
   getNextDueDate,
   RecurringTask,
+  getCurrentUser,
+  User,
 } from "@/lib/data";
 import {
   Table,
@@ -20,16 +22,22 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 
+type CompletedTask = RecurringTask & { completedBy: User };
+
 export default function RecurringTasksPage() {
   const allTasks = getRecurringTasks();
+  const currentUser = getCurrentUser();
   const [pendingTasks, setPendingTasks] = useState<RecurringTask[]>(allTasks);
-  const [completedTasks, setCompletedTasks] = useState<RecurringTask[]>([]);
+  const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>([]);
 
   const handleTaskCheck = (taskId: string) => {
     const taskToMove = pendingTasks.find((task) => task.id === taskId);
     if (taskToMove) {
       setPendingTasks(pendingTasks.filter((task) => task.id !== taskId));
-      setCompletedTasks([...completedTasks, taskToMove]);
+      setCompletedTasks([
+        ...completedTasks,
+        { ...taskToMove, completedBy: currentUser },
+      ]);
     }
   };
 
@@ -100,7 +108,7 @@ export default function RecurringTasksPage() {
                 <TableRow>
                   <TableHead>Task</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead>Completed</TableHead>
+                  <TableHead>Completed By</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -119,7 +127,7 @@ export default function RecurringTasksPage() {
                             "-"
                           )}
                         </TableCell>
-                        <TableCell>{format(new Date(), "PPP")}</TableCell>
+                        <TableCell>{task.completedBy.name}</TableCell>
                       </TableRow>
                     );
                   })
