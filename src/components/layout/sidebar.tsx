@@ -36,8 +36,7 @@ export default function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4">
         <Link href="/" className="flex items-center gap-2 font-bold font-headline text-lg">
-          <Building className="h-7 w-7 text-primary" />
-          <span className="group-data-[collapsible=icon]:hidden">FacilityFlow</span>
+          <span className="group-data-[collapsible=icon]:hidden">Facilities App</span>
         </Link>
       </SidebarHeader>
       <SidebarContent>

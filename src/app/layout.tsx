@@ -8,7 +8,7 @@ import AppSidebar from '@/components/layout/sidebar';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
 export const metadata: Metadata = {
-  title: 'FacilityFlow',
+  title: 'Facilities App',
   description: 'A ticketing app for Maintenance and Facilities.',
 };
 
@@ -24,9 +24,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body antialiased">
+      <body className="font-body antialiased flex flex-col min-h-screen">
         <SidebarProvider>
-          <div className="flex min-h-screen">
+          <div className="flex flex-1">
             <AppSidebar />
             <div className="flex flex-1 flex-col">
               <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
@@ -39,6 +39,9 @@ export default function RootLayout({
           </div>
         </SidebarProvider>
         <Toaster />
+        <footer className="py-4 px-6 text-center text-sm text-muted-foreground">
+          Facilities App 2025 designed by WeAreFTL
+        </footer>
       </body>
     </html>
   );
