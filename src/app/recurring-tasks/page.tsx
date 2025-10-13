@@ -129,7 +129,7 @@ export default function RecurringTasksPage() {
                           )}
                         </TableCell>
                         <TableCell>{task.completedBy.name}</TableCell>
-                        <TableCell>{format(task.completedAt, "p")}</TableCell>
+                        <TableCell>{format(task.completedAt, "PPP")}</TableCell>
                       </TableRow>
                     );
                   })
