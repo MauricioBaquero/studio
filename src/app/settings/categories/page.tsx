@@ -20,7 +20,7 @@ export default function CategoriesPage() {
 
   return (
     <Card>
-       <CardHeader className="flex flex-row items-center justify-between">
+       <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <CardTitle>Category Management</CardTitle>
           <CardDescription>
@@ -38,7 +38,7 @@ export default function CategoriesPage() {
             const subCats = getSubCategories(pCat.id);
             return (
               <AccordionItem value={pCat.id} key={pCat.id}>
-                <AccordionTrigger className="font-semibold text-base hover:no-underline">
+                <AccordionTrigger className="font-semibold text-base hover:no-underline group">
                   <div className="flex items-center justify-between w-full pr-4">
                     <span>{pCat.name}</span>
                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
