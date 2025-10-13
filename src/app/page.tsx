@@ -8,12 +8,12 @@ import Link from "next/link";
 import TicketBoard from "@/components/ticket-board";
 
 export default function TaskBoardPage() {
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [initialTickets, setInitialTickets] = useState<Ticket[]>([]);
   
   useEffect(() => {
     // This is to ensure the client-side state matches the server
     // and re-renders when data changes.
-    setTickets(getTickets());
+    setInitialTickets(getTickets());
   }, []);
 
   return (
@@ -28,7 +28,7 @@ export default function TaskBoardPage() {
         </Button>
       </div>
 
-      <TicketBoard tickets={tickets} />
+      <TicketBoard initialTickets={initialTickets} />
     </div>
   );
 }

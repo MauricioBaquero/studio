@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 interface TicketBoardColumnProps {
   status: string;
   tickets: Ticket[];
+  onTicketUpdate: (ticket: Ticket) => void;
 }
 
 const statusColors: { [key: string]: string } = {
@@ -18,6 +19,7 @@ const statusColors: { [key: string]: string } = {
 export default function TicketBoardColumn({
   status,
   tickets,
+  onTicketUpdate,
 }: TicketBoardColumnProps) {
   return (
     <div className="flex flex-col rounded-lg bg-card shadow-sm h-full">
@@ -39,7 +41,11 @@ export default function TicketBoardColumn({
         <div className="p-4 space-y-4">
           {tickets.length > 0 ? (
             tickets.map((ticket) => (
-              <TicketCard key={ticket.id} ticket={ticket} />
+              <TicketCard 
+                key={ticket.id} 
+                ticket={ticket}
+                onUpdate={onTicketUpdate}
+              />
             ))
           ) : (
             <div className="flex items-center justify-center h-24 text-sm text-muted-foreground">

@@ -37,9 +37,10 @@ const claimSayings = [
 
 interface TicketCardProps {
   ticket: Ticket;
+  onUpdate: (ticket: Ticket) => void;
 }
 
-export default function TicketCard({ ticket: initialTicket }: TicketCardProps) {
+export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCardProps) {
   const { toast } = useToast();
   const [ticket, setTicket] = useState(initialTicket);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -54,13 +55,14 @@ export default function TicketCard({ ticket: initialTicket }: TicketCardProps) {
   const color = getCategoryColor(ticket.categoryId);
   
   const handleClaimTask = () => {
-    const updatedTicket = { 
+    const updatedTicket: Ticket = { 
         ...ticket, 
         assignedToId: currentUser.id,
         status: 'In Progress' as const
     };
     updateTicket(ticket.id, updatedTicket);
     setTicket(updatedTicket);
+    onUpdate(updatedTicket); // Notify the parent board
     toast({
         title: "Task Claimed!",
         description: `You are now assigned to "${ticket.title}".`
@@ -77,6 +79,7 @@ export default function TicketCard({ ticket: initialTicket }: TicketCardProps) {
 
   const handleTicketUpdate = (updatedTicket: Ticket) => {
     setTicket(updatedTicket);
+    onUpdate(updatedTicket); // Notify the parent board
   }
 
   return (
