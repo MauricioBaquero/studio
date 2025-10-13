@@ -22,7 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 
-type CompletedTask = RecurringTask & { completedBy: User };
+type CompletedTask = RecurringTask & { completedBy: User; completedAt: Date };
 
 export default function RecurringTasksPage() {
   const allTasks = getRecurringTasks();
@@ -36,7 +36,7 @@ export default function RecurringTasksPage() {
       setPendingTasks(pendingTasks.filter((task) => task.id !== taskId));
       setCompletedTasks([
         ...completedTasks,
-        { ...taskToMove, completedBy: currentUser },
+        { ...taskToMove, completedBy: currentUser, completedAt: new Date() },
       ]);
     }
   };
@@ -109,6 +109,7 @@ export default function RecurringTasksPage() {
                   <TableHead>Task</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Completed By</TableHead>
+                  <TableHead>Completed At</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -128,12 +129,13 @@ export default function RecurringTasksPage() {
                           )}
                         </TableCell>
                         <TableCell>{task.completedBy.name}</TableCell>
+                        <TableCell>{format(task.completedAt, "p")}</TableCell>
                       </TableRow>
                     );
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={3} className="h-24 text-center">
+                    <TableCell colSpan={4} className="h-24 text-center">
                       No tasks completed yet.
                     </TableCell>
                   </TableRow>
