@@ -31,7 +31,7 @@ export default function TicketBoardColumn({
   return (
     <div className="flex flex-col rounded-lg bg-card shadow-sm h-full">
       <div className="p-4 border-b">
-        <h2 className="text-lg font-semibold font-headline flex items-center gap-2">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
           <span
             className={cn(
               "h-3 w-3 rounded-full",

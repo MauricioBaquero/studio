@@ -113,7 +113,7 @@ export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCa
           <CheckCircle className="absolute top-2 right-2 h-5 w-5 text-green-500" />
         )}
         <CardHeader>
-          <CardTitle className="text-base font-bold font-headline truncate">
+          <CardTitle className="text-base font-bold truncate">
             {ticket.title}
           </CardTitle>
           <CardDescription>ID: {ticket.id}</CardDescription>
