@@ -39,9 +39,6 @@ export default function RootLayout({
           </div>
         </SidebarProvider>
         <Toaster />
-        <footer className="py-4 px-6 text-center text-sm text-muted-foreground">
-          Facilities App 2025 designed by WeAreFTL
-        </footer>
       </body>
     </html>
   );
