@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { addDays } from "date-fns";
 import { ticketSchema } from "@/lib/schemas";
-import { Category } from "@/lib/data";
+import { Category, Location } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import {
@@ -17,7 +17,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -33,9 +32,10 @@ import { createTicketAction } from "@/lib/actions";
 interface TicketFormProps {
   parentCategories: Category[];
   allSubcategories: Category[];
+  locations: Location[];
 }
 
-export function TicketForm({ parentCategories, allSubcategories }: TicketFormProps) {
+export function TicketForm({ parentCategories, allSubcategories, locations }: TicketFormProps) {
   const { toast } = useToast();
   const [selectedParent, setSelectedParent] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -163,11 +163,25 @@ export function TicketForm({ parentCategories, allSubcategories }: TicketFormPro
               control={form.control}
               name="location"
               render={({ field }) => (
-                <FormItem>
+                 <FormItem>
                   <FormLabel>Location</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Building A, Room 201" {...field} />
-                  </FormControl>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a location" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {locations.map((loc) => (
+                        <SelectItem key={loc.id} value={loc.name}>
+                          {loc.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

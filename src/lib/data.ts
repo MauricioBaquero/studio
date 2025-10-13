@@ -27,6 +27,11 @@ export interface Category {
   color?: CategoryColor;
 }
 
+export interface Location {
+  id: string;
+  name: string;
+}
+
 export interface Ticket {
   id: string;
   title: string;
@@ -73,6 +78,14 @@ const categories: Category[] = [
   { id: "sub-2-3", name: "Window washing", parentId: "cat-2" },
 ];
 
+const locations: Location[] = [
+    { id: 'loc-1', name: 'Building A, 1st Floor' },
+    { id: 'loc-2', name: 'Building A, 2nd Floor' },
+    { id: 'loc-3', name: 'Building B, Conference Room 1' },
+    { id: 'loc-4', name: 'Main Lobby' },
+    { id: 'loc-5', name: 'Exterior - Parking Lot' },
+];
+
 const tickets: Ticket[] = [
   { id: "T-001", title: "Restroom A needs cleaning", description: "Men's restroom on the 2nd floor has a paper towel overflow.", status: "Not Started", location: "Building A, 2nd Floor", categoryId: "sub-1-2", assignedToId: "user-2", requestedCompletionDate: addDays(new Date(), 2), createdAt: new Date() },
   { id: "T-002", title: "AC Unit 5 not cooling", description: "The AC unit in conference room 5 is only blowing warm air.", status: "In Progress", location: "Building B, Conference Room 5", categoryId: "sub-1-1", assignedToId: "user-3", requestedCompletionDate: addDays(new Date(), 1), createdAt: addDays(new Date(), -1) },
@@ -104,6 +117,8 @@ export const getCategoryColor = (categoryId: string): CategoryColor | 'gray' => 
     return category?.color || 'gray';
 }
 
+export const getLocations = () => locations;
+export const getLocationById = (id: string) => locations.find(l => l.id === id);
 
 export const getTickets = () => tickets;
 export const getTicketById = (id: string) => tickets.find(t => t.id === id);

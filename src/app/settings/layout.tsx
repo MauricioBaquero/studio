@@ -8,6 +8,7 @@ const TABS = [
   { value: "general", label: "General", href: "/settings" },
   { value: "users", label: "Users", href: "/settings/users" },
   { value: "categories", label: "Categories", href: "/settings/categories" },
+  { value: "locations", label: "Locations", href: "/settings/locations" },
   { value: "scheduled-maintenance", label: "Scheduled Maintenance", href: "/settings/scheduled-maintenance" },
 ];
 
@@ -17,7 +18,7 @@ export default function SettingsLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const activeTab = TABS.find(tab => tab.href === pathname)?.value || "general";
+  const activeTab = TABS.find(tab => pathname.startsWith(tab.href))?.value || "general";
 
   return (
     <div className="space-y-6">

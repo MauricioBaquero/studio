@@ -4,7 +4,7 @@ export const ticketSchema = z.object({
   categoryId: z.string().min(1, "Category is required."),
   subcategoryId: z.string().min(1, "Subcategory is required."),
   description: z.string().min(10, "Description must be at least 10 characters.").max(1000),
-  location: z.string().min(3, "Location is required."),
+  location: z.string().min(1, "Location is required."),
   requestedCompletionDate: z.date({
     required_error: "A completion date is required.",
   }),
@@ -21,4 +21,8 @@ export const categorySchema = z.object({
 
 export const userRoleSchema = z.object({
   role: z.enum(["Admin", "Staff", "Viewer"]),
+});
+
+export const locationSchema = z.object({
+  name: z.string().min(3, "Location name must be at least 3 characters."),
 });
