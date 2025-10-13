@@ -27,11 +27,19 @@ export function TasksByAssigneeChart({ tickets }: TasksByAssigneeChartProps) {
   }));
 
   const unassignedTasks = tickets.filter(ticket => !ticket.assignedToId).length;
+  let unassignedData = null;
   if (unassignedTasks > 0) {
-    tasksByAssignee.push({ name: "Unassigned", value: unassignedTasks });
+    unassignedData = { name: "Unassigned", value: unassignedTasks };
   }
 
-  const chartData = tasksByAssignee.filter(d => d.value > 0).sort((a, b) => b.value - a.value);
+  // Sort assigned users alphabetically by name
+  const sortedAssigned = tasksByAssignee
+    .filter(d => d.value > 0)
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  // Add "Unassigned" to the end if it exists
+  const chartData = unassignedData ? [...sortedAssigned, unassignedData] : sortedAssigned;
+
 
   return (
     <Card className="flex flex-col">
