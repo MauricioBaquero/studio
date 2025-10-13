@@ -16,7 +16,7 @@ export default {
     extend: {
       fontFamily: {
         body: ['"Lexend"', 'sans-serif'],
-        headline: ['"Righteous"', 'sans-serif'],
+        headline: ['"Rye"', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {
