@@ -28,8 +28,11 @@ export function UserNav() {
     return null;
   }
   
-  const userDisplayName = user.displayName || user.email || "User";
-  const userDisplayEmail = user.email || "No email";
+  // user object from useUser() has displayName from Firebase Auth profile
+  // The local user document from firestore has the `name` field.
+  // We'll prefer the local data but fall back gracefully.
+  const userDisplayName = user.name || user.displayName || user.email || 'User';
+  const userDisplayEmail = user.email || 'No email';
   const userFallback = userDisplayName.charAt(0).toUpperCase();
 
   if (state === 'collapsed') {
