@@ -115,8 +115,10 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
     });
   };
 
+  const canInteract = isAdmin || isViewer || (isStaff && (isAssignedToCurrentUser || !ticket.assignedToId));
+  
   const handleOpenDialog = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('button')) {
+    if ((e.target as HTMLElement).closest('button') || !canInteract) {
         return;
     }
     setIsDialogOpen(true);
@@ -131,13 +133,16 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
     ? ticket.requestedCompletionDate.toDate()
     : toDate(ticket.requestedCompletionDate);
 
-  const canClaimTask = !isViewer;
+  const canClaimTask = !isViewer && (isAdmin || (isStaff && !ticket.assignedToId));
   const canMarkForReview = (isStaff || isAdmin) && isAssignedToCurrentUser;
 
   return (
     <>
       <Card 
-        className="relative transition-shadow hover:shadow-md cursor-pointer"
+        className={cn(
+            "relative transition-shadow",
+            canInteract ? "hover:shadow-md cursor-pointer" : "opacity-70 cursor-not-allowed"
+          )}
         onClick={handleOpenDialog}
       >
         {ticket.status === 'Completed' && (
@@ -195,15 +200,17 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
             )}
         </CardFooter>
       </Card>
-      <TicketDetailsDialog 
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        ticket={ticket}
-        onUpdate={handleTicketUpdate}
-        onDelete={onDelete}
-        users={users}
-        categories={categories}
-      />
+      {canInteract && (
+        <TicketDetailsDialog 
+            open={isDialogOpen}
+            onOpenChange={setIsDialogOpen}
+            ticket={ticket}
+            onUpdate={handleTicketUpdate}
+            onDelete={onDelete}
+            users={users}
+            categories={categories}
+        />
+      )}
     </>
   );
 }
