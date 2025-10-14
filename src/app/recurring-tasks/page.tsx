@@ -20,8 +20,6 @@ import {
   useFirestore,
   useMemoFirebase,
   useUser,
-  updateDocumentNonBlocking,
-  addDocumentNonBlocking,
 } from '@/firebase';
 import {
   collection,
@@ -39,12 +37,12 @@ export default function RecurringTasksPage() {
   const firestore = useFirestore();
   const { user: currentUser } = useUser();
 
-  const tasksQuery = useMemoFirebase(
+  const recurringTasksQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, 'recurringTasks')) : null),
     [firestore]
   );
-  const { data: allTasks, isLoading: isLoadingTasks } =
-    useCollection<RecurringTask>(tasksQuery);
+  const { data: initialTasks, isLoading: isLoadingTasks } =
+    useCollection<RecurringTask>(recurringTasksQuery);
 
   const categoriesQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, 'categories')) : null),
@@ -60,8 +58,38 @@ export default function RecurringTasksPage() {
   const { data: users, isLoading: isLoadingUsers } =
     useCollection<User>(usersQuery);
 
-  const [pendingTasks, setPendingTasks] = useState<RecurringTask[]>([]);
-  const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>([]);
+  const [allTasks, setAllTasks] = useState<RecurringTask[]>([]);
+
+  useEffect(() => {
+    if (initialTasks) {
+      setAllTasks(initialTasks);
+    }
+  }, [initialTasks]);
+
+  const { pendingTasks, completedTasks } = useMemo(() => {
+    if (!allTasks || !users) {
+      return { pendingTasks: [], completedTasks: [] };
+    }
+    
+    const todayCompleted: CompletedTask[] = [];
+    const stillPending: RecurringTask[] = [];
+
+    allTasks.forEach(task => {
+        const lastCompletedDate = task.lastCompleted instanceof Timestamp ? task.lastCompleted.toDate() : task.lastCompleted;
+        if (lastCompletedDate && isToday(lastCompletedDate)) {
+           const completingUser = users.find(u => u.uid === task.completedBy);
+           if(completingUser) {
+             todayCompleted.push({ ...task, completedBy: completingUser, completedAt: lastCompletedDate });
+           }
+        }
+        stillPending.push(task);
+    });
+
+    const sortedPending = stillPending.sort((a,b) => getNextDueDate(a).getTime() - getNextDueDate(b).getTime());
+
+    return { pendingTasks: sortedPending, completedTasks: todayCompleted };
+  }, [allTasks, users]);
+
 
   const getCategoryById = (id: string) => categories?.find(c => c.id === id);
 
@@ -73,40 +101,30 @@ export default function RecurringTasksPage() {
     return category?.color || 'gray';
   };
   
-  useEffect(() => {
-    if (allTasks && users) {
-      const todayCompleted: CompletedTask[] = [];
-      const stillPending: RecurringTask[] = [];
-
-      allTasks.forEach(task => {
-        const lastCompletedDate = task.lastCompleted instanceof Timestamp ? task.lastCompleted.toDate() : task.lastCompleted;
-        if (lastCompletedDate && isToday(lastCompletedDate)) {
-           const completingUser = users.find(u => u.uid === task.completedBy);
-           if(completingUser) {
-             todayCompleted.push({ ...task, completedBy: completingUser, completedAt: lastCompletedDate });
-           }
-        }
-        // The same task can be pending for its next occurrence
-        stillPending.push(task);
-      });
-      
-      setPendingTasks(stillPending);
-      setCompletedTasks(todayCompleted);
-    }
-  }, [allTasks, users]);
-
-
   const handleTaskCheck = (recurringTask: RecurringTask) => {
     if (!firestore || !currentUser) return;
     
-    const now = serverTimestamp();
+    const now = new Date();
+    const serverTime = serverTimestamp();
 
+    const updatedRecurringTask = {
+      ...recurringTask,
+      lastCompleted: now,
+      completedBy: currentUser.uid,
+    };
+    
+    // Optimistically update the UI
+    setAllTasks(prevTasks => 
+      prevTasks.map(t => t.id === recurringTask.id ? updatedRecurringTask : t)
+    );
+
+    // Perform non-blocking database updates
     const batch = writeBatch(firestore);
 
     // 1. Update the recurring task template
     const recurringTaskRef = doc(firestore, 'recurringTasks', recurringTask.id);
     batch.update(recurringTaskRef, {
-      lastCompleted: now,
+      lastCompleted: serverTime,
       completedBy: currentUser.uid,
     });
 
@@ -118,20 +136,23 @@ export default function RecurringTasksPage() {
         title: recurringTask.title,
         description: `Completed recurring task: ${recurringTask.title}`,
         categoryId: recurringTask.categoryId,
-        location: "N/A", // Recurring tasks don't have locations yet
+        location: "N/A", 
         locationId: null,
-        requestedCompletionDate: now,
-        actualCompletionDate: now,
+        requestedCompletionDate: serverTime,
+        actualCompletionDate: serverTime,
         status: "Completed",
         assignedToId: currentUser.uid,
-        approvedBy: currentUser.uid, // Self-approved for now
-        createdAt: now,
+        approvedBy: currentUser.uid,
+        createdAt: serverTime,
     };
     batch.set(newTaskRef, newTaskData);
     
-    // Non-blocking commit
     batch.commit().catch(error => {
         console.error("Failed to complete recurring task:", error);
+        // Revert UI on failure
+        setAllTasks(prevTasks => 
+          prevTasks.map(t => t.id === recurringTask.id ? recurringTask : t)
+        );
     });
   };
 
@@ -148,8 +169,6 @@ export default function RecurringTasksPage() {
     );
   }
   
-  const sortedPendingTasks = pendingTasks.sort((a,b) => getNextDueDate(a).getTime() - getNextDueDate(b).getTime());
-
   return (
     <div className="flex flex-col h-full">
       <h1 className="text-3xl font-bold font-headline mb-6">Recurring Tasks</h1>
@@ -169,8 +188,8 @@ export default function RecurringTasksPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedPendingTasks.length > 0 ? (
-                  sortedPendingTasks.map(task => {
+                {pendingTasks.length > 0 ? (
+                  pendingTasks.map(task => {
                     const category = getCategoryById(task.categoryId);
                     const color = getCategoryColor(task.categoryId);
                     const nextDueDate = getNextDueDate(task);
@@ -271,5 +290,3 @@ export default function RecurringTasksPage() {
     </div>
   );
 }
-
-    
