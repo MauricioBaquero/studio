@@ -134,7 +134,7 @@ export function TicketDetailsDialog({
     let finalStatus = newStatus || currentStatus;
 
     // If task is being assigned and is "Not Started", move it to "In Progress"
-    if (assignedTo && ticket.status === 'Not Started') {
+    if (assignedTo && ticket.status === 'Not Started' && assignedTo !== ticket.assignedToId) {
         finalStatus = 'In Progress';
     }
 
@@ -225,23 +225,23 @@ export function TicketDetailsDialog({
           <DialogTitle>Ticket Details</DialogTitle>
           <DialogDescription>ID: {ticket.id}</DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto pr-6 -mr-6 grid gap-4 py-4">
+        <div className="flex-1 overflow-y-auto pr-6 -mr-6 grid gap-6 py-4">
            <div className="space-y-2">
               <Label>Description</Label>
               <p className="text-sm text-muted-foreground p-4 border rounded-md bg-muted/50">
                   {ticket.description}
               </p>
            </div>
-          <div className="grid grid-cols-2 gap-4">
-             <div className="space-y-1">
+          <div className="grid grid-cols-2 gap-6">
+             <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Category</p>
                 <p className="text-sm">{category?.name}</p>
             </div>
-             <div className="space-y-1">
+             <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Location</p>
                 <p className="text-sm">{ticket.location}</p>
             </div>
-             <div className="space-y-1">
+             <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Assigned To</p>
                  {isAdmin ? (
                   <Select 
@@ -265,7 +265,7 @@ export function TicketDetailsDialog({
                     <p className="text-sm">{assignedUser?.name || 'Unassigned'}</p>
                  )}
             </div>
-             <div className="space-y-1">
+             <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Status</p>
                  <Select 
                     value={currentStatus} 
