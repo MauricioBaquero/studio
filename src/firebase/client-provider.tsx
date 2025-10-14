@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo, type ReactNode, useEffect } from 'react';
@@ -5,12 +6,22 @@ import { FirebaseProvider } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase';
 import { doc, getDoc, setDoc, writeBatch, collection, getDocs, query, where } from 'firebase/firestore';
 import type { Category } from '@/lib/data';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 interface FirebaseClientProviderProps {
   children: ReactNode;
 }
 
 const seedCategories = async (firestore: any) => {
+    const categoriesCollection = collection(firestore, 'categories');
+    const existingCategoriesSnap = await getDocs(query(categoriesCollection));
+    
+    if (!existingCategoriesSnap.empty) {
+        return;
+    }
+    
+    console.log("Categories collection is empty, seeding data...");
+
     const categoriesData = [
         { name: "Interior Maintenance & Cleaning", color: "blue", subcategories: [
             "Check AC unit", "Clean restrooms", "Clean electrical rooms", "Clean elevator control rooms", "Check cleaning supplies (290)", "General interior cleaning", "Carpet cleaning", "Floor repairs", "Building repairs, doors, windows, etc."
@@ -35,15 +46,6 @@ const seedCategories = async (firestore: any) => {
         ]},
     ];
 
-    const categoriesCollection = collection(firestore, 'categories');
-    const existingCategoriesSnap = await getDocs(categoriesCollection);
-    
-    if (!existingCategoriesSnap.empty) {
-        console.log('Categories collection already has data, skipping seed.');
-        return;
-    }
-
-    console.log("Seeding categories...");
     const batch = writeBatch(firestore);
 
     for (const catData of categoriesData) {
@@ -79,41 +81,39 @@ export function FirebaseClientProvider({
   children,
 }: FirebaseClientProviderProps) {
   const firebaseServices = useMemo(() => {
-    // Initialize Firebase on the client side, once per component mount.
     return initializeFirebase();
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, []);
 
-  // Temporary script to seed the initial user.
   useEffect(() => {
     const seedData = async () => {
-      if (!firebaseServices.firestore) return;
+      if (!firebaseServices.firestore || !firebaseServices.auth) return;
       
-      // Seed User
+      const email = 'mbaquero@fortlauderdale.gov';
       const uid = 'uca9XP90Q1agS7AA6gPREGyhIAE2';
       const userRef = doc(firebaseServices.firestore, 'users', uid);
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
-        console.log('Initial user not found, creating...');
+        console.log('Initial user document not found, creating...');
         try {
+          // This creates the document in Firestore, not the auth user
           await setDoc(userRef, {
             uid: uid,
             name: 'Mauricio Baquero',
-            email: 'mbaquero@fortlauderdale.gov',
+            email: email,
             role: 'Admin',
           });
-          console.log('Initial user created successfully.');
+          console.log('Initial user document created successfully.');
         } catch (error) {
-          console.error('Error creating initial user:', error);
+          console.error('Error creating initial user document:', error);
         }
       }
       
-      // Seed Categories
       await seedCategories(firebaseServices.firestore);
     };
 
     seedData();
-  }, [firebaseServices.firestore]);
+  }, [firebaseServices.firestore, firebaseServices.auth]);
 
   return (
     <FirebaseProvider

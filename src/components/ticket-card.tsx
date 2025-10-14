@@ -6,7 +6,6 @@ import {
   Ticket,
   User,
   Category,
-  getCurrentUser, // Still needed for current user's ID
 } from '@/lib/data';
 import {
   Card,
@@ -24,9 +23,8 @@ import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { TicketDetailsDialog } from './ticket-details-dialog';
 import { cn } from '@/lib/utils';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import { updateDocumentNonBlocking } from '@/firebase';
 import { Timestamp } from 'firebase/firestore';
 
 const claimSayings = [
@@ -49,15 +47,13 @@ interface TicketCardProps {
 export default function TicketCard({ ticket: initialTicket, users, categories, onUpdate }: TicketCardProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const { user: currentUser } = useUser();
   const [ticket, setTicket] = useState(initialTicket);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [claimSaying] = useState(
     () => claimSayings[Math.floor(Math.random() * claimSayings.length)]
   );
   
-  const currentUser = getCurrentUser(); // Mock for now, but provides current user ID
-  
-  // --- Start of Changes ---
   const getUserById = (id: string | null) => users.find(u => u.uid === id);
   const getCategoryById = (id: string) => categories.find(c => c.id === id);
   const getCategoryColor = (categoryId: string) => {
@@ -72,12 +68,11 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
   const category = getCategoryById(ticket.categoryId);
   const parentCategory = category?.parentId ? getCategoryById(category.parentId) : null;
   const color = getCategoryColor(ticket.categoryId);
-  // --- End of Changes ---
 
-  const isAssignedToOtherUser = ticket.assignedToId && ticket.assignedToId !== currentUser.uid;
+  const isAssignedToOtherUser = ticket.assignedToId && ticket.assignedToId !== currentUser?.uid;
   
   const handleClaimTask = () => {
-    if (!firestore) return;
+    if (!firestore || !currentUser) return;
     const ticketRef = doc(firestore, 'tasks', ticket.id);
     const updatedTicketData = { 
         assignedToId: currentUser.uid,
@@ -149,8 +144,8 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
           <div className="flex items-center gap-2 text-muted-foreground">
             <Tag className="h-4 w-4" />
             <div className="flex flex-wrap gap-1">
-              {parentCategory && <Badge color={color}>{parentCategory.name}</Badge>}
-              {category && <Badge color={color}>{category.name}</Badge>}
+              {parentCategory && <Badge color={color as any}>{parentCategory.name}</Badge>}
+              {category && <Badge color={color as any}>{category.name}</Badge>}
             </div>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
@@ -180,7 +175,7 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
                 </Button>
             )}
 
-            {ticket.status === 'In Progress' && ticket.assignedToId === currentUser.uid && (
+            {ticket.status === 'In Progress' && ticket.assignedToId === currentUser?.uid && (
                 <Button variant="success" size="sm" onClick={handleReadyForReview}>
                    Ready for Review
                 </Button>
