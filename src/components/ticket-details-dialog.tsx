@@ -223,14 +223,21 @@ export function TicketDetailsDialog({
                  <Select 
                     value={currentStatus} 
                     onValueChange={(value) => setCurrentStatus(value as TicketStatus)}
-                    disabled={isSaving || (isPendingReview && !isAdmin)}
+                    disabled={isSaving || (!isAdmin && ticket.status === 'Completed')}
                 >
                     <SelectTrigger className="w-full">
                         <SelectValue placeholder="Set status" />
                     </SelectTrigger>
                     <SelectContent>
                         {TICKET_STATUSES.map(status => (
-                            <SelectItem key={status} value={status} disabled={isPendingReview && !isAdmin && status !== 'Pending Review'}>
+                            <SelectItem 
+                                key={status} 
+                                value={status} 
+                                disabled={
+                                    (!isAdmin && (status === 'Completed' || ticket.status === 'Completed')) ||
+                                    (!isAdmin && isPendingReview && status !== 'Pending Review')
+                                }
+                            >
                                 {status}
                             </SelectItem>
                         ))}
@@ -328,7 +335,7 @@ export function TicketDetailsDialog({
                 </Button>
                 </div>
             ) : (
-                <Button onClick={() => handleUpdate()} disabled={isSaving}>
+                <Button onClick={() => handleUpdate()} disabled={isSaving || (!isAdmin && ticket.status === 'Completed')}>
                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isSaving ? "Saving..." : "Save Changes"}
                 </Button>
@@ -339,3 +346,5 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
+
+    
