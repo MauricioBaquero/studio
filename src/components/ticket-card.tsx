@@ -78,6 +78,7 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
 
   const isAdmin = currentUser?.role === 'Admin';
   const isViewer = currentUser?.role === 'Viewer';
+  const isStaff = currentUser?.role === 'Staff';
   const isAssignedToCurrentUser = ticket.assignedToId === currentUser?.uid;
 
   const handleClaimTask = () => {
@@ -129,6 +130,9 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
     ? ticket.requestedCompletionDate.toDate()
     : toDate(ticket.requestedCompletionDate);
 
+  const canClaimTask = !isViewer;
+  const canMarkForReview = (isStaff || isAdmin) && isAssignedToCurrentUser;
+
   return (
     <>
       <Card 
@@ -173,13 +177,13 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
                 <span className="text-sm text-muted-foreground italic">Unassigned</span>
             )}
 
-            {ticket.status === 'Not Started' && !ticket.assignedToId && !isViewer && (
+            {ticket.status === 'Not Started' && !ticket.assignedToId && canClaimTask && (
                 <Button variant="success" size="sm" onClick={handleClaimTask}>
                    {claimSaying}
                 </Button>
             )}
 
-            {ticket.status === 'In Progress' && isAssignedToCurrentUser && (
+            {ticket.status === 'In Progress' && canMarkForReview && (
                 <Button variant="success" size="sm" onClick={handleReadyForReview}>
                    Ready for Review
                 </Button>
