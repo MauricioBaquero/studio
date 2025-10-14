@@ -157,7 +157,7 @@ export function TicketDetailsDialog({
       
       const dataForDb: Partial<Ticket> = {
           status: finalStatus,
-          completionPhotoUrl: photoUrl,
+          completionPhotoUrl: photoUrl !== undefined ? photoUrl : null,
       };
 
       if (finalStatus === 'Completed') {
@@ -170,7 +170,7 @@ export function TicketDetailsDialog({
       // Optimistic update for UI
       const updatedTicketData: Partial<Ticket> = {
           status: finalStatus,
-          completionPhotoUrl: photoUrl,
+          completionPhotoUrl: photoUrl !== undefined ? photoUrl : null,
       };
       if (finalStatus === 'Completed') {
         updatedTicketData.approvedBy = currentUser.uid;
@@ -439,3 +439,5 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
+
+    
