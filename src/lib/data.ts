@@ -34,6 +34,13 @@ export interface Location {
   numberOfFloors?: number;
 }
 
+export interface Comment {
+    userId: string;
+    userName: string;
+    text: string;
+    createdAt: Timestamp | Date;
+}
+
 export interface Ticket {
   id: string;
   title: string;
@@ -46,6 +53,7 @@ export interface Ticket {
   createdAt: Date | Timestamp;
   completionPhotoUrl?: string | null;
   approvedBy?: string | null;
+  comments?: Comment[];
 }
 
 export interface RecurringTask {

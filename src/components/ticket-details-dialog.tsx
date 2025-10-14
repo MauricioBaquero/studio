@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import {
   Ticket,
@@ -9,6 +9,7 @@ import {
   TicketStatus,
   User,
   Category,
+  Comment,
 } from '@/lib/data';
 import {
   Dialog,
@@ -32,7 +33,7 @@ import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, X, Trash2 } from 'lucide-react';
 import { useFirestore, useStorage, updateDocumentNonBlocking, useUser, deleteDocumentNonBlocking } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { doc, serverTimestamp, Timestamp, arrayUnion } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 import {
   AlertDialog,
@@ -45,6 +46,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback } from './ui/avatar';
+import { formatDistanceToNow } from 'date-fns';
 
 interface TicketDetailsDialogProps {
   open: boolean;
@@ -73,18 +76,28 @@ export function TicketDetailsDialog({
   const [currentStatus, setCurrentStatus] = useState<TicketStatus>(ticket.status);
   const [completionPhoto, setCompletionPhoto] = useState<string | null>(ticket.completionPhotoUrl || null);
   const [newPhotoDataUrl, setNewPhotoDataUrl] = useState<string | null>(null);
-  const [comments, setComments] = useState('');
+  const [newCommentText, setNewCommentText] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const getUserById = (id: string | null) => users.find(u => u.uid === id);
   const getCategoryById = (id: string) => categories.find(c => c.id === id);
+
+  const sortedComments = useMemo(() => {
+    if (!ticket.comments) return [];
+    return [...ticket.comments].sort((a, b) => {
+        const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toDate() : a.createdAt;
+        const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toDate() : b.createdAt;
+        return dateB.getTime() - dateA.getTime();
+    });
+  }, [ticket.comments]);
+
 
   useEffect(() => {
     if (open) {
       setCurrentStatus(ticket.status);
       setCompletionPhoto(ticket.completionPhotoUrl || null);
       setNewPhotoDataUrl(null);
-      setComments('');
+      setNewCommentText('');
       setIsSaving(false);
     }
   }, [open, ticket]);
@@ -141,7 +154,7 @@ export function TicketDetailsDialog({
         photoUrl = null;
       }
       
-      const updatedTicketData: Partial<Ticket> = {
+      const updatedTicketData: Partial<Ticket> & {comments?: any} = {
           status: finalStatus,
           completionPhotoUrl: photoUrl,
       };
@@ -150,14 +163,29 @@ export function TicketDetailsDialog({
         updatedTicketData.approvedBy = currentUser.uid;
       }
       
-      if (comments) {
-          console.log(`Comment added for ticket ${ticket.id}: ${comments}`);
+      if (newCommentText.trim()) {
+        const newComment: Comment = {
+            userId: currentUser.uid,
+            userName: currentUser.name || "Unknown User",
+            text: newCommentText.trim(),
+            createdAt: serverTimestamp(),
+        };
+        updatedTicketData.comments = arrayUnion(newComment);
       }
 
       const ticketRef = doc(firestore, 'tasks', ticket.id);
       updateDocumentNonBlocking(ticketRef, updatedTicketData);
 
+      // Optimistic update for UI
       const newTicketState = { ...ticket, ...updatedTicketData };
+      if(updatedTicketData.comments) {
+        const optimisticComment: Comment = {
+            ...updatedTicketData.comments[0],
+            createdAt: new Date(),
+        }
+        newTicketState.comments = [...(ticket.comments || []), optimisticComment];
+      }
+
       onUpdate(newTicketState);
 
       toast({
@@ -195,16 +223,17 @@ export function TicketDetailsDialog({
   const category = getCategoryById(ticket.categoryId);
 
   const isAdmin = currentUser?.role === 'Admin';
+  const isViewer = currentUser?.role === 'Viewer';
   const isPendingReview = ticket.status === 'Pending Review';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Ticket Details</DialogTitle>
           <DialogDescription>ID: {ticket.id}</DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="flex-1 overflow-y-auto pr-6 -mr-6 grid gap-4 py-4">
           <div className="space-y-1">
             <h3 className="font-semibold">{ticket.title}</h3>
             <p className="text-sm text-muted-foreground">{ticket.description}</p>
@@ -262,14 +291,14 @@ export function TicketDetailsDialog({
                     size="icon"
                     className="absolute top-2 right-2 h-6 w-6"
                     onClick={removePhoto}
-                    disabled={isSaving}
+                    disabled={isSaving || isViewer}
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
               ) : (
                 <div>
-                  <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isSaving}>
+                  <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isSaving || isViewer}>
                     <Upload className="mr-2 h-4 w-4" />
                     Upload Photo
                   </Button>
@@ -279,24 +308,49 @@ export function TicketDetailsDialog({
                     className="hidden" 
                     onChange={handleFileChange}
                     accept="image/*"
-                    disabled={isSaving}
+                    disabled={isSaving || isViewer}
                   />
                 </div>
               )}
             </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="comments">Add Comments</Label>
-            <Textarea 
-                id="comments" 
-                placeholder="Add any relevant comments..." 
-                value={comments}
-                onChange={(e) => setComments(e.target.value)}
-                disabled={isSaving}
-            />
-          </div>
+            <div className="space-y-4">
+                <h4 className="font-medium text-muted-foreground">Comments</h4>
+                <div className="space-y-2">
+                    <Label htmlFor="comments">Add Comment</Label>
+                    <Textarea 
+                        id="comments" 
+                        placeholder="Add any relevant comments..." 
+                        value={newCommentText}
+                        onChange={(e) => setNewCommentText(e.target.value)}
+                        disabled={isSaving || isViewer}
+                    />
+                </div>
+                <div className="space-y-4">
+                    {sortedComments.map((comment, index) => {
+                         const createdAt = comment.createdAt instanceof Timestamp ? comment.createdAt.toDate() : comment.createdAt;
+                         const user = getUserById(comment.userId);
+                         return (
+                            <div key={index} className="flex items-start gap-3">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarFallback>{comment.userName.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <p className="font-semibold text-sm">{comment.userName}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {formatDistanceToNow(createdAt, { addSuffix: true })}
+                                        </p>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">{comment.text}</p>
+                                </div>
+                            </div>
+                         )
+                    })}
+                </div>
+            </div>
         </div>
-        <DialogFooter className="sm:justify-between">
+        <DialogFooter className="sm:justify-between pt-4 border-t">
             <div>
             {isAdmin && (
                 <AlertDialog>
@@ -335,7 +389,7 @@ export function TicketDetailsDialog({
                 </Button>
                 </div>
             ) : (
-                <Button onClick={() => handleUpdate()} disabled={isSaving || !isAdmin}>
+                <Button onClick={() => handleUpdate()} disabled={isSaving || (isViewer)}>
                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isSaving ? "Saving..." : "Save Changes"}
                 </Button>
@@ -346,5 +400,3 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
-
-    
