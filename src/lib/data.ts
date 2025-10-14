@@ -62,6 +62,7 @@ const users: User[] = [
   { id: "user-2", name: "John Smith", email: "john.smith@facilityflow.com", avatarUrl: "https://picsum.photos/seed/2/100/100", role: "Staff" },
   { id: "user-3", name: "Mike Johnson", email: "mike.johnson@facilityflow.com", avatarUrl: "https://picsum.photos/seed/3/100/100", role: "Staff" },
   { id: "user-4", name: "Sarah Williams", email: "sarah.williams@facilityflow.com", avatarUrl: "https://picsum.photos/seed/4/100/100", role: "Viewer" },
+  { id: "uca9XP90Q1agS7AA6gPREGyhIAE2", name: "Mauricio Baquero", email: "mbaquero@fortlauderdale.gov", avatarUrl: "https://picsum.photos/seed/5/100/100", role: "Admin" },
 ];
 
 const categories: Category[] = [
