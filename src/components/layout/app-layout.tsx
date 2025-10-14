@@ -27,32 +27,37 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { data: user, isLoading: isUserDataLoading } = useDoc<User>(userDocRef);
 
   useEffect(() => {
-    if (isUserLoading || isUserDataLoading) {
+    // Wait until authentication status is resolved
+    if (isUserLoading) {
       return;
     }
 
+    // If user is not authenticated and not on the login page, redirect to login
     if (!authUser && !isLoginPage) {
       router.replace('/login');
     }
 
+    // If user is authenticated and on the login page, redirect to the dashboard
     if (authUser && isLoginPage) {
       router.replace('/');
     }
+  }, [authUser, isUserLoading, isLoginPage, router]);
 
-  }, [authUser, user, isUserLoading, isUserDataLoading, isLoginPage, router, pathname]);
+
+  // If we are on the login page, just render the children without the layout
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
 
   const isLoading = isUserLoading || isUserDataLoading;
 
-  if (isLoading || (!authUser && !isLoginPage) || (authUser && isLoginPage)) {
+  // Show a loading indicator while we verify auth and fetch user data, or if we are about to redirect.
+  if (isLoading || !authUser) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p>Loading...</p>
       </div>
     );
-  }
-  
-  if (isLoginPage) {
-    return <>{children}</>;
   }
 
   return (
