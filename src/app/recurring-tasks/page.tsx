@@ -109,18 +109,14 @@ export default function RecurringTasksPage() {
 
     if (user) {
         // --- Optimistic UI Update ---
-        // 1. Create a representation of the task that was just completed for the "Completed Today" list
         const optimisticCompletedTask: CompletedTask = {
             ...recurringTask,
             completedBy: user,
             completedAt: now,
-            lastCompleted: (Array.isArray(recurringTask.lastCompleted) ? recurringTask.lastCompleted : []).concat([now]),
-        };
+            lastCompleted: [...(Array.isArray(recurringTask.lastCompleted) ? recurringTask.lastCompleted : []), now]
+          };
         setCompletedTasks(prev => [...prev, optimisticCompletedTask]);
-
-        // 2. Remove the old recurring task from the main list
-        setAllTasks(prevTasks => prevTasks.filter(t => t.id !== recurringTask.id));
-
+        
         // --- Database Operations ---
         const batch = writeBatch(firestore);
 
@@ -148,23 +144,33 @@ export default function RecurringTasksPage() {
 
         // 3. Create a new recurring task template for the next cycle
         const newRecurringTaskRef = doc(collection(firestore, 'recurringTasks'));
+        
         const newRecurringTaskData: Omit<RecurringTask, 'id'> = {
             title: recurringTask.title,
             categoryId: recurringTask.categoryId,
             frequency: recurringTask.frequency,
-            lastCompleted: [now], // Start the new log with today's completion
-            ...(recurringTask.frequency !== 'Daily' && { dayOfWeek: recurringTask.dayOfWeek }),
-            ...(recurringTask.frequency === 'Monthly' && { weekOfMonth: recurringTask.weekOfMonth }),
+            lastCompleted: [now],
         };
+
+        if (recurringTask.frequency !== 'Daily') {
+            if (recurringTask.dayOfWeek !== undefined) newRecurringTaskData.dayOfWeek = recurringTask.dayOfWeek;
+            if (recurringTask.frequency === 'Monthly' && recurringTask.weekOfMonth !== undefined) {
+                newRecurringTaskData.weekOfMonth = recurringTask.weekOfMonth;
+            }
+        }
+        
         batch.set(newRecurringTaskRef, newRecurringTaskData);
 
+        // Optimistically remove the old task from the list immediately
+        setAllTasks(prevTasks => prevTasks.filter(t => t.id !== recurringTask.id));
 
         batch.commit().then(() => {
             // On success, add the newly created recurring task (with its new ID) to the UI
-             setAllTasks(prevTasks => [
-                ...prevTasks,
-                { ...newRecurringTaskData, id: newRecurringTaskRef.id } as RecurringTask,
-            ]);
+             setAllTasks(prevTasks => {
+                 const newTasks = prevTasks.filter(t => t.id !== recurringTask.id);
+                 newTasks.push({ ...newRecurringTaskData, id: newRecurringTaskRef.id } as RecurringTask);
+                 return newTasks;
+             });
         }).catch(error => {
             console.error('Failed to complete recurring task:', error);
             // Revert UI on failure
