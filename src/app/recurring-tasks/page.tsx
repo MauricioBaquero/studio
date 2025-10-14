@@ -102,21 +102,6 @@ export default function RecurringTasksPage() {
       return [];
     }
     return allTasks
-      .filter(task => {
-        const nextDueDate = getNextDueDate(task);
-        const lastCompletion =
-          task.lastCompleted && task.lastCompleted.length > 0
-            ? toDate(task.lastCompleted[task.lastCompleted.length - 1] as Timestamp)
-            : null;
-        
-        // If it was completed today, we don't show it in the pending list for today.
-        // It will show up again tomorrow (or whenever its next due date is).
-        if (lastCompletion && isToday(lastCompletion)) {
-            return false;
-        }
-
-        return true;
-      })
       .sort(
         (a, b) => getNextDueDate(a).getTime() - getNextDueDate(b).getTime()
       );
@@ -207,13 +192,21 @@ export default function RecurringTasksPage() {
                     const isTaskOverdue =
                       isPast(nextDueDate) && !isSameDay(startOfDay(nextDueDate), startOfDay(new Date()));
 
+                    const lastCompletion =
+                      task.lastCompleted && task.lastCompleted.length > 0
+                        ? toDate(task.lastCompleted[task.lastCompleted.length - 1] as Timestamp)
+                        : null;
+                    const isCompletedToday = lastCompletion && isToday(lastCompletion);
+
                     return (
-                      <TableRow key={task.id}>
+                      <TableRow key={task.id} className={cn(isCompletedToday && "text-muted-foreground opacity-50")}>
                         <TableCell className="text-center">
                           <Checkbox
                             id={`task-${task.id}`}
                             aria-label={`Complete ${task.title}`}
                             onCheckedChange={() => handleTaskCheck(task)}
+                            checked={isCompletedToday}
+                            disabled={isCompletedToday}
                           />
                         </TableCell>
                         <TableCell className="font-medium">
@@ -231,11 +224,11 @@ export default function RecurringTasksPage() {
                         </TableCell>
                         <TableCell
                           className={cn(
-                            isTaskOverdue && 'text-destructive font-semibold'
+                            !isCompletedToday && isTaskOverdue && 'text-destructive font-semibold'
                           )}
                         >
                           {format(nextDueDate, 'MM/dd/yyyy')}
-                          {isTaskOverdue && (
+                          {!isCompletedToday && isTaskOverdue && (
                             <span className="ml-2">(Overdue)</span>
                           )}
                         </TableCell>
@@ -245,7 +238,7 @@ export default function RecurringTasksPage() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={5} className="h-24 text-center">
-                      All recurring tasks for today are complete!
+                      No scheduled maintenance tasks found.
                     </TableCell>
                   </TableRow>
                 )}
