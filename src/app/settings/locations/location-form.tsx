@@ -126,8 +126,8 @@ export function LocationForm({
                     <Input type="number" placeholder="e.g., 5" {...field} />
                   </FormControl>
                   <p className="text-sm text-muted-foreground">
-                    Leave as 0 or empty if not applicable (e.g. for exterior
-                    locations).
+                    Use 0 for single-story or non-applicable locations. Use 2 or
+                    more for multi-story buildings.
                   </p>
                   <FormMessage />
                 </FormItem>

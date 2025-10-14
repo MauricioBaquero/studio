@@ -28,5 +28,12 @@ export const userUpdateSchema = z.object({
 
 export const locationSchema = z.object({
   name: z.string().min(3, "Location name must be at least 3 characters."),
-  numberOfFloors: z.coerce.number().int().min(0).optional(),
+  numberOfFloors: z.coerce
+    .number()
+    .int()
+    .min(0, "Number of floors cannot be negative.")
+    .refine(value => value !== 1, {
+      message: "Use 0 for single-story buildings. Enter 2 or more for multi-story buildings.",
+    })
+    .optional(),
 });
