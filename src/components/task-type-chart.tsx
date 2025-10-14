@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Ticket, Category } from '@/lib/data';
@@ -13,7 +14,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Cell } from 'recharts';
+import { cn } from '@/lib/utils';
 
 interface TaskTypeChartProps {
   tickets: Ticket[];
@@ -31,15 +33,18 @@ export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
         : category;
 
       if (parentCategory) {
-        acc[parentCategory.name] = (acc[parentCategory.name] || 0) + 1;
+        if (!acc[parentCategory.name]) {
+          acc[parentCategory.name] = { value: 0, color: parentCategory.color || 'gray' };
+        }
+        acc[parentCategory.name].value += 1;
       }
       return acc;
     },
-    {} as { [key: string]: number }
+    {} as { [key: string]: { value: number, color: string } }
   );
 
   const chartData = Object.entries(tasksByCategory)
-    .map(([name, value]) => ({ name, value }))
+    .map(([name, { value, color }]) => ({ name, value, color }))
     .sort((a, b) => b.value - a.value);
 
   return (
@@ -75,7 +80,11 @@ export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
               cursor={false}
               content={<ChartTooltipContent hideLabel />}
             />
-            <Bar dataKey="value" fill="hsl(var(--primary))" radius={5} />
+            <Bar dataKey="value" radius={5}>
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} className={cn(`fill-${entry.color}-500`)} />
+              ))}
+            </Bar>
           </BarChart>
         </ChartContainer>
       </CardContent>
