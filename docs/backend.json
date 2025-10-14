@@ -196,13 +196,13 @@
       "type": "object",
       "description": "Represents a system setting.",
       "properties": {
-        "minimumCompletionDateRangeDays": {
+        "completionDateRange": {
           "type": "number",
           "description": "The minimum number of days for task completion requests."
         }
       },
       "required": [
-        "minimumCompletionDateRangeDays"
+        "completionDateRange"
       ]
     }
   },

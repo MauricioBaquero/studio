@@ -38,9 +38,12 @@ export default function GeneralSettingsPage() {
   );
   const { data: settings, isLoading } = useDoc<SettingsFormValues>(settingsRef);
 
-  const { register, handleSubmit, reset, formState } =
+  const { register, handleSubmit, reset, formState, watch } =
     useForm<SettingsFormValues>({
       resolver: zodResolver(settingsSchema),
+      defaultValues: {
+        completionDateRange: 7, // Default value before data loads
+      },
     });
 
   useEffect(() => {
@@ -79,7 +82,6 @@ export default function GeneralSettingsPage() {
                 <Input
                   id="completionDateRange"
                   type="number"
-                  defaultValue={settings?.completionDateRange || 7}
                   className="max-w-xs"
                   {...register('completionDateRange')}
                 />
