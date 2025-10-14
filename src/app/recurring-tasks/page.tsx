@@ -262,10 +262,10 @@ export default function RecurringTasksPage() {
                     {dueTasks.length > 0 && completedTodayTasks.length > 0 && (
                        <TableRow>
                         <TableCell colSpan={5} className="!p-0">
-                          <div className="flex items-center gap-4 px-4">
-                            <Separator />
+                          <div className="flex items-center gap-4 py-2 px-4">
+                            <Separator className="flex-1" />
                             <span className="text-xs text-muted-foreground whitespace-nowrap">Already completed today</span>
-                            <Separator />
+                            <Separator className="flex-1" />
                           </div>
                         </TableCell>
                       </TableRow>
