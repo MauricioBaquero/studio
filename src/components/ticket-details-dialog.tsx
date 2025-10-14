@@ -131,7 +131,13 @@ export function TicketDetailsDialog({
     setIsSaving(true);
     let photoUrl: string | null = ticket.completionPhotoUrl || null;
 
-    const finalStatus = newStatus || currentStatus;
+    let finalStatus = newStatus || currentStatus;
+
+    // If task is being assigned and is "Not Started", move it to "In Progress"
+    if (assignedTo && ticket.status === 'Not Started') {
+        finalStatus = 'In Progress';
+    }
+
 
     try {
       if (newPhotoDataUrl && storage) {
@@ -221,6 +227,7 @@ export function TicketDetailsDialog({
         </DialogHeader>
         <div className="flex-1 overflow-y-auto pr-6 -mr-6 grid gap-4 py-4">
            <div className="space-y-2">
+              <Label>Description</Label>
               <p className="text-sm text-muted-foreground p-4 border rounded-md bg-muted/50">
                   {ticket.description}
               </p>
@@ -378,5 +385,3 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
-
-    
