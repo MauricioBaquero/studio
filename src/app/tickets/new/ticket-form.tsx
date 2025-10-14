@@ -32,8 +32,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, addDocumentNonBlocking } from "@/firebase";
-import { collection, serverTimestamp } from "firebase/firestore";
+import { useFirestore, setDocumentNonBlocking } from "@/firebase";
+import { doc, serverTimestamp } from "firebase/firestore";
 
 interface TicketFormProps {
   parentCategories: Category[];
@@ -108,7 +108,10 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
     
     const fullLocation = [locationName, locationDetailDisplay].filter(Boolean).join(', ');
 
+    const ticketId = 'T' + Date.now();
+
     const ticketData = {
+        id: ticketId,
         title: `New Ticket: ${values.description.substring(0, 30)}...`, // Generate a simple title
         description: values.description,
         categoryId: values.subcategoryId, // We save the subcategory ID
@@ -121,12 +124,12 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
     };
 
     try {
-        const ticketsCollection = collection(firestore, "tasks");
-        addDocumentNonBlocking(ticketsCollection, ticketData);
+        const ticketRef = doc(firestore, "tasks", ticketId);
+        setDocumentNonBlocking(ticketRef, ticketData, { merge: false });
         
         toast({
             title: "Success!",
-            description: "Your ticket has been created.",
+            description: `Your ticket ${ticketId} has been created.`,
         });
         router.push('/'); // Redirect to the main board
     } catch (error) {
