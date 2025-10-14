@@ -1,7 +1,13 @@
 'use client';
 
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { useState } from 'react';
+import {
+  useCollection,
+  useFirestore,
+  useMemoFirebase,
+  deleteDocumentNonBlocking,
+} from '@/firebase';
+import { collection, query, doc } from 'firebase/firestore';
 import {
   Table,
   TableBody,
@@ -28,6 +34,18 @@ import { Button } from '@/components/ui/button';
 import { MoreHorizontal } from 'lucide-react';
 import { Badge, BadgeProps } from '@/components/ui/badge';
 import { User, UserRole } from '@/lib/data';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { UserRoleForm } from './user-role-form';
 
 const roleColors: Record<UserRole, BadgeProps['color']> = {
   Admin: 'purple',
@@ -37,11 +55,44 @@ const roleColors: Record<UserRole, BadgeProps['color']> = {
 
 export default function UsersPage() {
   const firestore = useFirestore();
+  const { toast } = useToast();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+
   const usersQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, 'users')) : null),
     [firestore]
   );
   const { data: users, isLoading } = useCollection<User>(usersQuery);
+
+  const handleOpenForm = (user: User) => {
+    setEditingUser(user);
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setEditingUser(null);
+    setIsFormOpen(false);
+  };
+
+  const confirmDelete = (userId: string) => {
+    setDeletingUserId(userId);
+    setIsAlertOpen(true);
+  };
+
+  const handleDelete = () => {
+    if (!firestore || !deletingUserId) return;
+    const userRef = doc(firestore, 'users', deletingUserId);
+    deleteDocumentNonBlocking(userRef);
+    toast({
+      title: 'User Removed',
+      description: 'The user has been successfully removed.',
+    });
+    setIsAlertOpen(false);
+    setDeletingUserId(null);
+  };
 
   if (isLoading) {
     return (
@@ -60,63 +111,94 @@ export default function UsersPage() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>User Management</CardTitle>
-        <CardDescription>
-          View users and manage their roles and permissions.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users?.map(user => (
-              <TableRow key={user.uid}>
-                <TableCell>
-                  <div className="flex items-center gap-4">
-                    <Avatar>
-                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {user.email}
-                      </p>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge color={roleColors[user.role] || 'gray'}>
-                    {user.role}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>Edit Role</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">
-                        Remove User
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>User Management</CardTitle>
+          <CardDescription>
+            View users and manage their roles and permissions.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {users?.map(user => (
+                <TableRow key={user.uid}>
+                  <TableCell>
+                    <div className="flex items-center gap-4">
+                      <Avatar>
+                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{user.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge color={roleColors[user.role] || 'gray'}>
+                      {user.role}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleOpenForm(user)}>
+                          Edit Role
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => confirmDelete(user.uid)}
+                        >
+                          Remove User
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      {editingUser && (
+        <UserRoleForm
+          open={isFormOpen}
+          onOpenChange={handleCloseForm}
+          user={editingUser}
+        />
+      )}
+      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently remove the
+              user from the system.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
