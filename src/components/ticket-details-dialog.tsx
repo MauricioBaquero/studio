@@ -44,8 +44,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { format } from 'date-fns';
-import { toDate } from 'date-fns';
+import { format, toDate } from 'date-fns';
 
 interface TicketDetailsDialogProps {
   open: boolean;
@@ -72,6 +71,7 @@ export function TicketDetailsDialog({
   const { user: currentUser } = useUser();
   const [isSaving, setIsSaving] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<TicketStatus>(ticket.status);
+  const [assignedTo, setAssignedTo] = useState<string | null>(ticket.assignedToId);
   const [completionPhoto, setCompletionPhoto] = useState<string | null>(ticket.completionPhotoUrl || null);
   const [newPhotoDataUrl, setNewPhotoDataUrl] = useState<string | null>(null);
   
@@ -84,6 +84,7 @@ export function TicketDetailsDialog({
   useEffect(() => {
     if (open) {
       setCurrentStatus(ticket.status);
+      setAssignedTo(ticket.assignedToId);
       setCompletionPhoto(ticket.completionPhotoUrl || null);
       setNewPhotoDataUrl(null);
       setIsSaving(false);
@@ -144,6 +145,7 @@ export function TicketDetailsDialog({
       const dataForDb: Partial<Ticket> = {
           status: finalStatus,
           completionPhotoUrl: photoUrl,
+          assignedToId: assignedTo
       };
 
       if (finalStatus === 'Completed') {
@@ -156,6 +158,7 @@ export function TicketDetailsDialog({
       const updatedTicketData: Partial<Ticket> = {
           status: finalStatus,
           completionPhotoUrl: photoUrl,
+          assignedToId: assignedTo
       };
       if (finalStatus === 'Completed') {
         updatedTicketData.approvedBy = currentUser.uid;
@@ -206,6 +209,7 @@ export function TicketDetailsDialog({
   const isAssignedToCurrentUser = ticket.assignedToId === currentUser?.uid;
   
   const canInteractWithForm = isAdmin || (isStaff && (isAssignedToCurrentUser || !ticket.assignedToId));
+  const assignableUsers = users.filter(u => u.role === 'Admin' || u.role === 'Staff');
 
 
   return (
@@ -217,7 +221,6 @@ export function TicketDetailsDialog({
         </DialogHeader>
         <div className="flex-1 overflow-y-auto pr-6 -mr-6 grid gap-4 py-4">
            <div className="space-y-2">
-              <p className="text-sm font-semibold">{ticket.title}</p>
               <p className="text-sm text-muted-foreground p-4 border rounded-md bg-muted/50">
                   {ticket.description}
               </p>
@@ -233,7 +236,27 @@ export function TicketDetailsDialog({
             </div>
              <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Assigned To</p>
-                <p className="text-sm">{assignedUser?.name || 'Unassigned'}</p>
+                 {isAdmin ? (
+                  <Select 
+                      value={assignedTo || 'unassigned'} 
+                      onValueChange={(value) => setAssignedTo(value === 'unassigned' ? null : value)}
+                      disabled={isSaving}
+                  >
+                      <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Assign user" />
+                      </SelectTrigger>
+                      <SelectContent>
+                          <SelectItem value="unassigned">Unassigned</SelectItem>
+                          {assignableUsers.map(user => (
+                              <SelectItem key={user.uid} value={user.uid}>
+                                  {user.name}
+                              </SelectItem>
+                          ))}
+                      </SelectContent>
+                  </Select>
+                 ) : (
+                    <p className="text-sm">{assignedUser?.name || 'Unassigned'}</p>
+                 )}
             </div>
              <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Status</p>
@@ -355,3 +378,5 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
+
+    
