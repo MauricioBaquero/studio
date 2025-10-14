@@ -10,13 +10,22 @@ import {
 import { MoreHorizontal } from 'lucide-react';
 import { Button } from './ui/button';
 import { useSidebar } from './ui/sidebar';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
+import { doc } from 'firebase/firestore';
+import type { User } from '@/lib/data';
 
 export function UserNav() {
   const auth = useAuth();
-  const { user } = useUser();
+  const firestore = useFirestore();
+  const { user: authUser } = useUser();
   const { state } = useSidebar();
+
+  const userDocRef = useMemoFirebase(
+    () => (firestore && authUser ? doc(firestore, 'users', authUser.uid) : null),
+    [firestore, authUser]
+  );
+  const { data: user } = useDoc<User>(userDocRef);
   
   const handleLogout = async () => {
     if (auth) {
@@ -24,15 +33,12 @@ export function UserNav() {
     }
   };
 
-  if (!user) {
+  if (!authUser) {
     return null;
   }
   
-  // user object from useUser() has displayName from Firebase Auth profile
-  // The local user document from firestore has the `name` field.
-  // We'll prefer the local data but fall back gracefully.
-  const userDisplayName = user.name || user.displayName || user.email || 'User';
-  const userDisplayEmail = user.email || 'No email';
+  const userDisplayName = user?.name || authUser.displayName || authUser.email || 'User';
+  const userDisplayEmail = authUser.email || 'No email';
   const userFallback = userDisplayName.charAt(0).toUpperCase();
 
   if (state === 'collapsed') {
