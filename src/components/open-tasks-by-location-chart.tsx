@@ -1,6 +1,7 @@
+
 "use client";
 
-import { Ticket, getLocations } from "@/lib/data";
+import { Ticket } from "@/lib/data";
 import {
   Card,
   CardContent,
@@ -13,11 +14,19 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Cell } from "recharts";
 
 interface OpenTasksByLocationChartProps {
   tickets: Ticket[];
 }
+
+const chartColors = [
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+];
 
 export function OpenTasksByLocationChart({ tickets }: OpenTasksByLocationChartProps) {
     const openTickets = tickets.filter(t => t.status !== 'Completed');
@@ -30,7 +39,11 @@ export function OpenTasksByLocationChart({ tickets }: OpenTasksByLocationChartPr
     }, {} as { [key: string]: number });
 
   const chartData = Object.entries(tasksByLocation)
-    .map(([name, value]) => ({ name, value }))
+    .map(([name, value], index) => ({ 
+        name, 
+        value, 
+        fill: chartColors[index % chartColors.length] 
+    }))
     .sort((a, b) => b.value - a.value);
 
   return (
@@ -64,7 +77,11 @@ export function OpenTasksByLocationChart({ tickets }: OpenTasksByLocationChartPr
               cursor={false}
               content={<ChartTooltipContent hideLabel />}
             />
-            <Bar dataKey="value" fill="hsl(var(--primary))" radius={5} />
+            <Bar dataKey="value" radius={5}>
+                {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+            </Bar>
           </BarChart>
         </ChartContainer>
       </CardContent>
