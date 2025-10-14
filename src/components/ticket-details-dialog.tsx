@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import {
   Ticket,
@@ -31,7 +31,7 @@ import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, X, Trash2 } from 'lucide-react';
 import { useFirestore, useStorage, updateDocumentNonBlocking, useUser, deleteDocumentNonBlocking } from '@/firebase';
-import { doc, serverTimestamp } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 import {
   AlertDialog,
@@ -44,7 +44,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { formatRelative } from 'date-fns';
+import { Textarea } from './ui/textarea';
 
 interface TicketDetailsDialogProps {
   open: boolean;
@@ -124,7 +124,6 @@ export function TicketDetailsDialog({
     setCompletionPhoto(null); 
   };
 
-
   const handleUpdate = async (newStatus?: TicketStatus) => {
     if (!firestore || !currentUser) return;
     setIsSaving(true);
@@ -153,7 +152,6 @@ export function TicketDetailsDialog({
       const ticketRef = doc(firestore, 'tasks', ticket.id);
       updateDocumentNonBlocking(ticketRef, dataForDb);
 
-      // Optimistic update for UI
       const updatedTicketData: Partial<Ticket> = {
           status: finalStatus,
           completionPhotoUrl: photoUrl,
@@ -213,13 +211,10 @@ export function TicketDetailsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Ticket Details</DialogTitle>
+          <DialogTitle>{ticket.title}</DialogTitle>
           <DialogDescription>ID: {ticket.id}</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto pr-6 -mr-6 grid gap-4 py-4">
-          <div className="space-y-1">
-            <h3 className="font-semibold">{ticket.title}</h3>
-          </div>
           <div className="grid grid-cols-2 gap-4">
              <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Category</p>
@@ -238,7 +233,7 @@ export function TicketDetailsDialog({
                  <Select 
                     value={currentStatus} 
                     onValueChange={(value) => setCurrentStatus(value as TicketStatus)}
-                    disabled={isSaving || !canEditStatus || isPendingReview}
+                    disabled={isSaving || !canEditStatus || isViewer || isStaff}
                 >
                     <SelectTrigger className="w-full">
                         <SelectValue placeholder="Set status" />
@@ -359,3 +354,5 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
+
+    
