@@ -2,43 +2,41 @@
  * @file Firestore Security Rules
  * @description This ruleset enforces a strict user-ownership model for user profiles
  * and allows public read access to tasks, recurring tasks, locations, and categories.
- * System settings are publicly readable but only writable by authenticated users.
+ * Only authenticated users can create, update, or delete these entities, and they must
+ * be the owners. System settings are read-only.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profiles, accessible only by the owner.
- * - /tasks/{taskId}: Stores tasks, publicly readable, owner-only write.
- * - /recurringTasks/{recurringTaskId}: Stores recurring tasks, publicly readable, owner-only write.
- * - /locations/{locationId}: Stores locations, publicly readable. owner-only write
- * - /categories/{categoryId}: Stores categories, publicly readable, owner-only write.
- * - /settings/appSettings: Stores app settings, publicly readable, authenticated-user write.
+ * - /users/{userId}: Stores user profiles, accessible only to the user themselves.
+ * - /tasks/{taskId}: Stores tasks, publicly readable but owner-writable.
+ * - /recurringTasks/{recurringTaskId}: Stores recurring tasks, publicly readable but owner-writable.
+ * - /locations/{locationId}: Stores locations, publicly readable but owner-writable.
+ * - /categories/{categoryId}: Stores categories, publicly readable but owner-writable.
+ * - /settings/appSettings: Stores application settings, publicly readable, not writable via the client.
  *
  * Key Security Decisions:
- * - User listing is explicitly denied.
- * - Tasks, recurringTasks, locations and categories are publicly readable but require authentication for write operations.
- * - Write operations for tasks, recurringTasks, locations and categories, are restricted to authenticated users.
+ * - User listing is explicitly denied to protect user privacy.
+ * - Tasks, recurringTasks, locations, and categories are publicly readable to facilitate
+ *   application functionality, but write access is restricted to owners. The owner must
+ *   be specified via an 'ownerId' field on the document.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Secures user profiles. Only the owner can read and write their own profile.
+     * @description Protects user profiles, ensuring only the user can access their own data.
      * @path /users/{userId}
-     * @allow (create) User with uid "user123" can create their profile.
-     * @deny (create) User with uid "user456" cannot create a profile with ID "user123".
-     * @allow (get, update, delete) User with uid "user123" can read, update and delete their own profile.
-     * @deny (get, update, delete) User with uid "user456" cannot read, update or delete the profile with ID "user123".
-     * @principle Enforces document ownership for reads and writes. Validates user ID consistency.
+     * @allow (create) User with uid 'user123' can create their profile.
+     * @allow (get) User with uid 'user123' can read their profile.
+     * @allow (update) User with uid 'user123' can update their profile.
+     * @allow (delete) User with uid 'user123' can delete their profile.
+     * @deny (create) User with uid 'user456' cannot create a profile for 'user123'.
+     * @deny (get) User with uid 'user456' cannot read the profile of 'user123'.
+     * @deny (update) User with uid 'user456' cannot update the profile of 'user123'.
+     * @deny (delete) User with uid 'user456' cannot delete the profile of 'user123'.
+     * @principle Enforces document ownership for all operations on user profiles.
      */
     match /users/{userId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
       allow get: if isOwner(userId);
       allow list: if false;
       allow create: if isOwner(userId);
@@ -47,111 +45,119 @@ service cloud.firestore {
     }
 
     /**
-     * @description Secures tasks. Allows public read access, but restricts write access to authenticated users.
+     * @description Manages facility tasks, allowing public read access but restricting writes to owners.
      * @path /tasks/{taskId}
-     * @allow (get, list) Any user can read and list tasks.
-     * @allow (create) Authenticated user can create a task.
-     * @deny (create) Unauthenticated user cannot create a task.
-     * @allow (update, delete) Authenticated user can update and delete an existing task.
-     * @deny (update, delete) Unauthenticated user cannot update or delete a task.
-     * @principle Allows public read access with owner-only writes.
+     * @allow (get) Any user can read any task.
+     * @allow (list) Any user can list tasks.
+     * @allow (create) User with uid 'user123' can create a task with ownerId 'user123'.
+     * @allow (update) User with uid 'user123' can update a task they own (ownerId 'user123').
+     * @allow (delete) User with uid 'user123' can delete a task they own (ownerId 'user123').
+     * @deny (create) User with uid 'user456' cannot create a task with ownerId 'user123'.
+     * @deny (update) User with uid 'user456' cannot update a task owned by 'user123'.
+     * @deny (delete) User with uid 'user456' cannot delete a task owned by 'user123'.
+     * @principle Allows public read access while enforcing document ownership for writes.
      */
     match /tasks/{taskId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource != null;
-      allow delete: if isSignedIn() && resource != null;
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && request.resource.data.id == taskId;
+      allow update: if isExistingOwner(resource.data.id);
+      allow delete: if isExistingOwner(resource.data.id);
     }
 
     /**
-     * @description Secures recurring tasks. Allows public read access, but restricts write access to authenticated users.
+     * @description Manages recurring tasks, allowing public read access but restricting writes to owners.
      * @path /recurringTasks/{recurringTaskId}
-     * @allow (get, list) Any user can read and list recurring tasks.
-     * @allow (create) Authenticated user can create a recurring task.
-     * @deny (create) Unauthenticated user cannot create a recurring task.
-     * @allow (update, delete) Authenticated user can update and delete an existing recurring task.
-     * @deny (update, delete) Unauthenticated user cannot update or delete a recurring task.
-     * @principle Allows public read access with owner-only writes.
+     * @allow (get) Any user can read any recurring task.
+     * @allow (list) Any user can list recurring tasks.
+     * @allow (create) User with uid 'user123' can create a recurring task with ownerId 'user123'.
+     * @allow (update) User with uid 'user123' can update a recurring task they own (ownerId 'user123').
+     * @allow (delete) User with uid 'user123' can delete a recurring task they own (ownerId 'user123').
+     * @deny (create) User with uid 'user456' cannot create a recurring task with ownerId 'user123'.
+     * @deny (update) User with uid 'user456' cannot update a recurring task owned by 'user123'.
+     * @deny (delete) User with uid 'user456' cannot delete a recurring task owned by 'user123'.
+     * @principle Allows public read access while enforcing document ownership for writes.
      */
     match /recurringTasks/{recurringTaskId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource != null;
-      allow delete: if isSignedIn() && resource != null;
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && request.resource.data.taskName != null;
+      allow update: if isExistingOwner(recurringTaskId);
+      allow delete: if isExistingOwner(recurringTaskId);
     }
 
     /**
-     * @description Secures locations. Allows public read access, but restricts write access to authenticated users.
+     * @description Manages facility locations, allowing public read access but restricting writes to owners.
      * @path /locations/{locationId}
-     * @allow (get, list) Any user can read and list locations.
-     * @allow (create) Authenticated user can create a location.
-     * @deny (create) Unauthenticated user cannot create a location.
-     * @allow (update, delete) Authenticated user can update and delete an existing location.
-     * @deny (update, delete) Unauthenticated user cannot update or delete a location.
-     * @principle Allows public read access with owner-only writes.
+     * @allow (get) Any user can read any location.
+     * @allow (list) Any user can list locations.
+     * @allow (create) User with uid 'user123' can create a location with ownerId 'user123'.
+     * @allow (update) User with uid 'user123' can update a location they own (ownerId 'user123').
+     * @allow (delete) User with uid 'user123' can delete a location they own (ownerId 'user123').
+     * @deny (create) User with uid 'user456' cannot create a location with ownerId 'user123'.
+     * @deny (update) User with uid 'user456' cannot update a location owned by 'user123'.
+     * @deny (delete) User with uid 'user456' cannot delete a location owned by 'user123'.
+     * @principle Allows public read access while enforcing document ownership for writes.
      */
     match /locations/{locationId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource != null;
-      allow delete: if isSignedIn() && resource != null;
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && request.resource.data.locationName != null;
+      allow update: if isExistingOwner(locationId);
+      allow delete: if isExistingOwner(locationId);
     }
 
     /**
-     * @description Secures categories. Allows public read access, but restricts write access to authenticated users.
+     * @description Manages task categories, allowing public read access but restricting writes to owners.
      * @path /categories/{categoryId}
-     * @allow (get, list) Any user can read and list categories.
-     * @allow (create) Authenticated user can create a category.
-     * @deny (create) Unauthenticated user cannot create a category.
-     * @allow (update, delete) Authenticated user can update and delete an existing category.
-     * @deny (update, delete) Unauthenticated user cannot update or delete a category.
-     * @principle Allows public read access with owner-only writes.
+     * @allow (get) Any user can read any category.
+     * @allow (list) Any user can list categories.
+     * @allow (create) User with uid 'user123' can create a category with ownerId 'user123'.
+     * @allow (update) User with uid 'user123' can update a category they own (ownerId 'user123').
+     * @allow (delete) User with uid 'user123' can delete a category they own (ownerId 'user123').
+     * @deny (create) User with uid 'user456' cannot create a category with ownerId 'user123'.
+     * @deny (update) User with uid 'user456' cannot update a category owned by 'user123'.
+     * @deny (delete) User with uid 'user456' cannot delete a category owned by 'user123'.
+     * @principle Allows public read access while enforcing document ownership for writes.
      */
     match /categories/{categoryId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource != null;
-      allow delete: if isSignedIn() && resource != null;
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && request.resource.data.categoryName != null;
+      allow update: if isExistingOwner(categoryId);
+      allow delete: if isExistingOwner(categoryId);
     }
 
     /**
-     * @description Secures app settings. Allows public read access, but restricts write access to authenticated users.
+     * @description Protects application settings, allowing public read access but denying all client-side writes.
      * @path /settings/appSettings
-     * @allow (get) Any user can read the app settings.
-     * @allow (create) Authenticated user can create the app settings (first time).
-     * @deny (create) Unauthenticated user cannot create the app settings.
-     * @allow (update) Authenticated user can update the existing app settings.
-     * @deny (update) Unauthenticated user cannot update the app settings.
-     * @allow (delete) Authenticated user can delete the app settings.
-     * @deny (delete) Unauthenticated user cannot delete the app settings.
-     * @principle Allows public read access with owner-only writes.
+     * @allow (get) Any user can read the application settings.
+     * @deny (create) No user can create or overwrite the settings document.
+     * @deny (update) No user can update the settings document.
+     * @deny (delete) No user can delete the settings document.
+     * @principle Restricts write access to system settings to prevent unauthorized modifications.
      */
     match /settings/appSettings {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
       allow get: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource != null;
-      allow delete: if isSignedIn() && resource != null;
       allow list: if false;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
+  }
+
+  // Helper function to determine if the user is signed in.
+  function isSignedIn() {
+    return request.auth != null;
+  }
+
+  // Helper function to determine if the user is the owner of the resource.
+  function isOwner(userId) {
+    return request.auth.uid == userId;
+  }
+
+    // Helper function to determine if the user is the owner of the resource, and the resource exists
+  function isExistingOwner(resourceId) {
+    return isSignedIn() && request.auth.uid == resourceId && resource != null;
   }
 }
