@@ -77,6 +77,7 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
   const color = getCategoryColor(ticket.categoryId);
 
   const isAdmin = currentUser?.role === 'Admin';
+  const isViewer = currentUser?.role === 'Viewer';
   const isAssignedToCurrentUser = ticket.assignedToId === currentUser?.uid;
 
   const handleClaimTask = () => {
@@ -172,7 +173,7 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
                 <span className="text-sm text-muted-foreground italic">Unassigned</span>
             )}
 
-            {ticket.status === 'Not Started' && !ticket.assignedToId && (
+            {ticket.status === 'Not Started' && !ticket.assignedToId && !isViewer && (
                 <Button variant="success" size="sm" onClick={handleClaimTask}>
                    {claimSaying}
                 </Button>
