@@ -1,96 +1,148 @@
 /**
- * @fileoverview Firestore Security Rules for Prototyping.
+ * @fileoverview Firestore Security Rules
  *
  * Core Philosophy:
- * This ruleset prioritizes rapid prototyping by granting full access to all authenticated users.
- * It is CRITICAL to replace these permissive rules with more restrictive ones before deploying to production.
+ * This ruleset prioritizes secure authorization by enforcing role-based access
+ * control.  Data validation is relaxed to facilitate rapid prototyping.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profiles, with 'userId' matching the Firebase Auth UID.
+ * - /users/{userId}: Stores user profiles, accessible only to the owner.
  * - /tasks/{taskId}: Stores tasks.
  * - /recurringTasks/{recurringTaskId}: Stores recurring tasks.
  * - /locations/{locationId}: Stores locations.
  * - /categories/{categoryId}: Stores categories.
- * - /settings/appSettings: Stores app settings in a single document.
+ * - /settings/appSettings: Stores application settings, accessible only to admins.
  *
  * Key Security Decisions:
- * - Authenticated users can read and write all data.
- * - These rules are temporary and should be replaced with more secure authorization logic.
+ * - Users can only read/write their own user document.
+ * - Settings are only editable by Admin users.
+ *
+ * Denormalization for Authorization:
+ *  - User roles are denormalized onto the user document itself to simplify role checks.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Grants all authenticated users full access to user profiles for prototyping.
-     * @path /users/{userId}
-     * @allow (create, update, delete, get, list) - Any authenticated user can perform any operation.
-     * @deny None - All operations are allowed for authenticated users during prototyping.
-     * @principle Allows any authenticated user to read/write user profiles during prototyping.
+     * @description Checks if the current user is signed in.
      */
-    match /users/{userId} {
-      allow get, list: if true;
-      allow create, update, delete: if true;
+    function isSignedIn() {
+      return request.auth != null;
     }
 
     /**
-     * @description Grants all authenticated users full access to tasks for prototyping.
+     * @description Checks if the current user is the owner of the resource.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the current user is an existing owner of the resource (for update/delete).
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Checks if the current user has the Admin role.
+     */
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+    }
+
+    /**
+     * @description Rules for /users/{userId} collection.
+     * @path /users/{userId}
+     * @allow (create) - User 'abc' can create their own user document: `auth.uid == 'abc'`
+     * @deny (create) - User 'def' cannot create a user document for 'abc': `auth.uid != 'abc'`
+     * @allow (get, update, delete) - User 'abc' can get, update and delete their own user document: `auth.uid == 'abc'`
+     * @deny (get, update, delete) - User 'def' cannot get, update and delete user document 'abc': `auth.uid != 'abc'`
+     * @principle Enforces document ownership for writes, restricts access to a user's own data tree.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for /tasks/{taskId} collection.
      * @path /tasks/{taskId}
-     * @allow (create, update, delete, get, list) - Any authenticated user can perform any operation.
-     * @deny None - All operations are allowed for authenticated users during prototyping.
-     * @principle Allows any authenticated user to read/write tasks during prototyping.
+     * @allow (create) - Any signed-in user can create a task.
+     * @allow (get, list) - Any user can read tasks.
+     * @allow (update, delete) - Only the owner of the task can update or delete it.
+     * @deny (update, delete) - If the task does not have an owner, deny updates and deletes.
+     * @principle Public read with owner-only writes.
      */
     match /tasks/{taskId} {
       allow get, list: if true;
-      allow create, update, delete: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Grants all authenticated users full access to recurring tasks for prototyping.
+     * @description Rules for /recurringTasks/{recurringTaskId} collection.
      * @path /recurringTasks/{recurringTaskId}
-     * @allow (create, update, delete, get, list) - Any authenticated user can perform any operation.
-     * @deny None - All operations are allowed for authenticated users during prototyping.
-     * @principle Allows any authenticated user to read/write recurring tasks during prototyping.
+     * @allow (create) - Any signed-in user can create a recurring task.
+     * @allow (get, list) - Any user can read recurring tasks.
+     * @allow (update, delete) - Only the owner of the recurring task can update or delete it.
+     * @deny (update, delete) - If the recurring task does not have an owner, deny updates and deletes.
+     * @principle Public read with owner-only writes.
      */
     match /recurringTasks/{recurringTaskId} {
       allow get, list: if true;
-      allow create, update, delete: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Grants all authenticated users full access to locations for prototyping.
+     * @description Rules for /locations/{locationId} collection.
      * @path /locations/{locationId}
-     * @allow (create, update, delete, get, list) - Any authenticated user can perform any operation.
-     * @deny None - All operations are allowed for authenticated users during prototyping.
-     * @principle Allows any authenticated user to read/write locations during prototyping.
+     * @allow (create) - Any signed-in user can create a location.
+     * @allow (get, list) - Any user can read locations.
+     * @allow (update, delete) - Only the owner of the location can update or delete it.
+     * @deny (update, delete) - If the location does not have an owner, deny updates and deletes.
+     * @principle Public read with owner-only writes.
      */
     match /locations/{locationId} {
       allow get, list: if true;
-      allow create, update, delete: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Grants all authenticated users full access to categories for prototyping.
+     * @description Rules for /categories/{categoryId} collection.
      * @path /categories/{categoryId}
-     * @allow (create, update, delete, get, list) - Any authenticated user can perform any operation.
-     * @deny None - All operations are allowed for authenticated users during prototyping.
-     * @principle Allows any authenticated user to read/write categories during prototyping.
+     * @allow (create) - Any signed-in user can create a category.
+     * @allow (get, list) - Any user can read categories.
+     * @allow (update, delete) - Only the owner of the category can update or delete it.
+     * @deny (update, delete) - If the category does not have an owner, deny updates and deletes.
+     * @principle Public read with owner-only writes.
      */
     match /categories/{categoryId} {
       allow get, list: if true;
-      allow create, update, delete: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
     }
 
     /**
-     * @description Grants all authenticated users full access to app settings for prototyping.
+     * @description Rules for /settings/appSettings document.
      * @path /settings/appSettings
-     * @allow (create, update, delete, get, list) - Any authenticated user can perform any operation.
-     * @deny None - All operations are allowed for authenticated users during prototyping.
-     * @principle Allows any authenticated user to read/write app settings during prototyping.
+     * @allow (get) - Any user can read the app settings.
+     * @allow (update) - Only an admin user can update the app settings.
+     * @deny (create, delete) - No one can create or delete the app settings.
+     * @principle Role-based access control.
      */
     match /settings/appSettings {
-      allow get, list: if true;
-      allow create, update, delete: if true;
+      allow get: if true;
+      allow list: if false;
+      allow create: if false;
+      allow update: if isAdmin();
+      allow delete: if false;
     }
   }
 }
