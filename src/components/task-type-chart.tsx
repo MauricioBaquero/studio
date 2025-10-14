@@ -15,12 +15,21 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, Cell } from 'recharts';
-import { cn } from '@/lib/utils';
 
 interface TaskTypeChartProps {
   tickets: Ticket[];
   categories: Category[];
 }
+
+const colorMap: { [key: string]: string } = {
+    blue: 'hsl(var(--chart-1))',
+    green: 'hsl(var(--chart-2))',
+    orange: 'hsl(var(--chart-3))',
+    purple: 'hsl(var(--chart-4))',
+    yellow: 'hsl(var(--chart-5))',
+    red: 'hsl(var(--destructive))',
+    gray: 'hsl(var(--muted-foreground))',
+};
 
 export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
   const getCategoryById = (id: string) => categories.find(c => c.id === id);
@@ -44,7 +53,7 @@ export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
   );
 
   const chartData = Object.entries(tasksByCategory)
-    .map(([name, { value, color }]) => ({ name, value, color }))
+    .map(([name, { value, color }]) => ({ name, value, color: colorMap[color] || colorMap.gray }))
     .sort((a, b) => b.value - a.value);
 
   return (
@@ -82,7 +91,7 @@ export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
             />
             <Bar dataKey="value" radius={5}>
               {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} className={cn(`fill-${entry.color}-500`)} />
+                <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Bar>
           </BarChart>
