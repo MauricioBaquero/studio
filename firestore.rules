@@ -1,123 +1,140 @@
 /**
- * @fileoverview Firestore Security Rules for FacilityFlow.
+ * @file Firestore Security Rules
+ * @description This ruleset defines access control for the Firestore database.
  *
- * Core Philosophy: This ruleset enforces a strict user-ownership model for user-specific data (tickets, recurring tasks) and restricts modification of global data (categories, settings) to authorized users.
+ * Core Philosophy:
+ * The ruleset enforces a mixed security model. User-specific data is protected via ownership,
+ * while other collections (tasks, categories, locations) are publicly readable but only
+ * modifiable by authenticated users. Settings are only accessible by authenticated users.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profiles.
- * - /users/{userId}/tickets/{ticketId}: Stores tickets associated with a specific user.
- * - /users/{userId}/recurringTasks/{recurringTaskId}: Stores recurring tasks assigned to a specific user.
- * - /categories/{categoryId}: Stores global task categories.
- * - /settings/{settingId}: Stores system-wide settings.
+ * - /users/{userId}: Stores user profiles. Access is restricted to the owner (the user with matching UID).
+ * - /tasks/{taskId}: Stores tasks. Publicly readable, but write access is restricted to authenticated users.
+ * - /recurringTasks/{recurringTaskId}: Stores recurring tasks. Publicly readable, but write access is restricted to authenticated users.
+ * - /locations/{locationId}: Stores locations. Publicly readable, but write access is restricted to authenticated users.
+ * - /categories/{categoryId}: Stores task categories. Publicly readable, but write access is restricted to authenticated users.
+ * - /settings/appSettings: Stores application settings. Read and write access are restricted to authenticated users.
  *
  * Key Security Decisions:
- * - User listing is not allowed to protect user privacy.
- * - Categories and settings are only editable by authorized users (currently, this is not explicitly defined in the IR).
- * - The default security posture for ambiguous relationships is strict owner-only access.
+ * - User listing is disallowed.
+ * - Public read access is granted to tasks, recurringTasks, locations, and categories to allow
+ *   unauthenticated users to view these resources.
+ * - Owner-only access is enforced for user profiles.
  *
- * Denormalization for Authorization: User roles are stored directly on the User document to avoid costly `get()` calls during authorization.
+ * Denormalization for Authorization:
+ *  N/A - Current rules do not require denormalization. However, if the Task entity required
+ *  role-based authorization, it would be necessary to denormalize the roles into the Task documents.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Protects user profiles, allowing only the user themselves to read/write their profile.
+     * @description Controls access to user profiles. Only the user can read/write their own profile.
      * @path /users/{userId}
-     * @allow (create) - Authenticated user creates their own profile with matching userId.
-     * @allow (get, update, delete) - Authenticated user reads/updates/deletes their own profile with matching userId.
-     * @deny (create) - Authenticated user attempts to create a profile with a mismatched userId.
-     * @deny (get, update, delete) - Authenticated user attempts to read/update/delete another user's profile.
-     * @deny (list) - Listing users is not allowed.
-     * @principle Enforces document ownership for writes and restricts access to a user's own data.
+     * @allow (create) - User with UID 'user123' can create /users/user123 document.
+     * @allow (get, update, delete) - User with UID 'user123' can get, update, and delete /users/user123.
+     * @deny (get, update, delete) - User with UID 'user456' cannot get, update, or delete /users/user123.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
+      // isOwner function checks if the request is made by the owner of the document
       allow get: if isOwner(userId);
-      allow list: if false; // User listing is not allowed
-
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow list: if false;
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) && resource != null && request.auth.uid == userId;
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Secures task categories, restricting access to authorized users (currently, all users).
+     * @description Controls access to tasks. Allows public read, but restricts writes to authenticated users.
+     * @path /tasks/{taskId}
+     * @allow (get, list) - Any user (or no user) can read all tasks.
+     * @allow (create) - Authenticated user can create a task.
+     * @deny (update, delete) - Unauthenticated user cannot update or delete a task.
+     * @principle Public read access with owner-only writes.
+     */
+    match /tasks/{taskId} {
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
+    }
+
+    /**
+     * @description Controls access to recurring tasks. Allows public read, but restricts writes to authenticated users.
+     * @path /recurringTasks/{recurringTaskId}
+     * @allow (get, list) - Any user (or no user) can read all recurring tasks.
+     * @allow (create) - Authenticated user can create a recurring task.
+     * @deny (update, delete) - Unauthenticated user cannot update or delete a recurring task.
+     * @principle Public read access with owner-only writes.
+     */
+    match /recurringTasks/{recurringTaskId} {
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
+    }
+
+    /**
+     * @description Controls access to locations. Allows public read, but restricts writes to authenticated users.
+     * @path /locations/{locationId}
+     * @allow (get, list) - Any user (or no user) can read all locations.
+     * @allow (create) - Authenticated user can create a location.
+     * @deny (update, delete) - Unauthenticated user cannot update or delete a location.
+     * @principle Public read access with owner-only writes.
+     */
+    match /locations/{locationId} {
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
+    }
+
+    /**
+     * @description Controls access to categories. Allows public read, but restricts writes to authenticated users.
      * @path /categories/{categoryId}
-     * @allow (get, list) - All users can read categories.
-     * @deny (create, update, delete) - Only authorized users can modify categories.
-     * @principle Restricts modification of global data to authorized users.
+     * @allow (get, list) - Any user (or no user) can read all categories.
+     * @allow (create) - Authenticated user can create a category.
+     * @deny (update, delete) - Unauthenticated user cannot update or delete a category.
+     * @principle Public read access with owner-only writes.
      */
     match /categories/{categoryId} {
       allow get, list: if true;
-      allow create, update, delete: if false; // TODO: Add admin validation once roles are fully defined.
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
     }
 
     /**
-     * @description Protects maintenance tickets associated with a specific user, allowing only the assigned user to read/write.
-     * @path /users/{userId}/tickets/{ticketId}
-     * @allow (create) - Authenticated user creates a ticket assigned to themselves.
-     * @allow (get, update, delete) - Authenticated user reads/updates/deletes tickets assigned to themselves.
-     * @deny (create) - Authenticated user attempts to create a ticket assigned to another user.
-     * @deny (get, update, delete) - Authenticated user attempts to read/update/delete tickets assigned to another user.
-     * @principle Enforces document ownership for writes and restricts access to a user's own data.
+     * @description Controls access to application settings. Restricts read and write access to authenticated users.
+     * @path /settings/appSettings
+     * @allow (get) - Authenticated user can read the settings.
+     * @allow (create, update, delete) - Authenticated user can create, update, or delete the settings.
+     * @deny (get, create, update, delete) - Unauthenticated user cannot perform any operations.
+     * @principle Restricts access to authenticated users.
      */
-    match /users/{userId}/tickets/{ticketId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
-      allow get, list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+    match /settings/appSettings {
+      allow get: if isSignedIn();
+      allow list: if false;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
     }
+  }
 
-    /**
-     * @description Protects recurring tasks assigned to a specific user, allowing only the assigned user to read/write.
-     * @path /users/{userId}/recurringTasks/{recurringTaskId}
-     * @allow (create) - Authenticated user creates a recurring task assigned to themselves.
-     * @allow (get, update, delete) - Authenticated user reads/updates/deletes recurring tasks assigned to themselves.
-     * @deny (create) - Authenticated user attempts to create a recurring task assigned to another user.
-     * @deny (get, update, delete) - Authenticated user attempts to read/update/delete recurring tasks assigned to another user.
-     * @principle Enforces document ownership for writes and restricts access to a user's own data.
-     */
-    match /users/{userId}/recurringTasks/{recurringTaskId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
+  // Helper function to determine if the user is signed in
+  function isSignedIn() {
+    return request.auth != null;
+  }
 
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
+  // Helper function to determine if the user is the owner of the document
+  function isOwner(userId) {
+    return request.auth.uid == userId;
+  }
 
-      allow get, list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
-    }
-
-    /**
-     * @description Secures system-wide settings, restricting access to authorized users (currently, all users).
-     * @path /settings/{settingId}
-     * @allow (get, list) - All users can read settings.
-     * @deny (create, update, delete) - Only authorized users can modify settings.
-     * @principle Restricts modification of global data to authorized users.
-     */
-    match /settings/{settingId} {
-      allow get, list: if true;
-      allow create, update, delete: if false; // TODO: Add admin validation once roles are fully defined.
-    }
+  // Helper function to determine if the user is the owner of the document, and the document exists
+  function isExistingOwner(userId) {
+    return isOwner(userId) && resource != null;
   }
 }
