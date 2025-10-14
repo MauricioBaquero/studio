@@ -36,16 +36,16 @@ export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
 
   const tasksByCategory = tickets.reduce(
     (acc, ticket) => {
-      const category = getCategoryById(ticket.categoryId);
-      const parentCategory = category?.parentId
-        ? getCategoryById(category.parentId)
-        : category;
+      const subCategory = getCategoryById(ticket.categoryId);
+      
+      if (subCategory) {
+        const parentCategory = subCategory.parentId ? getCategoryById(subCategory.parentId) : subCategory;
+        const color = parentCategory?.color || 'gray';
 
-      if (parentCategory) {
-        if (!acc[parentCategory.name]) {
-          acc[parentCategory.name] = { value: 0, color: parentCategory.color || 'gray' };
+        if (!acc[subCategory.name]) {
+          acc[subCategory.name] = { value: 0, color: color };
         }
-        acc[parentCategory.name].value += 1;
+        acc[subCategory.name].value += 1;
       }
       return acc;
     },
@@ -61,7 +61,7 @@ export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
       <CardHeader>
         <CardTitle>Tasks by Category</CardTitle>
         <CardDescription>
-          Breakdown of tasks by main category type.
+          Breakdown of tasks by specific sub-category.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
