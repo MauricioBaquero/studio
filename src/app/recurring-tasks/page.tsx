@@ -14,14 +14,12 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { format, isToday, isPast, startOfDay } from 'date-fns';
+import { format, isToday, isPast, startOfDay, isSameDay } from 'date-fns';
 import {
   useCollection,
   useFirestore,
   useMemoFirebase,
   useUser,
-  addDocumentNonBlocking,
-  deleteDocumentNonBlocking,
 } from '@/firebase';
 import {
   collection,
@@ -30,6 +28,7 @@ import {
   serverTimestamp,
   Timestamp,
   writeBatch,
+  addDoc,
 } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 
@@ -73,7 +72,23 @@ export default function RecurringTasksPage() {
     if (!allTasks || !users) {
       return [];
     }
-    const pending = allTasks.filter(task => !completedTasks.some(c => c.id === task.id && isToday(c.completedAt)));
+    const todayCompletedIds = new Set(
+      completedTasks
+        .filter(c => isToday(c.completedAt))
+        .map(c => c.id)
+    );
+
+    const pending = allTasks.filter(task => {
+        const nextDueDate = getNextDueDate(task);
+        const isDueToday = isToday(startOfDay(nextDueDate));
+        
+        // Don't show if it's due today AND already completed today
+        if (isDueToday && todayCompletedIds.has(task.id)) {
+            return false;
+        }
+        return true;
+    });
+
     return pending.sort((a,b) => getNextDueDate(a).getTime() - getNextDueDate(b).getTime());
   }, [allTasks, users, completedTasks]);
 
@@ -90,65 +105,77 @@ export default function RecurringTasksPage() {
   
   const handleTaskCheck = (recurringTask: RecurringTask) => {
     if (!firestore || !currentUser) return;
-    
+
     const now = new Date();
     const user = users?.find(u => u.uid === currentUser.uid);
 
     // Optimistic UI Update
     if (user) {
-        setCompletedTasks(prev => [...prev, { ...recurringTask, completedBy: user, completedAt: now }]);
-        setAllTasks(prevTasks => prevTasks.filter(t => t.id !== recurringTask.id));
-    }
+        const optimisticCompletedTask = { ...recurringTask, completedBy: user, completedAt: now };
+        setCompletedTasks(prev => [...prev, optimisticCompletedTask]);
 
-
-    const batch = writeBatch(firestore);
-
-    const completedTaskId = `T${Date.now()}`;
-    const completedTaskRef = doc(firestore, 'tasks', completedTaskId);
-    const completedTaskData = {
-        id: completedTaskId,
-        title: `(Recurring) ${recurringTask.title}`,
-        description: `Completed recurring task: ${recurringTask.title}`,
-        categoryId: recurringTask.categoryId,
-        location: "N/A", 
-        locationId: null,
-        requestedCompletionDate: now,
-        actualCompletionDate: now,
-        status: "Completed",
-        assignedToId: currentUser.uid,
-        approvedBy: currentUser.uid,
-        createdAt: serverTimestamp(),
-    };
-    batch.set(completedTaskRef, completedTaskData);
-
-    const oldRecurringTaskRef = doc(firestore, 'recurringTasks', recurringTask.id);
-    batch.delete(oldRecurringTaskRef);
-    
-    const newRecurringTaskRef = doc(collection(firestore, 'recurringTasks'));
-    const newRecurringTaskData: Omit<RecurringTask, 'id'> = {
-        ...recurringTask,
-        lastCompleted: now,
-    };
-    
-    // Remove id before saving to Firestore, as it's auto-generated for the new doc
-    const { id, ...dataToSave } = newRecurringTaskData;
-
-    batch.set(newRecurringTaskRef, dataToSave);
-
-    batch.commit().then(() => {
-        const newUITask = { ...newRecurringTaskData, id: newRecurringTaskRef.id };
-        setAllTasks(prevTasks => [...prevTasks, newUITask]);
-    }).catch(error => {
-        console.error("Failed to complete recurring task:", error);
-        // Revert UI on failure
-        setCompletedTasks(prev => prev.filter(t => t.id !== recurringTask.id));
+        const optimisticNewRecurringTaskData: Omit<RecurringTask, 'id'> = {
+            title: recurringTask.title,
+            categoryId: recurringTask.categoryId,
+            frequency: recurringTask.frequency,
+            dayOfWeek: recurringTask.dayOfWeek,
+            weekOfMonth: recurringTask.weekOfMonth,
+            lastCompleted: now,
+        };
+        const tempNewId = `temp-${Date.now()}`;
+        const newUITask = { ...optimisticNewRecurringTaskData, id: tempNewId };
+        
         setAllTasks(prevTasks => {
-            if (!prevTasks.some(t => t.id === recurringTask.id)) {
-                return [...prevTasks, recurringTask];
-            }
-            return prevTasks;
+            const filtered = prevTasks.filter(t => t.id !== recurringTask.id);
+            return [...filtered, newUITask];
         });
-    });
+
+        const batch = writeBatch(firestore);
+        
+        const completedTaskId = `T${Date.now()}`;
+        const completedTaskRef = doc(firestore, 'tasks', completedTaskId);
+        const completedTaskData = {
+            id: completedTaskId,
+            title: `(Recurring) ${recurringTask.title}`,
+            description: `Completed recurring task: ${recurringTask.title}`,
+            categoryId: recurringTask.categoryId,
+            location: "N/A", 
+            locationId: null,
+            requestedCompletionDate: now,
+            actualCompletionDate: now,
+            status: "Completed",
+            assignedToId: currentUser.uid,
+            approvedBy: currentUser.uid,
+            createdAt: serverTimestamp(),
+        };
+        batch.set(completedTaskRef, completedTaskData);
+
+        const oldRecurringTaskRef = doc(firestore, 'recurringTasks', recurringTask.id);
+        batch.delete(oldRecurringTaskRef);
+        
+        const newRecurringTaskRef = doc(collection(firestore, 'recurringTasks'));
+        const newRecurringTaskData: Omit<RecurringTask, 'id'> = {
+            ...optimisticNewRecurringTaskData,
+        };
+
+        batch.set(newRecurringTaskRef, newRecurringTaskData);
+
+        batch.commit().then(() => {
+            const finalNewTask = { ...newRecurringTaskData, id: newRecurringTaskRef.id };
+            setAllTasks(prev => prev.map(t => t.id === tempNewId ? finalNewTask : t));
+        }).catch(error => {
+            console.error("Failed to complete recurring task:", error);
+            // Revert UI on failure
+            setCompletedTasks(prev => prev.filter(t => t.id !== optimisticCompletedTask.id || t.completedAt !== optimisticCompletedTask.completedAt));
+            setAllTasks(prevTasks => {
+                const reverted = prevTasks.filter(t => t.id !== tempNewId);
+                if (!reverted.some(t => t.id === recurringTask.id)) {
+                    reverted.push(recurringTask);
+                }
+                return reverted;
+            });
+        });
+    }
   };
 
   const isLoading = isLoadingTasks || isLoadingCategories || isLoadingUsers;
@@ -247,7 +274,7 @@ export default function RecurringTasksPage() {
                     const category = getCategoryById(task.categoryId);
                     const color = getCategoryColor(task.categoryId);
                     return (
-                      <TableRow key={task.id}>
+                      <TableRow key={`completed-${task.id}-${task.completedAt.getTime()}`}>
                         <TableCell className="font-medium">
                           {task.title}
                         </TableCell>
