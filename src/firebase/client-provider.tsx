@@ -29,12 +29,10 @@ export function FirebaseClientProvider({
         console.log('Initial user not found, creating...');
         try {
           await setDoc(userRef, {
-            id: uid,
             uid: uid,
             name: 'Mauricio Baquero',
             email: 'mbaquero@fortlauderdale.gov',
             role: 'Admin',
-            avatarUrl: `https://picsum.photos/seed/${uid}/100/100`,
           });
           console.log('Initial user created successfully.');
         } catch (error) {

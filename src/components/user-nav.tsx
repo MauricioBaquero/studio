@@ -1,6 +1,6 @@
 'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +19,9 @@ export function UserNav() {
   const { state } = useSidebar();
   
   const handleLogout = async () => {
-    await signOut(auth);
+    if (auth) {
+      await signOut(auth);
+    }
   };
 
   if (!user) {
@@ -28,8 +30,7 @@ export function UserNav() {
   
   const userDisplayName = user.displayName || user.email || "User";
   const userDisplayEmail = user.email || "No email";
-  const userDisplayAvatar = user.photoURL || `https://picsum.photos/seed/${user.uid}/100/100`;
-
+  const userFallback = userDisplayName.charAt(0).toUpperCase();
 
   if (state === 'collapsed') {
     return (
@@ -37,8 +38,7 @@ export function UserNav() {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-10 w-10 rounded-full">
             <Avatar className="h-10 w-10">
-              <AvatarImage src={userDisplayAvatar} alt={userDisplayName} />
-              <AvatarFallback>{userDisplayName.charAt(0).toUpperCase()}</AvatarFallback>
+              <AvatarFallback>{userFallback}</AvatarFallback>
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
@@ -58,8 +58,7 @@ export function UserNav() {
         >
           <div className="flex items-center gap-3 w-full">
             <Avatar className="h-9 w-9">
-              <AvatarImage src={userDisplayAvatar} alt={userDisplayName} />
-              <AvatarFallback>{userDisplayName.charAt(0).toUpperCase()}</AvatarFallback>
+              <AvatarFallback>{userFallback}</AvatarFallback>
             </Avatar>
             <div className="flex-1 text-left truncate">
               <p className="text-sm font-medium leading-none truncate">

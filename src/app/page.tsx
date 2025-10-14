@@ -49,7 +49,7 @@ export default function TaskBoardPage() {
 
       // Assignee filter
       if (filters.assignee === 'me') {
-        if (ticket.assignedToId !== currentUser.id && ticket.assignedToId !== null) {
+        if (ticket.assignedToId !== currentUser.uid && ticket.assignedToId !== null) {
           return false;
         }
       }
@@ -76,7 +76,7 @@ export default function TaskBoardPage() {
 
       return true;
     });
-  }, [tickets, filters, currentUser.id]);
+  }, [tickets, filters, currentUser.uid]);
 
   // The onTicketUpdate is now handled optimistically by useCollection.
   // We can remove the local state management for ticket updates.

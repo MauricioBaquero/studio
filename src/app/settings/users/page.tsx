@@ -17,7 +17,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,11 +78,10 @@ export default function UsersPage() {
           </TableHeader>
           <TableBody>
             {users?.map(user => (
-              <TableRow key={user.id}>
+              <TableRow key={user.uid}>
                 <TableCell>
                   <div className="flex items-center gap-4">
                     <Avatar>
-                      <AvatarImage src={user.avatarUrl} alt={user.name} />
                       <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div>

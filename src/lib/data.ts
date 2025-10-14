@@ -13,10 +13,9 @@ export const CATEGORY_COLORS = ["red", "orange", "yellow", "green", "blue", "pur
 export type CategoryColor = (typeof CATEGORY_COLORS)[number];
 
 export interface User {
-  id: string;
+  uid: string;
   name: string;
   email: string;
-  avatarUrl: string;
   role: UserRole;
 }
 
@@ -58,11 +57,11 @@ export interface RecurringTask {
 
 // Mock Data
 const users: User[] = [
-  { id: "user-1", name: "Jane Doe", email: "jane.doe@facilityflow.com", avatarUrl: "https://picsum.photos/seed/1/100/100", role: "Admin" },
-  { id: "user-2", name: "John Smith", email: "john.smith@facilityflow.com", avatarUrl: "https://picsum.photos/seed/2/100/100", role: "Staff" },
-  { id: "user-3", name: "Mike Johnson", email: "mike.johnson@facilityflow.com", avatarUrl: "https://picsum.photos/seed/3/100/100", role: "Staff" },
-  { id: "user-4", name: "Sarah Williams", email: "sarah.williams@facilityflow.com", avatarUrl: "https://picsum.photos/seed/4/100/100", role: "Viewer" },
-  { id: "uca9XP90Q1agS7AA6gPREGyhIAE2", name: "Mauricio Baquero", email: "mbaquero@fortlauderdale.gov", avatarUrl: "https://picsum.photos/seed/5/100/100", role: "Admin" },
+  { uid: "user-1", name: "Jane Doe", email: "jane.doe@facilityflow.com", role: "Admin" },
+  { uid: "user-2", name: "John Smith", email: "john.smith@facilityflow.com", role: "Staff" },
+  { uid: "user-3", name: "Mike Johnson", email: "mike.johnson@facilityflow.com", role: "Staff" },
+  { uid: "user-4", name: "Sarah Williams", email: "sarah.williams@facilityflow.com", role: "Viewer" },
+  { uid: "uca9XP90Q1agS7AA6gPREGyhIAE2", name: "Mauricio Baquero", email: "mbaquero@fortlauderdale.gov", role: "Admin" },
 ];
 
 const categories: Category[] = [
@@ -98,7 +97,7 @@ const recurringTasks: RecurringTask[] = [
 
 // Data Accessor Functions
 export const getUsers = () => users;
-export const getUserById = (id: string | null) => users.find(u => u.id === id);
+export const getUserById = (id: string | null) => users.find(u => u.uid === id);
 export const getCurrentUser = () => users[0]; // For demo, always return the first user
 
 export const getCategories = () => categories;

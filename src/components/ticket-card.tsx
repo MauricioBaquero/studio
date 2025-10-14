@@ -16,7 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Calendar, CheckCircle, MapPin, Tag } from 'lucide-react';
 import { format, toDate } from 'date-fns';
 import { Badge } from './ui/badge';
@@ -59,13 +59,13 @@ export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCa
   const parentCategory = category?.parentId ? getCategoryById(category.parentId) : null;
   const color = getCategoryColor(ticket.categoryId);
 
-  const isAssignedToOtherUser = ticket.assignedToId && ticket.assignedToId !== currentUser.id;
+  const isAssignedToOtherUser = ticket.assignedToId && ticket.assignedToId !== currentUser.uid;
   
   const handleClaimTask = () => {
     if (!firestore) return;
     const ticketRef = doc(firestore, 'tasks', ticket.id);
     const updatedTicketData = { 
-        assignedToId: currentUser.id,
+        assignedToId: currentUser.uid,
         status: 'In Progress' as const
     };
     updateDocumentNonBlocking(ticketRef, updatedTicketData);
@@ -153,7 +153,6 @@ export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCa
             {assignedUser ? (
                  <div className="flex items-center gap-2">
                     <Avatar className="h-6 w-6">
-                        <AvatarImage src={assignedUser?.avatarUrl} alt={assignedUser?.name} />
                         <AvatarFallback>{assignedUser?.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <span className="text-sm text-muted-foreground">{assignedUser?.name}</span>
@@ -168,7 +167,7 @@ export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCa
                 </Button>
             )}
 
-            {ticket.status === 'In Progress' && ticket.assignedToId === currentUser.id && (
+            {ticket.status === 'In Progress' && ticket.assignedToId === currentUser.uid && (
                 <Button variant="success" size="sm" onClick={handleReadyForReview}>
                    Ready for Review
                 </Button>

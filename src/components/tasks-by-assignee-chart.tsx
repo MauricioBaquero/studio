@@ -23,7 +23,7 @@ export function TasksByAssigneeChart({ tickets }: TasksByAssigneeChartProps) {
   const users = getUsers();
   const tasksByAssignee = users.map(user => ({
     name: user.name.split(' ')[0], // Use first name for brevity
-    value: tickets.filter(ticket => ticket.assignedToId === user.id).length,
+    value: tickets.filter(ticket => ticket.assignedToId === user.uid).length,
   }));
 
   const unassignedTasks = tickets.filter(ticket => !ticket.assignedToId).length;
