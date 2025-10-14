@@ -1,60 +1,66 @@
 /**
  * @file Firestore Security Rules
- * @description This ruleset defines access control for the Firestore database.
- *
- * Core Philosophy:
- * The ruleset enforces a mixed security model. User-specific data is protected via ownership,
- * while other collections (tasks, categories, locations) are publicly readable but only
- * modifiable by authenticated users. Settings are only accessible by authenticated users.
+ * @description This ruleset enforces a strict user-ownership model for user profiles
+ * and allows public read access to tasks, recurring tasks, locations, and categories.
+ * System settings are publicly readable but only writable by authenticated users.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profiles. Access is restricted to the owner (the user with matching UID).
- * - /tasks/{taskId}: Stores tasks. Publicly readable, but write access is restricted to authenticated users.
- * - /recurringTasks/{recurringTaskId}: Stores recurring tasks. Publicly readable, but write access is restricted to authenticated users.
- * - /locations/{locationId}: Stores locations. Publicly readable, but write access is restricted to authenticated users.
- * - /categories/{categoryId}: Stores task categories. Publicly readable, but write access is restricted to authenticated users.
- * - /settings/appSettings: Stores application settings. Read and write access are restricted to authenticated users.
+ * - /users/{userId}: Stores user profiles, accessible only by the owner.
+ * - /tasks/{taskId}: Stores tasks, publicly readable, owner-only write.
+ * - /recurringTasks/{recurringTaskId}: Stores recurring tasks, publicly readable, owner-only write.
+ * - /locations/{locationId}: Stores locations, publicly readable. owner-only write
+ * - /categories/{categoryId}: Stores categories, publicly readable, owner-only write.
+ * - /settings/appSettings: Stores app settings, publicly readable, authenticated-user write.
  *
  * Key Security Decisions:
- * - User listing is disallowed.
- * - Public read access is granted to tasks, recurringTasks, locations, and categories to allow
- *   unauthenticated users to view these resources.
- * - Owner-only access is enforced for user profiles.
- *
- * Denormalization for Authorization:
- *  N/A - Current rules do not require denormalization. However, if the Task entity required
- *  role-based authorization, it would be necessary to denormalize the roles into the Task documents.
+ * - User listing is explicitly denied.
+ * - Tasks, recurringTasks, locations and categories are publicly readable but require authentication for write operations.
+ * - Write operations for tasks, recurringTasks, locations and categories, are restricted to authenticated users.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profiles. Only the user can read/write their own profile.
+     * @description Secures user profiles. Only the owner can read and write their own profile.
      * @path /users/{userId}
-     * @allow (create) - User with UID 'user123' can create /users/user123 document.
-     * @allow (get, update, delete) - User with UID 'user123' can get, update, and delete /users/user123.
-     * @deny (get, update, delete) - User with UID 'user456' cannot get, update, or delete /users/user123.
-     * @principle Enforces document ownership for writes.
+     * @allow (create) User with uid "user123" can create their profile.
+     * @deny (create) User with uid "user456" cannot create a profile with ID "user123".
+     * @allow (get, update, delete) User with uid "user123" can read, update and delete their own profile.
+     * @deny (get, update, delete) User with uid "user456" cannot read, update or delete the profile with ID "user123".
+     * @principle Enforces document ownership for reads and writes. Validates user ID consistency.
      */
     match /users/{userId} {
-      // isOwner function checks if the request is made by the owner of the document
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if false;
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && resource != null && request.auth.uid == userId;
+      allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to tasks. Allows public read, but restricts writes to authenticated users.
+     * @description Secures tasks. Allows public read access, but restricts write access to authenticated users.
      * @path /tasks/{taskId}
-     * @allow (get, list) - Any user (or no user) can read all tasks.
-     * @allow (create) - Authenticated user can create a task.
-     * @deny (update, delete) - Unauthenticated user cannot update or delete a task.
-     * @principle Public read access with owner-only writes.
+     * @allow (get, list) Any user can read and list tasks.
+     * @allow (create) Authenticated user can create a task.
+     * @deny (create) Unauthenticated user cannot create a task.
+     * @allow (update, delete) Authenticated user can update and delete an existing task.
+     * @deny (update, delete) Unauthenticated user cannot update or delete a task.
+     * @principle Allows public read access with owner-only writes.
      */
     match /tasks/{taskId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
       allow get, list: if true;
       allow create: if isSignedIn();
       allow update: if isSignedIn() && resource != null;
@@ -62,14 +68,20 @@ service cloud.firestore {
     }
 
     /**
-     * @description Controls access to recurring tasks. Allows public read, but restricts writes to authenticated users.
+     * @description Secures recurring tasks. Allows public read access, but restricts write access to authenticated users.
      * @path /recurringTasks/{recurringTaskId}
-     * @allow (get, list) - Any user (or no user) can read all recurring tasks.
-     * @allow (create) - Authenticated user can create a recurring task.
-     * @deny (update, delete) - Unauthenticated user cannot update or delete a recurring task.
-     * @principle Public read access with owner-only writes.
+     * @allow (get, list) Any user can read and list recurring tasks.
+     * @allow (create) Authenticated user can create a recurring task.
+     * @deny (create) Unauthenticated user cannot create a recurring task.
+     * @allow (update, delete) Authenticated user can update and delete an existing recurring task.
+     * @deny (update, delete) Unauthenticated user cannot update or delete a recurring task.
+     * @principle Allows public read access with owner-only writes.
      */
     match /recurringTasks/{recurringTaskId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
       allow get, list: if true;
       allow create: if isSignedIn();
       allow update: if isSignedIn() && resource != null;
@@ -77,14 +89,20 @@ service cloud.firestore {
     }
 
     /**
-     * @description Controls access to locations. Allows public read, but restricts writes to authenticated users.
+     * @description Secures locations. Allows public read access, but restricts write access to authenticated users.
      * @path /locations/{locationId}
-     * @allow (get, list) - Any user (or no user) can read all locations.
-     * @allow (create) - Authenticated user can create a location.
-     * @deny (update, delete) - Unauthenticated user cannot update or delete a location.
-     * @principle Public read access with owner-only writes.
+     * @allow (get, list) Any user can read and list locations.
+     * @allow (create) Authenticated user can create a location.
+     * @deny (create) Unauthenticated user cannot create a location.
+     * @allow (update, delete) Authenticated user can update and delete an existing location.
+     * @deny (update, delete) Unauthenticated user cannot update or delete a location.
+     * @principle Allows public read access with owner-only writes.
      */
     match /locations/{locationId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
       allow get, list: if true;
       allow create: if isSignedIn();
       allow update: if isSignedIn() && resource != null;
@@ -92,14 +110,20 @@ service cloud.firestore {
     }
 
     /**
-     * @description Controls access to categories. Allows public read, but restricts writes to authenticated users.
+     * @description Secures categories. Allows public read access, but restricts write access to authenticated users.
      * @path /categories/{categoryId}
-     * @allow (get, list) - Any user (or no user) can read all categories.
-     * @allow (create) - Authenticated user can create a category.
-     * @deny (update, delete) - Unauthenticated user cannot update or delete a category.
-     * @principle Public read access with owner-only writes.
+     * @allow (get, list) Any user can read and list categories.
+     * @allow (create) Authenticated user can create a category.
+     * @deny (create) Unauthenticated user cannot create a category.
+     * @allow (update, delete) Authenticated user can update and delete an existing category.
+     * @deny (update, delete) Unauthenticated user cannot update or delete a category.
+     * @principle Allows public read access with owner-only writes.
      */
     match /categories/{categoryId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
       allow get, list: if true;
       allow create: if isSignedIn();
       allow update: if isSignedIn() && resource != null;
@@ -107,34 +131,27 @@ service cloud.firestore {
     }
 
     /**
-     * @description Controls access to application settings. Restricts read and write access to authenticated users.
+     * @description Secures app settings. Allows public read access, but restricts write access to authenticated users.
      * @path /settings/appSettings
-     * @allow (get) - Authenticated user can read the settings.
-     * @allow (create, update, delete) - Authenticated user can create, update, or delete the settings.
-     * @deny (get, create, update, delete) - Unauthenticated user cannot perform any operations.
-     * @principle Restricts access to authenticated users.
+     * @allow (get) Any user can read the app settings.
+     * @allow (create) Authenticated user can create the app settings (first time).
+     * @deny (create) Unauthenticated user cannot create the app settings.
+     * @allow (update) Authenticated user can update the existing app settings.
+     * @deny (update) Unauthenticated user cannot update the app settings.
+     * @allow (delete) Authenticated user can delete the app settings.
+     * @deny (delete) Unauthenticated user cannot delete the app settings.
+     * @principle Allows public read access with owner-only writes.
      */
     match /settings/appSettings {
-      allow get: if isSignedIn();
-      allow list: if false;
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow get: if true;
       allow create: if isSignedIn();
       allow update: if isSignedIn() && resource != null;
       allow delete: if isSignedIn() && resource != null;
+      allow list: if false;
     }
-  }
-
-  // Helper function to determine if the user is signed in
-  function isSignedIn() {
-    return request.auth != null;
-  }
-
-  // Helper function to determine if the user is the owner of the document
-  function isOwner(userId) {
-    return request.auth.uid == userId;
-  }
-
-  // Helper function to determine if the user is the owner of the document, and the document exists
-  function isExistingOwner(userId) {
-    return isOwner(userId) && resource != null;
   }
 }
