@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
@@ -29,21 +28,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import {
-  Category,
-  CategoryColor,
-  CATEGORY_COLORS,
-} from '@/lib/data';
+import { Category, CATEGORY_COLORS } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { categorySchema } from '@/lib/schemas';
+import {
+  useFirestore,
+  addDocumentNonBlocking,
+  updateDocumentNonBlocking,
+} from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
+import type { z } from 'zod';
 
-const categoryFormSchema = z.object({
-  name: z.string().min(3, 'Name is required'),
-  parentId: z.string().nullable(),
-  color: z.string().optional(),
-});
-
-type CategoryFormValues = z.infer<typeof categoryFormSchema>;
+type CategoryFormValues = z.infer<typeof categorySchema>;
 
 interface CategoryFormProps {
   open: boolean;
@@ -59,43 +56,52 @@ export function CategoryForm({
   parentCategories,
 }: CategoryFormProps) {
   const { toast } = useToast();
+  const firestore = useFirestore();
   const isEditMode = !!category;
 
   const form = useForm<CategoryFormValues>({
-    resolver: zodResolver(categoryFormSchema),
+    resolver: zodResolver(categorySchema),
     defaultValues: {
       name: '',
       parentId: null,
       color: 'gray',
     },
   });
-  
+
   useEffect(() => {
     if (category) {
-        form.reset({
-            name: category.name,
-            parentId: category.parentId,
-            color: category.color || 'gray'
-        });
+      form.reset({
+        name: category.name,
+        parentId: category.parentId,
+        color: category.color || 'gray',
+      });
     } else {
-        form.reset({
-            name: '',
-            parentId: null,
-            color: 'gray'
-        });
+      form.reset({
+        name: '',
+        parentId: null,
+        color: 'gray',
+      });
     }
   }, [category, form]);
 
-
   const onSubmit = (data: CategoryFormValues) => {
-    console.log(isEditMode ? 'Update Category:' : 'New Category:', data);
+    if (!firestore) return;
+
+    if (isEditMode && category) {
+      const categoryRef = doc(firestore, 'categories', category.id);
+      updateDocumentNonBlocking(categoryRef, data);
+    } else {
+      const categoriesCollection = collection(firestore, 'categories');
+      addDocumentNonBlocking(categoriesCollection, data);
+    }
+
     toast({
       title: 'Success!',
       description: `Category has been ${isEditMode ? 'updated' : 'created'}.`,
     });
     onOpenChange(false);
   };
-  
+
   const isSubcategory = form.watch('parentId') !== null;
 
   return (
@@ -104,7 +110,8 @@ export function CategoryForm({
         <DialogHeader>
           <DialogTitle>{isEditMode ? 'Edit' : 'Add New'} Category</DialogTitle>
           <DialogDescription>
-            Fill out the form below to {isEditMode ? 'update the' : 'create a new'} category.
+            Fill out the form below to{' '}
+            {isEditMode ? 'update the' : 'create a new'} category.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -122,14 +129,14 @@ export function CategoryForm({
                 </FormItem>
               )}
             />
-             <FormField
+            <FormField
               control={form.control}
               name="parentId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Parent Category (optional)</FormLabel>
-                   <Select
-                    onValueChange={(value) => {
+                  <Select
+                    onValueChange={value => {
                       field.onChange(value === 'none' ? null : value);
                     }}
                     value={field.value || 'none'}
@@ -140,8 +147,10 @@ export function CategoryForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="none">None (this is a parent category)</SelectItem>
-                      {parentCategories.map((cat) => (
+                      <SelectItem value="none">
+                        None (this is a parent category)
+                      </SelectItem>
+                      {parentCategories.map(cat => (
                         <SelectItem key={cat.id} value={cat.id}>
                           {cat.name}
                         </SelectItem>
@@ -154,40 +163,46 @@ export function CategoryForm({
             />
 
             {!isSubcategory && (
-                 <FormField
-                 control={form.control}
-                 name="color"
-                 render={({ field }) => (
-                   <FormItem>
-                     <FormLabel>Color</FormLabel>
-                     <Select
-                       onValueChange={field.onChange}
-                       value={field.value}
-                     >
-                       <FormControl>
-                         <SelectTrigger>
-                           <SelectValue placeholder="Select a color" />
-                         </SelectTrigger>
-                       </FormControl>
-                       <SelectContent>
-                         {CATEGORY_COLORS.map((color) => (
-                           <SelectItem key={color} value={color}>
-                             <div className="flex items-center gap-2">
-                               <div className={cn("h-4 w-4 rounded-full", `bg-${color}-500`)} />
-                               <span className="capitalize">{color}</span>
-                             </div>
-                           </SelectItem>
-                         ))}
-                       </SelectContent>
-                     </Select>
-                     <FormMessage />
-                   </FormItem>
-                 )}
-               />
+              <FormField
+                control={form.control}
+                name="color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Color</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a color" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {CATEGORY_COLORS.map(color => (
+                          <SelectItem key={color} value={color}>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={cn(
+                                  'h-4 w-4 rounded-full',
+                                  `bg-${color}-500`
+                                )}
+                              />
+                              <span className="capitalize">{color}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             )}
-           
+
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit">{isEditMode ? 'Update' : 'Create'}</Button>

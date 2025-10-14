@@ -35,6 +35,12 @@ import {
   RecurringTask,
 } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
+import {
+  useFirestore,
+  addDocumentNonBlocking,
+  updateDocumentNonBlocking,
+} from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
 
 const recurringTaskSchema = z.object({
   title: z.string().min(3, 'Title is required'),
@@ -63,14 +69,19 @@ export function AddTaskForm({
   editingTask,
 }: AddTaskFormProps) {
   const { toast } = useToast();
+  const firestore = useFirestore();
   const isEditMode = !!editingTask;
 
   const getParentCategoryId = (subcategoryId: string) => {
-    return allSubcategories.find(sub => sub.id === subcategoryId)?.parentId || null;
-  }
+    return (
+      allSubcategories.find(sub => sub.id === subcategoryId)?.parentId || null
+    );
+  };
 
   const [selectedParent, setSelectedParent] = useState<string | null>(
-    isEditMode ? getParentCategoryId(editingTask.categoryId) : null
+    isEditMode && editingTask
+      ? getParentCategoryId(editingTask.categoryId)
+      : null
   );
 
   const form = useForm<RecurringTaskFormValues>({
@@ -84,57 +95,79 @@ export function AddTaskForm({
       weekOfMonth: undefined,
     },
   });
-  
+
   useEffect(() => {
     if (editingTask) {
-        const parentId = getParentCategoryId(editingTask.categoryId);
-        form.reset({
-            title: editingTask.title,
-            categoryId: parentId || '',
-            subcategoryId: editingTask.categoryId,
-            frequency: editingTask.frequency,
-            dayOfWeek: editingTask.dayOfWeek,
-            weekOfMonth: editingTask.weekOfMonth,
-        });
-        setSelectedParent(parentId);
+      const parentId = getParentCategoryId(editingTask.categoryId);
+      form.reset({
+        title: editingTask.title,
+        categoryId: parentId || '',
+        subcategoryId: editingTask.categoryId,
+        frequency: editingTask.frequency,
+        dayOfWeek: editingTask.dayOfWeek,
+        weekOfMonth: editingTask.weekOfMonth,
+      });
+      setSelectedParent(parentId);
     } else {
-        form.reset({
-            title: '',
-            categoryId: '',
-            subcategoryId: '',
-            frequency: 'Daily',
-            dayOfWeek: undefined,
-            weekOfMonth: undefined,
-        });
-        setSelectedParent(null);
+      form.reset({
+        title: '',
+        categoryId: '',
+        subcategoryId: '',
+        frequency: 'Daily',
+        dayOfWeek: undefined,
+        weekOfMonth: undefined,
+      });
+      setSelectedParent(null);
     }
   }, [editingTask, form, allSubcategories]);
 
-
   const subcategoryOptions = useMemo(() => {
     return selectedParent
-      ? allSubcategories.filter((sub) => sub.parentId === selectedParent)
+      ? allSubcategories.filter(sub => sub.parentId === selectedParent)
       : [];
   }, [selectedParent, allSubcategories]);
 
   const onSubmit = (data: RecurringTaskFormValues) => {
-    console.log(isEditMode ? 'Update Recurring Task:' : 'New Recurring Task:', data);
+    if (!firestore) return;
+    const taskData = {
+      title: data.title,
+      categoryId: data.subcategoryId, // We save subcategory id as the main categoryId
+      frequency: data.frequency,
+      dayOfWeek: data.dayOfWeek,
+      weekOfMonth: data.weekOfMonth,
+      lastCompleted: null, // Always initialize as null
+    };
+
+    if (isEditMode && editingTask) {
+      const taskRef = doc(firestore, 'recurringTasks', editingTask.id);
+      updateDocumentNonBlocking(taskRef, taskData);
+    } else {
+      const recurringTasksCollection = collection(firestore, 'recurringTasks');
+      addDocumentNonBlocking(recurringTasksCollection, taskData);
+    }
+
     toast({
       title: 'Success!',
-      description: `Recurring task has been ${isEditMode ? 'updated' : 'created'}.`,
+      description: `Recurring task has been ${
+        isEditMode ? 'updated' : 'created'
+      }.`,
     });
     onOpenChange(false);
   };
-  
+
   const frequency = form.watch('frequency');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEditMode ? 'Edit' : 'Add New'} Recurring Task</DialogTitle>
+          <DialogTitle>
+            {isEditMode ? 'Edit' : 'Add New'} Recurring Task
+          </DialogTitle>
           <DialogDescription>
-            Fill out the form below to {isEditMode ? 'update the' : 'create a new'} scheduled maintenance task.
+            Fill out the form below to{' '}
+            {isEditMode ? 'update the' : 'create a new'} scheduled maintenance
+            task.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -146,7 +179,10 @@ export function AddTaskForm({
                 <FormItem>
                   <FormLabel>Task Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Monthly HVAC Inspection" {...field} />
+                    <Input
+                      placeholder="e.g., Monthly HVAC Inspection"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -159,7 +195,7 @@ export function AddTaskForm({
                 <FormItem>
                   <FormLabel>Category</FormLabel>
                   <Select
-                    onValueChange={(value) => {
+                    onValueChange={value => {
                       field.onChange(value);
                       setSelectedParent(value);
                       form.setValue('subcategoryId', ''); // Reset subcategory
@@ -172,7 +208,7 @@ export function AddTaskForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {parentCategories.map((cat) => (
+                      {parentCategories.map(cat => (
                         <SelectItem key={cat.id} value={cat.id}>
                           {cat.name}
                         </SelectItem>
@@ -200,7 +236,7 @@ export function AddTaskForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {subcategoryOptions.map((cat) => (
+                      {subcategoryOptions.map(cat => (
                         <SelectItem key={cat.id} value={cat.id}>
                           {cat.name}
                         </SelectItem>
@@ -225,7 +261,7 @@ export function AddTaskForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {RECURRING_FREQUENCIES.map((freq) => (
+                      {RECURRING_FREQUENCIES.map(freq => (
                         <SelectItem key={freq} value={freq}>
                           {freq}
                         </SelectItem>
@@ -236,89 +272,104 @@ export function AddTaskForm({
                 </FormItem>
               )}
             />
-             {frequency === 'Weekly' && (
-                <FormField
-                    control={form.control}
-                    name="dayOfWeek"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Day of Week</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value?.toString()}>
-                                <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select day" />
-                                </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="1">Monday</SelectItem>
-                                    <SelectItem value="2">Tuesday</SelectItem>
-                                    <SelectItem value="3">Wednesday</SelectItem>
-                                    <SelectItem value="4">Thursday</SelectItem>
-                                    <SelectItem value="5">Friday</SelectItem>
-                                    <SelectItem value="6">Saturday</SelectItem>
-                                    <SelectItem value="0">Sunday</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </FormItem>
-                    )}
-                />
+            {frequency === 'Weekly' && (
+              <FormField
+                control={form.control}
+                name="dayOfWeek"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Day of Week</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value?.toString()}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select day" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="1">Monday</SelectItem>
+                        <SelectItem value="2">Tuesday</SelectItem>
+                        <SelectItem value="3">Wednesday</SelectItem>
+                        <SelectItem value="4">Thursday</SelectItem>
+                        <SelectItem value="5">Friday</SelectItem>
+                        <SelectItem value="6">Saturday</SelectItem>
+                        <SelectItem value="0">Sunday</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
             )}
             {frequency === 'Monthly' && (
               <div className="grid grid-cols-2 gap-4">
-                 <FormField
-                    control={form.control}
-                    name="weekOfMonth"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Week of Month</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value?.toString()}>
-                                <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select week" />
-                                </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="1">First</SelectItem>
-                                    <SelectItem value="2">Second</SelectItem>
-                                    <SelectItem value="3">Third</SelectItem>
-                                    <SelectItem value="4">Fourth</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </FormItem>
-                    )}
+                <FormField
+                  control={form.control}
+                  name="weekOfMonth"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Week of Month</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select week" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="1">First</SelectItem>
+                          <SelectItem value="2">Second</SelectItem>
+                          <SelectItem value="3">Third</SelectItem>
+                          <SelectItem value="4">Fourth</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
                 />
                 <FormField
-                    control={form.control}
-                    name="dayOfWeek"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Day of Week</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value?.toString()}>
-                                <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select day" />
-                                </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="1">Monday</SelectItem>
-                                    <SelectItem value="2">Tuesday</SelectItem>
-                                    <SelectItem value="3">Wednesday</SelectItem>
-                                    <SelectItem value="4">Thursday</SelectItem>
-                                    <SelectItem value="5">Friday</SelectItem>
-                                    <SelectItem value="6">Saturday</SelectItem>
-                                    <SelectItem value="0">Sunday</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </FormItem>
-                    )}
+                  control={form.control}
+                  name="dayOfWeek"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Day of Week</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select day" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="1">Monday</SelectItem>
+                          <SelectItem value="2">Tuesday</SelectItem>
+                          <SelectItem value="3">Wednesday</SelectItem>
+                          <SelectItem value="4">Thursday</SelectItem>
+                          <SelectItem value="5">Friday</SelectItem>
+                          <SelectItem value="6">Saturday</SelectItem>
+                          <SelectItem value="0">Sunday</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
                 />
               </div>
             )}
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancel
               </Button>
-              <Button type="submit">{isEditMode ? 'Update Task' : 'Create Task'}</Button>
+              <Button type="submit">
+                {isEditMode ? 'Update Task' : 'Create Task'}
+              </Button>
             </DialogFooter>
           </form>
         </Form>
