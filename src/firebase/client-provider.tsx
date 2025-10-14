@@ -87,28 +87,6 @@ export function FirebaseClientProvider({
   useEffect(() => {
     const seedData = async () => {
       if (!firebaseServices.firestore || !firebaseServices.auth) return;
-      
-      const email = 'mbaquero@fortlauderdale.gov';
-      const uid = 'uca9XP90Q1agS7AA6gPREGyhIAE2';
-      const userRef = doc(firebaseServices.firestore, 'users', uid);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        console.log('Initial user document not found, creating...');
-        try {
-          // This creates the document in Firestore, not the auth user
-          await setDoc(userRef, {
-            uid: uid,
-            name: 'Mauricio Baquero',
-            email: email,
-            role: 'Admin',
-          });
-          console.log('Initial user document created successfully.');
-        } catch (error) {
-          console.error('Error creating initial user document:', error);
-        }
-      }
-      
       await seedCategories(firebaseServices.firestore);
     };
 

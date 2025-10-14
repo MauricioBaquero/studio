@@ -3,7 +3,7 @@
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc } from 'firebase/firestore';
+import { Firestore, doc, getDoc, setDoc } from 'firebase/firestore';
 import { Auth, User as AuthUser, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseStorage } from 'firebase/storage';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
@@ -106,11 +106,32 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     }
     const unsubscribe = onAuthStateChanged(
       auth,
-      (firebaseUser) => setAuthState({ user: firebaseUser, isUserLoading: false, userError: null }),
+      async (firebaseUser) => {
+        if (firebaseUser) {
+          // User is signed in. Check if they have a document in Firestore.
+          const userRef = doc(firestore, 'users', firebaseUser.uid);
+          const userSnap = await getDoc(userRef);
+
+          if (!userSnap.exists()) {
+            // New user! Create their document in Firestore with a default role.
+            try {
+              await setDoc(userRef, {
+                uid: firebaseUser.uid,
+                name: firebaseUser.displayName || firebaseUser.email || 'New User',
+                email: firebaseUser.email,
+                role: 'Viewer', // Assign a default role
+              });
+            } catch (error) {
+              console.error("Error creating user document:", error);
+            }
+          }
+        }
+        setAuthState({ user: firebaseUser, isUserLoading: false, userError: null });
+      },
       (error) => setAuthState({ user: null, isUserLoading: false, userError: error })
     );
     return () => unsubscribe();
-  }, [auth]);
+  }, [auth, firestore]);
 
   const baseContextValue = useMemo(() => {
     const servicesAvailable = !!(firebaseApp && firestore && auth && storage);
