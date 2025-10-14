@@ -134,21 +134,20 @@
           "description": "The frequency of the task."
         },
         "dayOfWeek": {
-          "type": "string",
+          "type": "number",
           "description": "The day of the week for weekly tasks."
         },
         "weekOfMonth": {
           "type": "number",
           "description": "The week of the month for monthly tasks."
         },
-        "actualCompletionDate": {
-          "type": "string",
-          "format": "date",
-          "description": "The last date the task was completed."
-        },
-        "completedBy": {
-          "type": "string",
-          "description": "Reference to the User who last completed the task."
+        "lastCompleted": {
+          "type": "array",
+          "description": "A log of all completion dates for this task.",
+          "items": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "required": [

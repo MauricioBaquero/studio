@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -28,6 +29,7 @@ import {
   serverTimestamp,
   Timestamp,
   writeBatch,
+  arrayUnion,
 } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 
@@ -112,20 +114,22 @@ export default function RecurringTasksPage() {
         ...recurringTask,
         completedBy: user,
         completedAt: now,
+        lastCompleted: [...(recurringTask.lastCompleted || []), now]
       };
       setCompletedTasks(prev => [...prev, optimisticCompletedTask]);
-
-      const tempNewId = `temp-${Date.now()}`;
-      const newUITask = {
-        ...recurringTask,
-        id: tempNewId,
-        lastCompleted: now,
-      };
       
+      const tempNewId = `temp-${Date.now()}`;
+      const updatedUITask: RecurringTask = {
+          ...recurringTask,
+          lastCompleted: [...(recurringTask.lastCompleted || []), now]
+      };
+
+      // Optimistically update the UI by removing the old task and adding the updated one
       setAllTasks(prevTasks => {
           const filtered = prevTasks.filter(t => t.id !== recurringTask.id);
-          return [...filtered, newUITask];
+          return [...filtered, updatedUITask];
       });
+
 
       const batch = writeBatch(firestore);
 
@@ -147,41 +151,14 @@ export default function RecurringTasksPage() {
       };
       batch.set(completedTaskRef, completedTaskData);
 
-      const oldRecurringTaskRef = doc(
-        firestore,
-        'recurringTasks',
-        recurringTask.id
-      );
-      batch.delete(oldRecurringTaskRef);
-
-      const newRecurringTaskRef = doc(collection(firestore, 'recurringTasks'));
-      const newRecurringTaskData: any = {
-        title: recurringTask.title,
-        categoryId: recurringTask.categoryId,
-        frequency: recurringTask.frequency,
-        lastCompleted: now,
-      };
-
-      if (recurringTask.frequency === 'Weekly' || recurringTask.frequency === 'Monthly') {
-        newRecurringTaskData.dayOfWeek = recurringTask.dayOfWeek;
-      }
-      if (recurringTask.frequency === 'Monthly') {
-        newRecurringTaskData.weekOfMonth = recurringTask.weekOfMonth;
-      }
-
-      batch.set(newRecurringTaskRef, newRecurringTaskData);
+      const recurringTaskRef = doc(firestore, 'recurringTasks', recurringTask.id);
+      batch.update(recurringTaskRef, {
+        lastCompleted: arrayUnion(now)
+      });
+      
 
       batch
         .commit()
-        .then(() => {
-          const finalNewTask = {
-            ...newRecurringTaskData,
-            id: newRecurringTaskRef.id,
-          };
-          setAllTasks(prev =>
-            prev.map(t => (t.id === tempNewId ? finalNewTask : t))
-          );
-        })
         .catch(error => {
           console.error('Failed to complete recurring task:', error);
           // Revert UI on failure

@@ -1,4 +1,5 @@
 
+
 import { addDays, addWeeks, addMonths, setDay, setDate, nextDay, startOfDay, isAfter, isSameDay } from "date-fns";
 import type { Timestamp } from 'firebase/firestore';
 
@@ -60,7 +61,7 @@ export interface RecurringTask {
   title: string;
   categoryId: string;
   frequency: RecurringFrequency;
-  lastCompleted: Date | Timestamp | null;
+  lastCompleted: (Date | Timestamp)[];
   completedBy?: string;
   dayOfWeek?: number; // Sunday - Saturday : 0 - 6
   weekOfMonth?: number; // 1-4
@@ -101,9 +102,9 @@ const locations: Location[] = [
 let tickets: Ticket[] = []; // This is now empty, data comes from Firestore
 
 const recurringTasks: RecurringTask[] = [
-    { id: "rec-1", title: "Daily Restroom Checks", categoryId: "sub-1-2", frequency: "Daily", lastCompleted: addDays(new Date(), -1) },
-    { id: "rec-2", title: "Weekly Lobby Cleaning", categoryId: "sub-1-6", frequency: "Weekly", lastCompleted: addWeeks(new Date(), -1), dayOfWeek: 1 },
-    { id: "rec-3", title: "Monthly AC Filter Change", categoryId: "sub-1-1", frequency: "Monthly", lastCompleted: addMonths(new Date(), -1), weekOfMonth: 2, dayOfWeek: 2 },
+    { id: "rec-1", title: "Daily Restroom Checks", categoryId: "sub-1-2", frequency: "Daily", lastCompleted: [addDays(new Date(), -1)] },
+    { id: "rec-2", title: "Weekly Lobby Cleaning", categoryId: "sub-1-6", frequency: "Weekly", lastCompleted: [addWeeks(new Date(), -1)], dayOfWeek: 1 },
+    { id: "rec-3", title: "Monthly AC Filter Change", categoryId: "sub-1-1", frequency: "Monthly", lastCompleted: [addMonths(new Date(), -1)], weekOfMonth: 2, dayOfWeek: 2 },
 ];
 
 // Data Accessor Functions
@@ -137,9 +138,12 @@ export const getRecurringTasks = () => recurringTasks;
 
 export const getNextDueDate = (task: RecurringTask): Date => {
   const today = startOfDay(new Date());
-  const lastCompleted = task.lastCompleted 
-    ? startOfDay((task.lastCompleted as Timestamp).toDate ? (task.lastCompleted as Timestamp).toDate() : task.lastCompleted as Date)
+
+  const mostRecentCompletion = task.lastCompleted && task.lastCompleted.length > 0
+    ? new Date(Math.max(...task.lastCompleted.map(d => ((d as Timestamp).toDate ? (d as Timestamp).toDate() : d as Date).getTime())))
     : null;
+
+  const lastCompleted = mostRecentCompletion ? startOfDay(mostRecentCompletion) : null;
 
   if (lastCompleted && isSameDay(lastCompleted, today)) {
      // If it was completed today, the next due date is in the future
