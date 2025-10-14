@@ -1,0 +1,275 @@
+{
+  "entities": {
+    "Ticket": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Ticket",
+      "type": "object",
+      "description": "Represents a maintenance or facility ticket.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Ticket entity."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to Category. (Relationship: Category 1:N Ticket)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed explanation of the ticket request."
+        },
+        "requestedCompletionDate": {
+          "type": "string",
+          "description": "The date by which the ticket completion is requested.",
+          "format": "date-time"
+        },
+        "location": {
+          "type": "string",
+          "description": "The location associated with the ticket (e.g., room number, building)."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the ticket (e.g., Not Started, In Progress, Pending Review, Completed)."
+        },
+        "assignedToUserId": {
+          "type": "string",
+          "description": "Reference to User. User to whom the ticket is assigned. (Relationship: User 1:N Ticket)"
+        },
+        "createdDate": {
+          "type": "string",
+          "description": "The date and time when the ticket was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "categoryId",
+        "description",
+        "requestedCompletionDate",
+        "location",
+        "status",
+        "assignedToUserId",
+        "createdDate"
+      ]
+    },
+    "Category": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Category",
+      "type": "object",
+      "description": "Represents a category for organizing tasks.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Category entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the category."
+        },
+        "parentCategoryId": {
+          "type": "string",
+          "description": "Reference to Parent Category. The ID of the parent category, if any. (Relationship: Category 1:N Category)"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "RecurringTask": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "RecurringTask",
+      "type": "object",
+      "description": "Represents a recurring task schedule.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the RecurringTask entity."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to Category. The category associated with the recurring task. (Relationship: Category 1:N RecurringTask)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the recurring task."
+        },
+        "scheduleType": {
+          "type": "string",
+          "description": "The type of schedule (e.g., Daily, Weekly, Monthly)."
+        },
+        "scheduleDetails": {
+          "type": "string",
+          "description": "Details of when the task is scheduled. This could be a JSON string with the details of how often to create the ticket."
+        },
+        "assignedToUserId": {
+          "type": "string",
+          "description": "Reference to User. The user to whom the recurring task is assigned. (Relationship: User 1:N RecurringTask)"
+        }
+      },
+      "required": [
+        "id",
+        "categoryId",
+        "description",
+        "scheduleType",
+        "scheduleDetails",
+        "assignedToUserId"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a system user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "userName": {
+          "type": "string",
+          "description": "The username of the user."
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the user (e.g., Viewer, Staff, Admin)."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user.",
+          "format": "email"
+        }
+      },
+      "required": [
+        "id",
+        "userName",
+        "role",
+        "email"
+      ]
+    },
+    "Setting": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Setting",
+      "type": "object",
+      "description": "Represents a system setting.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Setting entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the setting."
+        },
+        "value": {
+          "type": "string",
+          "description": "The value of the setting. Store as a string."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "value"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Uses path-based ownership for access control.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": {
+            "$ref": "#/backend/entities/Category"
+          },
+          "description": "Stores task categories.  Admin access is required for modification.",
+          "params": [
+            {
+              "name": "categoryId",
+              "description": "The unique identifier for the category."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/tickets/{ticketId}",
+        "definition": {
+          "entityName": "Ticket",
+          "schema": {
+            "$ref": "#/backend/entities/Ticket"
+          },
+          "description": "Stores maintenance tickets associated with a specific user. Uses path-based ownership for access control.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who the ticket is assigned to."
+            },
+            {
+              "name": "ticketId",
+              "description": "The unique identifier for the ticket."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/recurringTasks/{recurringTaskId}",
+        "definition": {
+          "entityName": "RecurringTask",
+          "schema": {
+            "$ref": "#/backend/entities/RecurringTask"
+          },
+          "description": "Stores recurring tasks assigned to a specific user. Uses path-based ownership for access control.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user to whom the recurring task is assigned."
+            },
+            {
+              "name": "recurringTaskId",
+              "description": "The unique identifier for the recurring task."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/settings/{settingId}",
+        "definition": {
+          "entityName": "Setting",
+          "schema": {
+            "$ref": "#/backend/entities/Setting"
+          },
+          "description": "Stores system-wide settings.  Admin access is required for modification.",
+          "params": [
+            {
+              "name": "settingId",
+              "description": "The unique identifier for the setting."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support a ticket-based task management system (FacilityFlow) with features like ticket creation, management, user roles, category management, recurring task scheduling, settings configuration, and a user management interface. The structure prioritizes authorization independence via denormalization, structural segregation for a homogeneous security posture, and access modeling for standardization and consistency.\n\n**Authorization Independence:** User roles are stored within the user document itself. This eliminates the need for complex `get()` calls in security rules, supporting atomic operations and improving debuggability.\n\n**Structural Segregation:** Each collection is designed to hold documents with similar access control requirements. For example, user-specific data (like assigned tickets and recurring tasks) are stored under the `/users/{userId}` path, while global categories and settings reside in separate collections.\n\n**QAPs Support:**\n*   **List Operations:** Segregation of data into collections with homogeneous security postures ensures secure list operations. Rules can be applied at the collection level to control access based on user roles or ownership.\n*   **Category and Settings:** Global categories and settings are stored in dedicated collections (`/categories`, `/settings`), allowing for easy management and secure access control based on user roles (e.g., only admins can modify categories and settings).\n*   **User Roles:** Roles are stored on the User document in `/users/{userId}` and are secure based on path-based ownership."
+  }
+}

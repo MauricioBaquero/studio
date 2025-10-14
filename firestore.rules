@@ -1,0 +1,123 @@
+/**
+ * @fileoverview Firestore Security Rules for FacilityFlow.
+ *
+ * Core Philosophy: This ruleset enforces a strict user-ownership model for user-specific data (tickets, recurring tasks) and restricts modification of global data (categories, settings) to authorized users.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores user profiles.
+ * - /users/{userId}/tickets/{ticketId}: Stores tickets associated with a specific user.
+ * - /users/{userId}/recurringTasks/{recurringTaskId}: Stores recurring tasks assigned to a specific user.
+ * - /categories/{categoryId}: Stores global task categories.
+ * - /settings/{settingId}: Stores system-wide settings.
+ *
+ * Key Security Decisions:
+ * - User listing is not allowed to protect user privacy.
+ * - Categories and settings are only editable by authorized users (currently, this is not explicitly defined in the IR).
+ * - The default security posture for ambiguous relationships is strict owner-only access.
+ *
+ * Denormalization for Authorization: User roles are stored directly on the User document to avoid costly `get()` calls during authorization.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Protects user profiles, allowing only the user themselves to read/write their profile.
+     * @path /users/{userId}
+     * @allow (create) - Authenticated user creates their own profile with matching userId.
+     * @allow (get, update, delete) - Authenticated user reads/updates/deletes their own profile with matching userId.
+     * @deny (create) - Authenticated user attempts to create a profile with a mismatched userId.
+     * @deny (get, update, delete) - Authenticated user attempts to read/update/delete another user's profile.
+     * @deny (list) - Listing users is not allowed.
+     * @principle Enforces document ownership for writes and restricts access to a user's own data.
+     */
+    match /users/{userId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if false; // User listing is not allowed
+
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Secures task categories, restricting access to authorized users (currently, all users).
+     * @path /categories/{categoryId}
+     * @allow (get, list) - All users can read categories.
+     * @deny (create, update, delete) - Only authorized users can modify categories.
+     * @principle Restricts modification of global data to authorized users.
+     */
+    match /categories/{categoryId} {
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Add admin validation once roles are fully defined.
+    }
+
+    /**
+     * @description Protects maintenance tickets associated with a specific user, allowing only the assigned user to read/write.
+     * @path /users/{userId}/tickets/{ticketId}
+     * @allow (create) - Authenticated user creates a ticket assigned to themselves.
+     * @allow (get, update, delete) - Authenticated user reads/updates/deletes tickets assigned to themselves.
+     * @deny (create) - Authenticated user attempts to create a ticket assigned to another user.
+     * @deny (get, update, delete) - Authenticated user attempts to read/update/delete tickets assigned to another user.
+     * @principle Enforces document ownership for writes and restricts access to a user's own data.
+     */
+    match /users/{userId}/tickets/{ticketId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Protects recurring tasks assigned to a specific user, allowing only the assigned user to read/write.
+     * @path /users/{userId}/recurringTasks/{recurringTaskId}
+     * @allow (create) - Authenticated user creates a recurring task assigned to themselves.
+     * @allow (get, update, delete) - Authenticated user reads/updates/deletes recurring tasks assigned to themselves.
+     * @deny (create) - Authenticated user attempts to create a recurring task assigned to another user.
+     * @deny (get, update, delete) - Authenticated user attempts to read/update/delete recurring tasks assigned to another user.
+     * @principle Enforces document ownership for writes and restricts access to a user's own data.
+     */
+    match /users/{userId}/recurringTasks/{recurringTaskId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Secures system-wide settings, restricting access to authorized users (currently, all users).
+     * @path /settings/{settingId}
+     * @allow (get, list) - All users can read settings.
+     * @deny (create, update, delete) - Only authorized users can modify settings.
+     * @principle Restricts modification of global data to authorized users.
+     */
+    match /settings/{settingId} {
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Add admin validation once roles are fully defined.
+    }
+  }
+}
