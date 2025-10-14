@@ -1,11 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import {
-  RecurringTask,
-  Category,
-  User,
-} from '@/lib/data';
+import { useState, useMemo, useEffect } from 'react';
+import { RecurringTask, Category, User } from '@/lib/data';
 import {
   Table,
   TableBody,
@@ -17,14 +13,21 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { format, isToday } from 'date-fns';
 import {
   useCollection,
   useFirestore,
   useMemoFirebase,
   useUser,
+  updateDocumentNonBlocking,
 } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  doc,
+  serverTimestamp,
+  Timestamp,
+} from 'firebase/firestore';
 
 type CompletedTask = RecurringTask & { completedBy: User; completedAt: Date };
 
@@ -55,7 +58,7 @@ export default function RecurringTasksPage() {
 
   const [pendingTasks, setPendingTasks] = useState<RecurringTask[]>([]);
   const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>([]);
-  
+
   const getCategoryById = (id: string) => categories?.find(c => c.id === id);
 
   const getCategoryColor = (categoryId: string) => {
@@ -64,45 +67,62 @@ export default function RecurringTasksPage() {
       category = getCategoryById(category.parentId);
     }
     return category?.color || 'gray';
-  }
-  
+  };
+
   const getNextDueDate = (task: RecurringTask): Date => {
-      // This is a simplified logic. A real app would need a more robust way
-      // to calculate next due date based on frequency, lastCompleted date etc.
-      return new Date();
-  }
-
-  // Effect to separate tasks into pending and completed
-  // This is a simplified logic, a real implementation would check `lastCompleted` against the current date and frequency
-  useMemo(() => {
-    if (allTasks) {
-      setPendingTasks(allTasks);
-      setCompletedTasks([]); // Resetting completed tasks for now
-    }
-  }, [allTasks]);
-
-  const handleTaskCheck = (taskId: string) => {
-    const taskToMove = pendingTasks.find(task => task.id === taskId);
-    const user = users?.find(u => u.uid === currentUser?.uid);
-
-    if (taskToMove && user) {
-      setPendingTasks(pendingTasks.filter(task => task.id !== taskId));
-      setCompletedTasks([
-        ...completedTasks,
-        { ...taskToMove, completedBy: user, completedAt: new Date() },
-      ]);
-      // Here you would also update the `lastCompleted` field in Firestore
-    }
+    // This is a simplified logic. A real app would need a more robust way
+    // to calculate next due date based on frequency, lastCompleted date etc.
+    return new Date();
   };
   
+  // This logic will be improved in the next step.
+  useEffect(() => {
+    if (allTasks && users) {
+      const todayCompleted: CompletedTask[] = [];
+      const stillPending: RecurringTask[] = [];
+
+      allTasks.forEach(task => {
+        const lastCompletedDate = task.lastCompleted instanceof Timestamp ? task.lastCompleted.toDate() : task.lastCompleted;
+        if (lastCompletedDate && isToday(lastCompletedDate)) {
+           const completingUser = users.find(u => u.uid === task.completedBy);
+           if(completingUser) {
+             todayCompleted.push({ ...task, completedBy: completingUser, completedAt: lastCompletedDate });
+           } else {
+             stillPending.push(task);
+           }
+        } else {
+          stillPending.push(task);
+        }
+      });
+      
+      setPendingTasks(stillPending);
+      setCompletedTasks(todayCompleted);
+    }
+  }, [allTasks, users]);
+
+
+  const handleTaskCheck = (taskId: string) => {
+    if (!firestore || !currentUser) return;
+
+    const taskRef = doc(firestore, 'recurringTasks', taskId);
+    updateDocumentNonBlocking(taskRef, {
+      lastCompleted: serverTimestamp(),
+      completedBy: currentUser.uid,
+    });
+
+    // The UI will update automatically thanks to the real-time listener `useCollection`
+  };
+
   const isLoading = isLoadingTasks || isLoadingCategories || isLoadingUsers;
 
   if (isLoading) {
     return (
-        <div className="flex flex-col h-full">
-            <h1 className="text-3xl font-bold font-headline mb-6">Recurring Tasks</h1>
-            <p>Loading recurring tasks...</p>
-        </div>
+      <div className="flex flex-col h-full">
+        <h1 className="text-3xl font-bold font-headline mb-6">
+          Recurring Tasks
+        </h1>
+        <p>Loading recurring tasks...</p>
+      </div>
     );
   }
 
@@ -166,7 +186,7 @@ export default function RecurringTasksPage() {
         </Card>
         <Card className="flex flex-col">
           <CardHeader>
-            <CardTitle>Completed Today</CardTitle>
+            <CardTitle>Completed to Date</CardTitle>
           </CardHeader>
           <CardContent className="flex-1">
             <Table>
@@ -197,7 +217,7 @@ export default function RecurringTasksPage() {
                         </TableCell>
                         <TableCell>{task.completedBy.name}</TableCell>
                         <TableCell>
-                          {format(task.completedAt, 'MM/dd/yyyy')}
+                          {format(task.completedAt, 'p')}
                         </TableCell>
                       </TableRow>
                     );

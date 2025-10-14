@@ -1,4 +1,6 @@
-import { addDays, addWeeks, addMonths, Timestamp } from "date-fns";
+
+import { addDays, addWeeks, addMonths } from "date-fns";
+import type { Timestamp } from 'firebase/firestore';
 
 export type UserRole = "Admin" | "Staff" | "Viewer";
 export const USER_ROLES: UserRole[] = ["Admin", "Staff", "Viewer"];
@@ -50,7 +52,8 @@ export interface RecurringTask {
   title: string;
   categoryId: string;
   frequency: RecurringFrequency;
-  lastCompleted: Date | null;
+  lastCompleted: Date | Timestamp | null;
+  completedBy?: string;
   dayOfWeek?: number; // Sunday - Saturday : 0 - 6
   weekOfMonth?: number; // 1-4
 }
@@ -119,16 +122,19 @@ export const getLocationById = (id: string) => locations.find(l => l.id === id);
 // We keep updateTicket here for now to be used in client components, but it will be updated to use Firestore.
 export const updateTicket = (id: string, updatedTicketData: Partial<Ticket>) => {
     console.log(`Updating ticket ${id} in Firestore with:`, updatedTicketData);
-    // This will be replaced with a firestore update call.
+    // This will be replaced with a a firestore update call.
 };
 
 export const getRecurringTasks = () => recurringTasks;
 export const getNextDueDate = (task: RecurringTask): Date => {
     if (!task.lastCompleted) return new Date();
+    // This logic needs to be improved to be accurate
+    // This is a simplified check, a proper implementation would use `instanceof Timestamp`
+    const lastCompletedDate = (task.lastCompleted as Timestamp).toDate ? (task.lastCompleted as Timestamp).toDate() : task.lastCompleted as Date;
     switch (task.frequency) {
-        case "Daily": return addDays(task.lastCompleted, 1);
-        case "Weekly": return addWeeks(task.lastCompleted, 1);
-        case "Monthly": return addMonths(task.lastCompleted, 1);
+        case "Daily": return addDays(lastCompletedDate, 1);
+        case "Weekly": return addWeeks(lastCompletedDate, 1);
+        case "Monthly": return addMonths(lastCompletedDate, 1);
         default: return new Date();
     }
 }
