@@ -30,6 +30,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
 type CompletedTask = {
     id: string;
@@ -97,14 +98,32 @@ export default function RecurringTasksPage() {
     }
   }, [recurringTasks, users]);
 
-  const pendingTasks = useMemo(() => {
+  const { dueTasks, completedTodayTasks } = useMemo(() => {
     if (!allTasks) {
-      return [];
+      return { dueTasks: [], completedTodayTasks: [] };
     }
-    return allTasks
-      .sort(
-        (a, b) => getNextDueDate(a).getTime() - getNextDueDate(b).getTime()
-      );
+    const sortedTasks = allTasks.sort(
+      (a, b) => getNextDueDate(a).getTime() - getNextDueDate(b).getTime()
+    );
+
+    const due: RecurringTask[] = [];
+    const completed: RecurringTask[] = [];
+
+    sortedTasks.forEach(task => {
+      const lastCompletion =
+        task.lastCompleted && task.lastCompleted.length > 0
+          ? toDate(task.lastCompleted[task.lastCompleted.length - 1] as Timestamp)
+          : null;
+      const isCompletedToday = lastCompletion && isToday(lastCompletion);
+
+      if (isCompletedToday) {
+        completed.push(task);
+      } else {
+        due.push(task);
+      }
+    });
+
+    return { dueTasks: due, completedTodayTasks: completed };
   }, [allTasks]);
 
 
@@ -152,6 +171,53 @@ export default function RecurringTasksPage() {
 
   const isLoading = isLoadingRecurringTasks || isLoadingCategories || isLoadingUsers || isLoadingLocations;
 
+  const renderTaskRow = (task: RecurringTask, isCompleted: boolean) => {
+    const category = getCategoryById(task.categoryId);
+    const location = getLocationById(task.locationId);
+    const color = getCategoryColor(task.categoryId);
+    const nextDueDate = getNextDueDate(task);
+    const isTaskOverdue =
+      isPast(nextDueDate) && !isSameDay(startOfDay(nextDueDate), startOfDay(new Date()));
+
+    return (
+      <TableRow key={task.id} className={cn(isCompleted && "text-muted-foreground opacity-50")}>
+        <TableCell className="text-center">
+          <Checkbox
+            id={`task-${task.id}`}
+            aria-label={`Complete ${task.title}`}
+            onCheckedChange={() => handleTaskCheck(task)}
+            checked={isCompleted}
+            disabled={isCompleted}
+          />
+        </TableCell>
+        <TableCell className="font-medium">
+          {task.title}
+        </TableCell>
+        <TableCell>
+          {category ? (
+            <Badge color={color as any}>{category.name}</Badge>
+          ) : (
+            '-'
+          )}
+        </TableCell>
+        <TableCell>
+          {location?.name || '-'}
+        </TableCell>
+        <TableCell
+          className={cn(
+            !isCompleted && isTaskOverdue && 'text-destructive font-semibold'
+          )}
+        >
+          {format(nextDueDate, 'MM/dd/yyyy')}
+          {!isCompleted && isTaskOverdue && (
+            <span className="ml-2">(Overdue)</span>
+          )}
+        </TableCell>
+      </TableRow>
+    );
+  };
+
+
   if (isLoading) {
     return (
       <div className="flex flex-col h-full">
@@ -183,64 +249,30 @@ export default function RecurringTasksPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pendingTasks.length > 0 ? (
-                  pendingTasks.map(task => {
-                    const category = getCategoryById(task.categoryId);
-                    const location = getLocationById(task.locationId);
-                    const color = getCategoryColor(task.categoryId);
-                    const nextDueDate = getNextDueDate(task);
-                    const isTaskOverdue =
-                      isPast(nextDueDate) && !isSameDay(startOfDay(nextDueDate), startOfDay(new Date()));
-
-                    const lastCompletion =
-                      task.lastCompleted && task.lastCompleted.length > 0
-                        ? toDate(task.lastCompleted[task.lastCompleted.length - 1] as Timestamp)
-                        : null;
-                    const isCompletedToday = lastCompletion && isToday(lastCompletion);
-
-                    return (
-                      <TableRow key={task.id} className={cn(isCompletedToday && "text-muted-foreground opacity-50")}>
-                        <TableCell className="text-center">
-                          <Checkbox
-                            id={`task-${task.id}`}
-                            aria-label={`Complete ${task.title}`}
-                            onCheckedChange={() => handleTaskCheck(task)}
-                            checked={isCompletedToday}
-                            disabled={isCompletedToday}
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {task.title}
-                        </TableCell>
-                        <TableCell>
-                          {category ? (
-                            <Badge color={color as any}>{category.name}</Badge>
-                          ) : (
-                            '-'
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {location?.name || '-'}
-                        </TableCell>
-                        <TableCell
-                          className={cn(
-                            !isCompletedToday && isTaskOverdue && 'text-destructive font-semibold'
-                          )}
-                        >
-                          {format(nextDueDate, 'MM/dd/yyyy')}
-                          {!isCompletedToday && isTaskOverdue && (
-                            <span className="ml-2">(Overdue)</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                ) : (
-                  <TableRow>
+                {dueTasks.length === 0 && completedTodayTasks.length === 0 ? (
+                   <TableRow>
                     <TableCell colSpan={5} className="h-24 text-center">
                       No scheduled maintenance tasks found.
                     </TableCell>
                   </TableRow>
+                ) : (
+                  <>
+                    {dueTasks.map(task => renderTaskRow(task, false))}
+                    
+                    {dueTasks.length > 0 && completedTodayTasks.length > 0 && (
+                       <TableRow>
+                        <TableCell colSpan={5} className="!p-0">
+                          <div className="flex items-center gap-4 px-4">
+                            <Separator />
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">Already completed today</span>
+                            <Separator />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+
+                    {completedTodayTasks.map(task => renderTaskRow(task, true))}
+                  </>
                 )}
               </TableBody>
             </Table>
