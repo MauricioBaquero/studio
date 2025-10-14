@@ -47,7 +47,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback } from './ui/avatar';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 
 interface TicketDetailsDialogProps {
   open: boolean;
@@ -157,7 +157,7 @@ export function TicketDetailsDialog({
       
       const dataForDb: Partial<Ticket> = {
           status: finalStatus,
-          completionPhotoUrl: photoUrl,
+          completionPhotoUrl: photoUrl === undefined ? null : photoUrl,
       };
 
       if (finalStatus === 'Completed') {
@@ -286,7 +286,7 @@ export function TicketDetailsDialog({
                  <Select 
                     value={currentStatus} 
                     onValueChange={(value) => setCurrentStatus(value as TicketStatus)}
-                    disabled={isSaving || !canEditStatus}
+                    disabled={isSaving || !canEditStatus || isPendingReview}
                 >
                     <SelectTrigger className="w-full">
                         <SelectValue placeholder="Set status" />
@@ -380,7 +380,7 @@ export function TicketDetailsDialog({
                                     <div className="flex items-center gap-2">
                                         <p className="font-semibold text-sm">{comment.userName}</p>
                                         <p className="text-xs text-muted-foreground">
-                                            {formatDistanceToNow(createdAt, { addSuffix: true })}
+                                            {format(createdAt, 'MM/dd/yyyy')}
                                         </p>
                                     </div>
                                     <p className="text-sm text-muted-foreground">{comment.text}</p>
@@ -441,7 +441,3 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
-
-    
-
-    
