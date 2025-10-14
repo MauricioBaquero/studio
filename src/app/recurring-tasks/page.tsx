@@ -21,6 +21,7 @@ import {
   useMemoFirebase,
   useUser,
   updateDocumentNonBlocking,
+  addDocumentNonBlocking,
 } from '@/firebase';
 import {
   collection,
@@ -28,6 +29,7 @@ import {
   doc,
   serverTimestamp,
   Timestamp,
+  writeBatch,
 } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 
@@ -94,13 +96,42 @@ export default function RecurringTasksPage() {
   }, [allTasks, users]);
 
 
-  const handleTaskCheck = (taskId: string) => {
+  const handleTaskCheck = (recurringTask: RecurringTask) => {
     if (!firestore || !currentUser) return;
+    
+    const now = serverTimestamp();
 
-    const taskRef = doc(firestore, 'recurringTasks', taskId);
-    updateDocumentNonBlocking(taskRef, {
-      lastCompleted: serverTimestamp(),
+    const batch = writeBatch(firestore);
+
+    // 1. Update the recurring task template
+    const recurringTaskRef = doc(firestore, 'recurringTasks', recurringTask.id);
+    batch.update(recurringTaskRef, {
+      lastCompleted: now,
       completedBy: currentUser.uid,
+    });
+
+    // 2. Create a new one-off task to log the completion
+    const newTaskId = `T${Date.now()}`;
+    const newTaskRef = doc(firestore, 'tasks', newTaskId);
+    const newTaskData = {
+        id: newTaskId,
+        title: recurringTask.title,
+        description: `Completed recurring task: ${recurringTask.title}`,
+        categoryId: recurringTask.categoryId,
+        location: "N/A", // Recurring tasks don't have locations yet
+        locationId: null,
+        requestedCompletionDate: now,
+        actualCompletionDate: now,
+        status: "Completed",
+        assignedToId: currentUser.uid,
+        approvedBy: currentUser.uid, // Self-approved for now
+        createdAt: now,
+    };
+    batch.set(newTaskRef, newTaskData);
+    
+    // Non-blocking commit
+    batch.commit().catch(error => {
+        console.error("Failed to complete recurring task:", error);
     });
   };
 
@@ -154,7 +185,7 @@ export default function RecurringTasksPage() {
                           <Checkbox
                             id={`task-${task.id}`}
                             aria-label={`Complete ${task.title}`}
-                            onCheckedChange={() => handleTaskCheck(task.id)}
+                            onCheckedChange={() => handleTaskCheck(task)}
                             disabled={isCompletedToday}
                             checked={isCompletedToday}
                           />
@@ -240,3 +271,5 @@ export default function RecurringTasksPage() {
     </div>
   );
 }
+
+    
