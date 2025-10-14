@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { RecurringTask, Category, User } from '@/lib/data';
+import { RecurringTask, Category, User, getNextDueDate } from '@/lib/data';
 import {
   Table,
   TableBody,
@@ -13,7 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { format, isToday } from 'date-fns';
+import { format, isToday, isPast, startOfDay } from 'date-fns';
 import {
   useCollection,
   useFirestore,
@@ -28,6 +29,7 @@ import {
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
+import { cn } from '@/lib/utils';
 
 type CompletedTask = RecurringTask & { completedBy: User; completedAt: Date };
 
@@ -68,14 +70,7 @@ export default function RecurringTasksPage() {
     }
     return category?.color || 'gray';
   };
-
-  const getNextDueDate = (task: RecurringTask): Date => {
-    // This is a simplified logic. A real app would need a more robust way
-    // to calculate next due date based on frequency, lastCompleted date etc.
-    return new Date();
-  };
   
-  // This logic will be improved in the next step.
   useEffect(() => {
     if (allTasks && users) {
       const todayCompleted: CompletedTask[] = [];
@@ -87,12 +82,10 @@ export default function RecurringTasksPage() {
            const completingUser = users.find(u => u.uid === task.completedBy);
            if(completingUser) {
              todayCompleted.push({ ...task, completedBy: completingUser, completedAt: lastCompletedDate });
-           } else {
-             stillPending.push(task);
            }
-        } else {
-          stillPending.push(task);
         }
+        // The same task can be pending for its next occurrence
+        stillPending.push(task);
       });
       
       setPendingTasks(stillPending);
@@ -109,8 +102,6 @@ export default function RecurringTasksPage() {
       lastCompleted: serverTimestamp(),
       completedBy: currentUser.uid,
     });
-
-    // The UI will update automatically thanks to the real-time listener `useCollection`
   };
 
   const isLoading = isLoadingTasks || isLoadingCategories || isLoadingUsers;
@@ -125,6 +116,8 @@ export default function RecurringTasksPage() {
       </div>
     );
   }
+  
+  const sortedPendingTasks = pendingTasks.sort((a,b) => getNextDueDate(a).getTime() - getNextDueDate(b).getTime());
 
   return (
     <div className="flex flex-col h-full">
@@ -145,11 +138,16 @@ export default function RecurringTasksPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pendingTasks.length > 0 ? (
-                  pendingTasks.map(task => {
+                {sortedPendingTasks.length > 0 ? (
+                  sortedPendingTasks.map(task => {
                     const category = getCategoryById(task.categoryId);
                     const color = getCategoryColor(task.categoryId);
                     const nextDueDate = getNextDueDate(task);
+                    const isTaskOverdue = isPast(nextDueDate) && !isToday(nextDueDate);
+
+                    const lastCompletedDate = task.lastCompleted instanceof Timestamp ? task.lastCompleted.toDate() : task.lastCompleted;
+                    const isCompletedToday = lastCompletedDate && isToday(lastCompletedDate);
+
                     return (
                       <TableRow key={task.id}>
                         <TableCell className="text-center">
@@ -157,6 +155,8 @@ export default function RecurringTasksPage() {
                             id={`task-${task.id}`}
                             aria-label={`Complete ${task.title}`}
                             onCheckedChange={() => handleTaskCheck(task.id)}
+                            disabled={isCompletedToday}
+                            checked={isCompletedToday}
                           />
                         </TableCell>
                         <TableCell className="font-medium">
@@ -169,7 +169,10 @@ export default function RecurringTasksPage() {
                             '-'
                           )}
                         </TableCell>
-                        <TableCell>{format(nextDueDate, 'PPP')}</TableCell>
+                        <TableCell className={cn(isTaskOverdue && "text-destructive font-semibold")}>
+                          {format(nextDueDate, 'PPP')}
+                          {isTaskOverdue && <span className="ml-2">(Overdue)</span>}
+                        </TableCell>
                       </TableRow>
                     );
                   })
@@ -186,7 +189,7 @@ export default function RecurringTasksPage() {
         </Card>
         <Card className="flex flex-col">
           <CardHeader>
-            <CardTitle>Completed to Date</CardTitle>
+            <CardTitle>Completed Today</CardTitle>
           </CardHeader>
           <CardContent className="flex-1">
             <Table>
@@ -225,7 +228,7 @@ export default function RecurringTasksPage() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={4} className="h-24 text-center">
-                      No tasks completed yet.
+                      No tasks completed yet today.
                     </TableCell>
                   </TableRow>
                 )}

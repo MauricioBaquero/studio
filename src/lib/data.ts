@@ -1,5 +1,5 @@
 
-import { addDays, addWeeks, addMonths } from "date-fns";
+import { addDays, addWeeks, addMonths, setDay, setDate, nextDay, startOfDay, isAfter, isSameDay } from "date-fns";
 import type { Timestamp } from 'firebase/firestore';
 
 export type UserRole = "Admin" | "Staff" | "Viewer";
@@ -134,15 +134,59 @@ export const updateTicket = (id: string, updatedTicketData: Partial<Ticket>) => 
 };
 
 export const getRecurringTasks = () => recurringTasks;
+
 export const getNextDueDate = (task: RecurringTask): Date => {
-    if (!task.lastCompleted) return new Date();
-    // This logic needs to be improved to be accurate
-    // This is a simplified check, a proper implementation would use `instanceof Timestamp`
-    const lastCompletedDate = (task.lastCompleted as Timestamp).toDate ? (task.lastCompleted as Timestamp).toDate() : task.lastCompleted as Date;
-    switch (task.frequency) {
-        case "Daily": return addDays(lastCompletedDate, 1);
-        case "Weekly": return addWeeks(lastCompletedDate, 1);
-        case "Monthly": return addMonths(lastCompletedDate, 1);
-        default: return new Date();
+  const today = startOfDay(new Date());
+  const lastCompleted = task.lastCompleted 
+    ? startOfDay((task.lastCompleted as Timestamp).toDate ? (task.lastCompleted as Timestamp).toDate() : task.lastCompleted as Date)
+    : null;
+
+  if (lastCompleted && isSameDay(lastCompleted, today)) {
+     // If it was completed today, the next due date is in the future
+     switch (task.frequency) {
+      case "Daily":
+        return addDays(today, 1);
+      case "Weekly":
+        return addWeeks(today, 1);
+      case "Monthly":
+        return addMonths(today, 1);
     }
-}
+  }
+
+  const baseDate = lastCompleted || today;
+
+  switch (task.frequency) {
+    case 'Daily':
+      return isAfter(today, baseDate) ? today : addDays(baseDate, 1);
+    
+    case 'Weekly': {
+      const nextOccurrence = nextDay(baseDate, task.dayOfWeek as any);
+      return isAfter(nextOccurrence, baseDate) ? nextOccurrence : addWeeks(nextOccurrence, 1);
+    }
+    
+    case 'Monthly': {
+      if (task.weekOfMonth && task.dayOfWeek !== undefined) {
+        let candidateDate = setDate(baseDate, 1); // Start of month
+        candidateDate = setDay(candidateDate, task.dayOfWeek, { weekStartsOn: 0 }); // First dayOfWeek of month
+        
+        // Adjust for week of month
+        let dayOfMonth = candidateDate.getDate() + (task.weekOfMonth - 1) * 7;
+        
+        candidateDate = setDate(candidateDate, dayOfMonth);
+
+        // If this month's date is already past, move to next month
+        if (isAfter(baseDate, candidateDate) || isSameDay(baseDate, candidateDate)) {
+          candidateDate = addMonths(candidateDate, 1);
+          candidateDate = setDate(candidateDate, 1); // Start of next month
+          candidateDate = setDay(candidateDate, task.dayOfWeek, { weekStartsOn: 0 });
+          dayOfMonth = candidateDate.getDate() + (task.weekOfMonth - 1) * 7;
+          candidateDate = setDate(candidateDate, dayOfMonth);
+        }
+        return candidateDate;
+      }
+      return addMonths(baseDate, 1); // Fallback for simple monthly
+    }
+    default:
+      return new Date();
+  }
+};
