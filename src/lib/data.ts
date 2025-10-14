@@ -53,7 +53,6 @@ export interface Ticket {
   createdAt: Date | Timestamp;
   completionPhotoUrl?: string | null;
   approvedBy?: string | null;
-  comments?: Comment[];
 }
 
 export interface RecurringTask {

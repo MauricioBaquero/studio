@@ -1,0 +1,279 @@
+
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a system user.",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Unique identifier for the User entity, from Firebase Auth."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user.",
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["Admin", "Staff", "Viewer"],
+          "description": "The role of the user."
+        }
+      },
+      "required": [
+        "uid",
+        "name",
+        "email",
+        "role"
+      ]
+    },
+    "Task": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Task",
+      "type": "object",
+      "description": "Represents a maintenance or facility task.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Task."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to Category."
+        },
+        "subCategoryId": {
+          "type": "string",
+          "description": "Reference to a sub-category within Category."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed explanation of the task."
+        },
+        "locationId": {
+          "type": "string",
+          "description": "Reference to Location."
+        },
+        "additionalDetails": {
+          "type": "string",
+          "description": "Any extra details about the location or task."
+        },
+        "requestedCompletionDate": {
+          "type": "string",
+          "format": "date",
+          "description": "The date by which the task completion is requested."
+        },
+        "submitToReviewDate": {
+          "type": "string",
+          "format": "date",
+          "description": "The date the task was submitted for review."
+        },
+        "actualCompletionDate": {
+          "type": "string",
+          "format": "date",
+          "description": "The date the task was actually completed."
+        },
+        "assignedTo": {
+          "type": "string",
+          "description": "Reference to the User to whom the task is assigned."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the task."
+        }
+      },
+      "required": [
+        "id",
+        "categoryId",
+        "description",
+        "locationId",
+        "requestedCompletionDate",
+        "status"
+      ]
+    },
+    "RecurringTask": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "RecurringTask",
+      "type": "object",
+      "description": "Represents a recurring task schedule.",
+      "properties": {
+        "taskName": {
+          "type": "string",
+          "description": "The name of the recurring task."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to Category."
+        },
+        "frequency": {
+          "type": "string",
+          "enum": [
+            "Daily",
+            "Weekly",
+            "Monthly"
+          ],
+          "description": "The frequency of the task."
+        },
+        "dayOfWeek": {
+          "type": "string",
+          "description": "The day of the week for weekly tasks."
+        },
+        "weekOfMonth": {
+          "type": "number",
+          "description": "The week of the month for monthly tasks."
+        },
+        "actualCompletionDate": {
+          "type": "string",
+          "format": "date",
+          "description": "The last date the task was completed."
+        },
+        "completedBy": {
+          "type": "string",
+          "description": "Reference to the User who last completed the task."
+        }
+      },
+      "required": [
+        "taskName",
+        "categoryId",
+        "frequency"
+      ]
+    },
+    "Location": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Location",
+      "type": "object",
+      "description": "Represents a facility location.",
+      "properties": {
+        "locationName": {
+          "type": "string",
+          "description": "The name of the location."
+        },
+        "numberOfFloors": {
+          "type": "number",
+          "description": "Number of floors at the location. Can be 0 or N/A."
+        }
+      },
+      "required": [
+        "locationName"
+      ]
+    },
+    "Category": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Category",
+      "type": "object",
+      "description": "Represents a task category, which can be a parent or sub-category.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Category."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the category."
+        },
+        "parentId": {
+          "type": ["string", "null"],
+          "description": "The ID of the parent category. If null, this is a parent category."
+        },
+        "color": {
+          "type": "string",
+          "description": "The color associated with the category (for parent categories)."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "parentId"
+      ]
+    },
+    "Setting": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Setting",
+      "type": "object",
+      "description": "Represents a system setting.",
+      "properties": {
+        "completionDateRange": {
+          "type": "number",
+          "description": "The minimum number of days for task completion requests."
+        }
+      },
+      "required": [
+        "completionDateRange"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles."
+        }
+      },
+      {
+        "path": "/tasks/{taskId}",
+        "definition": {
+          "entityName": "Task",
+          "schema": {
+            "$ref": "#/backend/entities/Task"
+          },
+          "description": "Stores all tasks for the facility."
+        }
+      },
+      {
+        "path": "/recurringTasks/{recurringTaskId}",
+        "definition": {
+          "entityName": "RecurringTask",
+          "schema": {
+            "$ref": "#/backend/entities/RecurringTask"
+          },
+          "description": "Stores all recurring tasks."
+        }
+      },
+      {
+        "path": "/locations/{locationId}",
+        "definition": {
+          "entityName": "Location",
+          "schema": {
+            "$ref": "#/backend/entities/Location"
+          },
+          "description": "Stores all facility locations."
+        }
+      },
+      {
+        "path": "/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": {
+            "$ref": "#/backend/entities/Category"
+          },
+          "description": "Stores all task categories and sub-categories."
+        }
+      },
+      {
+        "path": "/settings/appSettings",
+        "definition": {
+          "entityName": "Setting",
+          "schema": {
+            "$ref": "#/backend/entities/Setting"
+          },
+          "description": "Stores system-wide settings in a single document."
+        }
+      }
+    ]
+  }
+}

@@ -76,21 +76,11 @@ export function TicketDetailsDialog({
   const [currentStatus, setCurrentStatus] = useState<TicketStatus>(ticket.status);
   const [completionPhoto, setCompletionPhoto] = useState<string | null>(ticket.completionPhotoUrl || null);
   const [newPhotoDataUrl, setNewPhotoDataUrl] = useState<string | null>(null);
-  const [newCommentText, setNewCommentText] = useState('');
-  const [isSendingComment, setIsSendingComment] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const getUserById = (id: string | null) => users.find(u => u.uid === id);
   const getCategoryById = (id: string) => categories.find(c => c.id === id);
-
-  const sortedComments = useMemo(() => {
-    if (!ticket.comments) return [];
-    return [...ticket.comments].sort((a, b) => {
-        const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toDate() : a.createdAt;
-        const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toDate() : b.createdAt;
-        return dateB.getTime() - dateA.getTime();
-    });
-  }, [ticket.comments]);
 
 
   useEffect(() => {
@@ -98,7 +88,6 @@ export function TicketDetailsDialog({
       setCurrentStatus(ticket.status);
       setCompletionPhoto(ticket.completionPhotoUrl || null);
       setNewPhotoDataUrl(null);
-      setNewCommentText('');
       setIsSaving(false);
     }
   }, [open, ticket]);
@@ -157,7 +146,7 @@ export function TicketDetailsDialog({
       
       const dataForDb: Partial<Ticket> = {
           status: finalStatus,
-          completionPhotoUrl: photoUrl === undefined ? null : photoUrl,
+          completionPhotoUrl: photoUrl,
       };
 
       if (finalStatus === 'Completed') {
@@ -198,38 +187,6 @@ export function TicketDetailsDialog({
     }
   };
 
-  const handleSendComment = async () => {
-    if (!firestore || !currentUser || !newCommentText.trim()) return;
-
-    setIsSendingComment(true);
-
-    const newCommentForDb = {
-        userId: currentUser.uid,
-        userName: currentUser.name || "Unknown User",
-        text: newCommentText.trim(),
-        createdAt: serverTimestamp(),
-    };
-
-    const optimisticComment: Comment = {
-        userId: currentUser.uid,
-        userName: currentUser.name || "Unknown User",
-        text: newCommentText.trim(),
-        createdAt: new Date(),
-    };
-
-    const ticketRef = doc(firestore, 'tasks', ticket.id);
-    updateDocumentNonBlocking(ticketRef, {
-        comments: arrayUnion(newCommentForDb)
-    });
-    
-    onUpdate({ ...ticket, comments: [...(ticket.comments || []), optimisticComment] });
-    setNewCommentText('');
-    setIsSendingComment(false);
-     toast({
-        title: "Comment Added",
-    });
-  };
-
   const handleDelete = () => {
     if (!firestore) return;
     const ticketRef = doc(firestore, 'tasks', ticket.id);
@@ -253,7 +210,6 @@ export function TicketDetailsDialog({
   const isAssignedToCurrentUser = ticket.assignedToId === currentUser?.uid;
   
   const canInteractWithForm = isAdmin || (isStaff && (isAssignedToCurrentUser || !ticket.assignedToId));
-  const canComment = isAdmin || isStaff;
 
 
   return (
@@ -350,46 +306,6 @@ export function TicketDetailsDialog({
               )}
             </div>
 
-            <div className="space-y-4">
-                <h4 className="font-medium text-muted-foreground">Comments</h4>
-                {canComment && (
-                    <div className="flex items-start gap-2">
-                        <Textarea 
-                            id="comments" 
-                            placeholder="Add any relevant comments..." 
-                            value={newCommentText}
-                            onChange={(e) => setNewCommentText(e.target.value)}
-                            disabled={isSaving || isSendingComment}
-                            className="flex-1"
-                        />
-                        <Button onClick={handleSendComment} disabled={isSendingComment || !newCommentText.trim()} size="icon">
-                            {isSendingComment ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                            <span className="sr-only">Send Comment</span>
-                        </Button>
-                    </div>
-                )}
-                <div className="space-y-4">
-                    {sortedComments.map((comment, index) => {
-                         const createdAt = comment.createdAt instanceof Timestamp ? comment.createdAt.toDate() : comment.createdAt;
-                         return (
-                            <div key={index} className="flex items-start gap-3">
-                                <Avatar className="h-8 w-8">
-                                    <AvatarFallback>{comment.userName.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                        <p className="font-semibold text-sm">{comment.userName}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {format(createdAt, 'MM/dd/yyyy')}
-                                        </p>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground">{comment.text}</p>
-                                </div>
-                            </div>
-                         )
-                    })}
-                </div>
-            </div>
         </div>
         <DialogFooter className="sm:justify-between pt-4 border-t">
             <div>
