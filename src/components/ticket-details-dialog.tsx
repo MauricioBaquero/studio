@@ -143,7 +143,7 @@ export function TicketDetailsDialog({
       
       const updatedTicketData: Partial<Ticket> = {
           status: finalStatus,
-          completionPhotoUrl: photoUrl === undefined ? null : photoUrl,
+          completionPhotoUrl: photoUrl,
       };
 
       if (finalStatus === 'Completed') {
@@ -227,7 +227,7 @@ export function TicketDetailsDialog({
                  <Select 
                     value={currentStatus} 
                     onValueChange={(value) => setCurrentStatus(value as TicketStatus)}
-                    disabled={isSaving || (!isAdmin && (ticket.status === 'Completed' || ticket.status === 'Pending Review'))}
+                    disabled={isSaving || !isAdmin}
                 >
                     <SelectTrigger className="w-full">
                         <SelectValue placeholder="Set status" />
@@ -236,11 +236,7 @@ export function TicketDetailsDialog({
                         {TICKET_STATUSES.map(status => (
                             <SelectItem 
                                 key={status} 
-                                value={status} 
-                                disabled={
-                                    (!isAdmin && (status === 'Completed' || ticket.status === 'Completed')) ||
-                                    (!isAdmin && isPendingReview && status !== 'Pending Review')
-                                }
+                                value={status}
                             >
                                 {status}
                             </SelectItem>
@@ -339,7 +335,7 @@ export function TicketDetailsDialog({
                 </Button>
                 </div>
             ) : (
-                <Button onClick={() => handleUpdate()} disabled={isSaving || (!isAdmin && ticket.status === 'Completed')}>
+                <Button onClick={() => handleUpdate()} disabled={isSaving || !isAdmin}>
                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isSaving ? "Saving..." : "Save Changes"}
                 </Button>
@@ -350,3 +346,5 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
+
+    
