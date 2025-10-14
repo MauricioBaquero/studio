@@ -3,6 +3,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -31,7 +32,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useToast } from "@/hooks/use-toast";
-import { createTicketAction } from "@/lib/actions";
+import { useFirestore, addDocumentNonBlocking } from "@/firebase";
+import { collection, serverTimestamp } from "firebase/firestore";
 
 interface TicketFormProps {
   parentCategories: Category[];
@@ -43,6 +45,8 @@ const MINIMUM_NOTICE_DAYS = 7;
 
 export function TicketForm({ parentCategories, allSubcategories, locations }: TicketFormProps) {
   const { toast } = useToast();
+  const router = useRouter();
+  const firestore = useFirestore();
   const [selectedParent, setSelectedParent] = useState<string | null>(null);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -80,6 +84,15 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
 
 
   async function onSubmit(values: z.infer<typeof ticketSchema>) {
+    if (!firestore) {
+        toast({
+            title: "Error",
+            description: "Database connection not found.",
+            variant: "destructive"
+        });
+        return;
+    }
+
     setIsSubmitting(true);
     const locationName = getLocationById(values.locationId)?.name;
 
@@ -96,27 +109,33 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
     const fullLocation = [locationName, locationDetailDisplay].filter(Boolean).join(', ');
 
     const ticketData = {
-        ...values,
-        location: fullLocation || values.locationId, // Fallback to id if name not found
+        title: `New Ticket: ${values.description.substring(0, 30)}...`, // Generate a simple title
+        description: values.description,
+        categoryId: values.subcategoryId, // We save the subcategory ID
+        location: fullLocation,
+        locationId: values.locationId,
+        requestedCompletionDate: values.requestedCompletionDate,
+        status: "Not Started",
+        assignedToId: null,
+        createdAt: serverTimestamp(),
     };
 
-    console.log(ticketData);
-
     try {
-        // This is a temporary type assertion. The `createTicketAction` expects a `location` string
-        // but our schema has changed. We'll adjust the action later.
-        await createTicketAction(ticketData as any);
+        const ticketsCollection = collection(firestore, "tasks");
+        addDocumentNonBlocking(ticketsCollection, ticketData);
+        
         toast({
             title: "Success!",
             description: "Your ticket has been created.",
         });
+        router.push('/'); // Redirect to the main board
     } catch (error) {
+        console.error("Error creating ticket: ", error);
         toast({
             title: "Error",
             description: "Failed to create ticket. Please try again.",
             variant: "destructive"
         });
-    } finally {
         setIsSubmitting(false);
     }
   }

@@ -33,12 +33,35 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
+  const firestoreDb = getFirestore(firebaseApp);
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp)
+    firestore: firestoreDb
   };
 }
+
+// This is a server-side instance of firestore, it is used in server actions
+// This is not a recommended pattern and will be refactored
+let serverFirestore: any = null;
+if (typeof window === 'undefined') {
+    const { initializeApp: initializeAdminApp, getApps: getAdminApps, cert } = require('firebase-admin/app');
+    const { getFirestore: getAdminFirestore } = require('firebase-admin/firestore');
+    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT 
+      ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+      : undefined;
+
+    if (serviceAccount) {
+      if (!getAdminApps().length) {
+          initializeAdminApp({
+              credential: cert(serviceAccount)
+          });
+      }
+      serverFirestore = getAdminFirestore();
+    }
+}
+export const firestore = serverFirestore;
+
 
 export * from './provider';
 export * from './client-provider';
