@@ -1,26 +1,29 @@
-"use client";
+'use client';
 
-import { Ticket, getUserById, getUsers } from "@/lib/data";
+import type { Ticket, User } from '@/lib/data';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis } from "recharts";
+} from '@/components/ui/chart';
+import { BarChart, Bar, XAxis, YAxis } from 'recharts';
 
 interface TasksByAssigneeChartProps {
   tickets: Ticket[];
+  users: User[];
 }
 
-export function TasksByAssigneeChart({ tickets }: TasksByAssigneeChartProps) {
-  const users = getUsers();
+export function TasksByAssigneeChart({
+  tickets,
+  users,
+}: TasksByAssigneeChartProps) {
   const tasksByAssignee = users.map(user => ({
     name: user.name.split(' ')[0], // Use first name for brevity
     value: tickets.filter(ticket => ticket.assignedToId === user.uid).length,
@@ -29,7 +32,7 @@ export function TasksByAssigneeChart({ tickets }: TasksByAssigneeChartProps) {
   const unassignedTasks = tickets.filter(ticket => !ticket.assignedToId).length;
   let unassignedData = null;
   if (unassignedTasks > 0) {
-    unassignedData = { name: "Unassigned", value: unassignedTasks };
+    unassignedData = { name: 'Unassigned', value: unassignedTasks };
   }
 
   // Sort assigned users alphabetically by name
@@ -38,14 +41,17 @@ export function TasksByAssigneeChart({ tickets }: TasksByAssigneeChartProps) {
     .sort((a, b) => a.name.localeCompare(b.name));
 
   // Add "Unassigned" to the end if it exists
-  const chartData = unassignedData ? [...sortedAssigned, unassignedData] : sortedAssigned;
-
+  const chartData = unassignedData
+    ? [...sortedAssigned, unassignedData]
+    : sortedAssigned;
 
   return (
     <Card className="flex flex-col">
       <CardHeader>
         <CardTitle>Tasks by Assignee</CardTitle>
-        <CardDescription>Current workload distribution across the team.</CardDescription>
+        <CardDescription>
+          Current workload distribution across the team.
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <ChartContainer config={{}} className="h-[250px] w-full">
@@ -66,7 +72,7 @@ export function TasksByAssigneeChart({ tickets }: TasksByAssigneeChartProps) {
               axisLine={false}
               tickMargin={10}
               width={80}
-              tick={{ fill: "hsl(var(--foreground))" }}
+              tick={{ fill: 'hsl(var(--foreground))' }}
             />
             <ChartTooltip
               cursor={false}

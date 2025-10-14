@@ -1,36 +1,42 @@
-"use client";
+'use client';
 
-import { Ticket, getCategoryById } from "@/lib/data";
+import type { Ticket, Category } from '@/lib/data';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis } from "recharts";
+} from '@/components/ui/chart';
+import { BarChart, Bar, XAxis, YAxis } from 'recharts';
 
 interface TaskTypeChartProps {
   tickets: Ticket[];
+  categories: Category[];
 }
 
-export function TaskTypeChart({ tickets }: TaskTypeChartProps) {
-  const tasksByCategory = tickets.reduce((acc, ticket) => {
-    const category = getCategoryById(ticket.categoryId);
-    const parentCategory = category?.parentId
-      ? getCategoryById(category.parentId)
-      : category;
-    
-    if (parentCategory) {
-      acc[parentCategory.name] = (acc[parentCategory.name] || 0) + 1;
-    }
-    return acc;
-  }, {} as { [key: string]: number });
+export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
+  const getCategoryById = (id: string) => categories.find(c => c.id === id);
+
+  const tasksByCategory = tickets.reduce(
+    (acc, ticket) => {
+      const category = getCategoryById(ticket.categoryId);
+      const parentCategory = category?.parentId
+        ? getCategoryById(category.parentId)
+        : category;
+
+      if (parentCategory) {
+        acc[parentCategory.name] = (acc[parentCategory.name] || 0) + 1;
+      }
+      return acc;
+    },
+    {} as { [key: string]: number }
+  );
 
   const chartData = Object.entries(tasksByCategory)
     .map(([name, value]) => ({ name, value }))
@@ -40,7 +46,9 @@ export function TaskTypeChart({ tickets }: TaskTypeChartProps) {
     <Card className="flex flex-col">
       <CardHeader>
         <CardTitle>Tasks by Category</CardTitle>
-        <CardDescription>Breakdown of tasks by main category type.</CardDescription>
+        <CardDescription>
+          Breakdown of tasks by main category type.
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <ChartContainer config={{}} className="h-[250px] w-full">
@@ -61,7 +69,7 @@ export function TaskTypeChart({ tickets }: TaskTypeChartProps) {
               axisLine={false}
               tickMargin={10}
               width={150}
-              tick={{ fill: "hsl(var(--foreground))" }}
+              tick={{ fill: 'hsl(var(--foreground))' }}
             />
             <ChartTooltip
               cursor={false}
