@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -30,6 +29,8 @@ import {
   Timestamp,
   writeBatch,
   arrayUnion,
+  addDoc,
+  deleteDoc,
 } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 
@@ -78,11 +79,8 @@ export default function RecurringTasksPage() {
     );
 
     const pending = allTasks.filter(task => {
-      const nextDueDate = getNextDueDate(task);
-      const isDueToday = isToday(startOfDay(nextDueDate));
-
-      // Don't show if it's due today AND already completed today
-      if (isDueToday && todayCompletedIds.has(task.id)) {
+      // Don't show if it's already been completed today
+      if (todayCompletedIds.has(task.id)) {
         return false;
       }
       return true;
@@ -110,67 +108,70 @@ export default function RecurringTasksPage() {
     const user = users?.find(u => u.uid === currentUser.uid);
 
     if (user) {
-      const optimisticCompletedTask = {
-        ...recurringTask,
-        completedBy: user,
-        completedAt: now,
-        lastCompleted: [...(recurringTask.lastCompleted || []), now]
-      };
-      setCompletedTasks(prev => [...prev, optimisticCompletedTask]);
-      
-      const tempNewId = `temp-${Date.now()}`;
-      const updatedUITask: RecurringTask = {
-          ...recurringTask,
-          lastCompleted: [...(recurringTask.lastCompleted || []), now]
-      };
+        // --- Optimistic UI Update ---
+        // 1. Create a representation of the task that was just completed for the "Completed Today" list
+        const optimisticCompletedTask: CompletedTask = {
+            ...recurringTask,
+            completedBy: user,
+            completedAt: now,
+            lastCompleted: (Array.isArray(recurringTask.lastCompleted) ? recurringTask.lastCompleted : []).concat([now]),
+        };
+        setCompletedTasks(prev => [...prev, optimisticCompletedTask]);
 
-      // Optimistically update the UI by removing the old task and adding the updated one
-      setAllTasks(prevTasks => {
-          const filtered = prevTasks.filter(t => t.id !== recurringTask.id);
-          return [...filtered, updatedUITask];
-      });
+        // 2. Remove the old recurring task from the main list
+        setAllTasks(prevTasks => prevTasks.filter(t => t.id !== recurringTask.id));
+
+        // --- Database Operations ---
+        const batch = writeBatch(firestore);
+
+        // 1. Create a one-off "Completed" task for the main task board
+        const completedTaskRef = doc(collection(firestore, 'tasks'));
+        const completedTaskData = {
+            id: completedTaskRef.id,
+            title: `(Recurring) ${recurringTask.title}`,
+            description: `Completed recurring task: ${recurringTask.title}`,
+            categoryId: recurringTask.categoryId,
+            location: 'N/A', // Recurring tasks don't have locations yet
+            locationId: null,
+            requestedCompletionDate: now,
+            actualCompletionDate: now,
+            status: 'Completed',
+            assignedToId: currentUser.uid,
+            approvedBy: currentUser.uid,
+            createdAt: serverTimestamp(),
+        };
+        batch.set(completedTaskRef, completedTaskData);
+
+        // 2. Delete the old recurring task template
+        const oldRecurringTaskRef = doc(firestore, 'recurringTasks', recurringTask.id);
+        batch.delete(oldRecurringTaskRef);
+
+        // 3. Create a new recurring task template for the next cycle
+        const newRecurringTaskRef = doc(collection(firestore, 'recurringTasks'));
+        const newRecurringTaskData: Omit<RecurringTask, 'id'> = {
+            title: recurringTask.title,
+            categoryId: recurringTask.categoryId,
+            frequency: recurringTask.frequency,
+            lastCompleted: [now], // Start the new log with today's completion
+            ...(recurringTask.frequency !== 'Daily' && { dayOfWeek: recurringTask.dayOfWeek }),
+            ...(recurringTask.frequency === 'Monthly' && { weekOfMonth: recurringTask.weekOfMonth }),
+        };
+        batch.set(newRecurringTaskRef, newRecurringTaskData);
 
 
-      const batch = writeBatch(firestore);
-
-      const completedTaskId = `T${Date.now()}`;
-      const completedTaskRef = doc(firestore, 'tasks', completedTaskId);
-      const completedTaskData = {
-        id: completedTaskId,
-        title: `(Recurring) ${recurringTask.title}`,
-        description: `Completed recurring task: ${recurringTask.title}`,
-        categoryId: recurringTask.categoryId,
-        location: 'N/A',
-        locationId: null,
-        requestedCompletionDate: now,
-        actualCompletionDate: now,
-        status: 'Completed',
-        assignedToId: currentUser.uid,
-        approvedBy: currentUser.uid,
-        createdAt: serverTimestamp(),
-      };
-      batch.set(completedTaskRef, completedTaskData);
-
-      const recurringTaskRef = doc(firestore, 'recurringTasks', recurringTask.id);
-      batch.update(recurringTaskRef, {
-        lastCompleted: arrayUnion(now)
-      });
-      
-
-      batch
-        .commit()
-        .catch(error => {
-          console.error('Failed to complete recurring task:', error);
-          // Revert UI on failure
-          setCompletedTasks(prev =>
-            prev.filter(
-              t =>
-                t.id !== optimisticCompletedTask.id ||
-                t.completedAt !== optimisticCompletedTask.completedAt
-            )
-          );
-           setAllTasks(prevTasks => {
-                const reverted = prevTasks.filter(t => t.id !== tempNewId);
+        batch.commit().then(() => {
+            // On success, add the newly created recurring task (with its new ID) to the UI
+             setAllTasks(prevTasks => [
+                ...prevTasks,
+                { ...newRecurringTaskData, id: newRecurringTaskRef.id } as RecurringTask,
+            ]);
+        }).catch(error => {
+            console.error('Failed to complete recurring task:', error);
+            // Revert UI on failure
+            setCompletedTasks(prev => prev.filter(t => t.id !== optimisticCompletedTask.id || t.completedAt !== optimisticCompletedTask.completedAt));
+            setAllTasks(prev => {
+                const reverted = [...prev];
+                // If the old task is not there, add it back
                 if (!reverted.some(t => t.id === recurringTask.id)) {
                     reverted.push(recurringTask);
                 }
@@ -178,7 +179,7 @@ export default function RecurringTasksPage() {
             });
         });
     }
-  };
+};
 
   const isLoading = isLoadingTasks || isLoadingCategories || isLoadingUsers;
 
