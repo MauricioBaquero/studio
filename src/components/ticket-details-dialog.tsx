@@ -8,8 +8,6 @@ import {
   TicketStatus,
   getUserById,
   getCategoryById,
-  updateTicket,
-  getCurrentUser,
 } from '@/lib/data';
 import {
   Dialog,
@@ -32,6 +30,8 @@ import { Textarea } from './ui/textarea';
 import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, X } from 'lucide-react';
+import { useFirestore, updateDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 interface TicketDetailsDialogProps {
   open: boolean;
@@ -47,6 +47,7 @@ export function TicketDetailsDialog({
   onUpdate,
 }: TicketDetailsDialogProps) {
   const { toast } = useToast();
+  const firestore = useFirestore();
   const [currentStatus, setCurrentStatus] = useState<TicketStatus>(ticket.status);
   const [completionPhoto, setCompletionPhoto] = useState<string | null>(ticket.completionPhotoUrl || null);
   const [comments, setComments] = useState('');
@@ -72,18 +73,22 @@ export function TicketDetailsDialog({
   };
 
   const handleUpdate = () => {
+    if (!firestore) return;
+    const ticketRef = doc(firestore, 'tasks', ticket.id);
+
     const updatedTicketData: Partial<Ticket> = {
+        status: currentStatus,
         completionPhotoUrl: completionPhoto,
-        // In a real app, you would also save the comments.
-        // For now, we just log it.
     };
     
     if (comments) {
         console.log(`Comment added for ticket ${ticket.id}: ${comments}`);
+        // In a real app, you would add this to a 'comments' subcollection.
     }
 
+    updateDocumentNonBlocking(ticketRef, updatedTicketData);
+
     const newTicketState = { ...ticket, ...updatedTicketData };
-    updateTicket(ticket.id, newTicketState);
     onUpdate(newTicketState);
 
     toast({
@@ -127,7 +132,6 @@ export function TicketDetailsDialog({
                  <Select 
                     value={currentStatus} 
                     onValueChange={(value) => setCurrentStatus(value as TicketStatus)}
-                    disabled={true}
                 >
                     <SelectTrigger className="w-full">
                         <SelectValue placeholder="Set status" />

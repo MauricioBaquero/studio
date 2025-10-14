@@ -1,4 +1,4 @@
-import { addDays, addWeeks, addMonths } from "date-fns";
+import { addDays, addWeeks, addMonths, Timestamp } from "date-fns";
 
 export type UserRole = "Admin" | "Staff" | "Viewer";
 export const USER_ROLES: UserRole[] = ["Admin", "Staff", "Viewer"];
@@ -41,8 +41,8 @@ export interface Ticket {
   location: string;
   categoryId: string;
   assignedToId: string | null;
-  requestedCompletionDate: Date;
-  createdAt: Date;
+  requestedCompletionDate: Date | Timestamp;
+  createdAt: Date | Timestamp;
   completionPhotoUrl?: string | null;
 }
 
@@ -87,13 +87,7 @@ const locations: Location[] = [
     { id: 'loc-4', name: 'Exterior - Parking Lot' },
 ];
 
-let tickets: Ticket[] = [
-  { id: "T-001", title: "Restroom A needs cleaning", description: "Men's restroom on the 2nd floor has a paper towel overflow.", status: "Not Started", location: "Building A, 2nd Floor", categoryId: "sub-1-2", assignedToId: null, requestedCompletionDate: addDays(new Date(), 2), createdAt: new Date() },
-  { id: "T-002", title: "AC Unit 5 not cooling", description: "The AC unit in conference room 5 is only blowing warm air.", status: "In Progress", location: "Building B, Conference Room 5", categoryId: "sub-1-1", assignedToId: "user-3", requestedCompletionDate: addDays(new Date(), 1), createdAt: addDays(new Date(), -1) },
-  { id: "T-003", title: "Broken door handle", description: "The main entrance door handle is loose and about to fall off.", status: "Pending Review", location: "Main Lobby", categoryId: "sub-1-7", assignedToId: "user-2", requestedCompletionDate: addDays(new Date(), 3), createdAt: addDays(new Date(), -2), completionPhotoUrl: "https://picsum.photos/seed/work/600/400" },
-  { id: "T-004", title: "Carpet stain in hallway", description: "Large coffee stain near the elevators on the 3rd floor.", status: "Completed", location: "Building A, 3rd Floor Hallway", categoryId: "sub-1-5", assignedToId: "user-3", requestedCompletionDate: addDays(new Date(), -5), createdAt: addDays(new Date(), -7) },
-  { id: "T-005", title: "Low on toilet paper", description: "Supply closet in Room 290 is running low on toilet paper rolls.", status: "Not Started", location: "Room 290", categoryId: "sub-1-4", assignedToId: null, requestedCompletionDate: addDays(new Date(), 7), createdAt: new Date() },
-];
+let tickets: Ticket[] = []; // This is now empty, data comes from Firestore
 
 const recurringTasks: RecurringTask[] = [
     { id: "rec-1", title: "Daily Restroom Checks", categoryId: "sub-1-2", frequency: "Daily", lastCompleted: addDays(new Date(), -1) },
@@ -121,14 +115,11 @@ export const getCategoryColor = (categoryId: string): CategoryColor | 'gray' => 
 export const getLocations = () => locations;
 export const getLocationById = (id: string) => locations.find(l => l.id === id);
 
-export const getTickets = () => tickets;
-export const getTicketById = (id: string) => tickets.find(t => t.id === id);
-
+// Ticket functions now interact with Firestore via hooks/server actions
+// We keep updateTicket here for now to be used in client components, but it will be updated to use Firestore.
 export const updateTicket = (id: string, updatedTicketData: Partial<Ticket>) => {
-    const ticketIndex = tickets.findIndex(t => t.id === id);
-    if (ticketIndex !== -1) {
-        tickets[ticketIndex] = { ...tickets[ticketIndex], ...updatedTicketData };
-    }
+    console.log(`Updating ticket ${id} in Firestore with:`, updatedTicketData);
+    // This will be replaced with a firestore update call.
 };
 
 export const getRecurringTasks = () => recurringTasks;

@@ -7,7 +7,6 @@ import {
   getCategoryById,
   getCategoryColor,
   getCurrentUser,
-  updateTicket,
 } from '@/lib/data';
 import {
   Card,
@@ -19,12 +18,16 @@ import {
 } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Calendar, CheckCircle, MapPin, Tag } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, toDate } from 'date-fns';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { TicketDetailsDialog } from './ticket-details-dialog';
 import { cn } from '@/lib/utils';
+import { useFirestore } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { updateDocumentNonBlocking } from '@/firebase';
+import { Timestamp } from 'firebase/firestore';
 
 const claimSayings = [
   "I'll take this one!",
@@ -43,6 +46,7 @@ interface TicketCardProps {
 
 export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCardProps) {
   const { toast } = useToast();
+  const firestore = useFirestore();
   const [ticket, setTicket] = useState(initialTicket);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [claimSaying] = useState(
@@ -58,14 +62,17 @@ export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCa
   const isAssignedToOtherUser = ticket.assignedToId && ticket.assignedToId !== currentUser.id;
   
   const handleClaimTask = () => {
-    const updatedTicket: Ticket = { 
-        ...ticket, 
+    if (!firestore) return;
+    const ticketRef = doc(firestore, 'tasks', ticket.id);
+    const updatedTicketData = { 
         assignedToId: currentUser.id,
         status: 'In Progress' as const
     };
-    updateTicket(ticket.id, updatedTicket);
+    updateDocumentNonBlocking(ticketRef, updatedTicketData);
+    // Optimistic update for the UI
+    const updatedTicket = { ...ticket, ...updatedTicketData };
     setTicket(updatedTicket);
-    onUpdate(updatedTicket); // Notify the parent board
+    onUpdate(updatedTicket);
     toast({
         title: "Task Claimed!",
         description: `You are now assigned to "${ticket.title}".`
@@ -73,11 +80,13 @@ export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCa
   };
 
   const handleReadyForReview = () => {
-    const updatedTicket: Ticket = {
-      ...ticket,
+    if (!firestore) return;
+    const ticketRef = doc(firestore, 'tasks', ticket.id);
+    const updatedTicketData = {
       status: 'Pending Review' as const,
     };
-    updateTicket(ticket.id, updatedTicket);
+    updateDocumentNonBlocking(ticketRef, updatedTicketData);
+    const updatedTicket = { ...ticket, ...updatedTicketData };
     setTicket(updatedTicket);
     onUpdate(updatedTicket);
     toast({
@@ -88,7 +97,6 @@ export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCa
 
   const handleOpenDialog = (e: React.MouseEvent) => {
     if (isAssignedToOtherUser) return;
-    // Don't open dialog if the claim button was clicked
     if ((e.target as HTMLElement).closest('button')) {
         return;
     }
@@ -96,9 +104,15 @@ export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCa
   }
 
   const handleTicketUpdate = (updatedTicket: Ticket) => {
+    // The update is now coming from the dialog, which already called Firestore.
+    // We just update the local state to reflect it.
     setTicket(updatedTicket);
     onUpdate(updatedTicket); // Notify the parent board
   }
+
+  const requestedCompletionDate = ticket.requestedCompletionDate instanceof Timestamp
+    ? ticket.requestedCompletionDate.toDate()
+    : toDate(ticket.requestedCompletionDate);
 
   return (
     <>
@@ -132,7 +146,7 @@ export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCa
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <Calendar className="h-4 w-4" />
-            <span>Due: {format(ticket.requestedCompletionDate, 'MMM d, yyyy')}</span>
+            <span>Due: {format(requestedCompletionDate, 'MMM d, yyyy')}</span>
           </div>
         </CardContent>
         <CardFooter className="flex items-center justify-between">
