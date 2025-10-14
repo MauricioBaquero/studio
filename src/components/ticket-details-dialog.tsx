@@ -31,7 +31,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from './ui/textarea';
 import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, X, Trash2 } from 'lucide-react';
+import { Loader2, Upload, X, Trash2, Send } from 'lucide-react';
 import { useFirestore, useStorage, updateDocumentNonBlocking, useUser, deleteDocumentNonBlocking } from '@/firebase';
 import { doc, serverTimestamp, Timestamp, arrayUnion } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -77,6 +77,7 @@ export function TicketDetailsDialog({
   const [completionPhoto, setCompletionPhoto] = useState<string | null>(ticket.completionPhotoUrl || null);
   const [newPhotoDataUrl, setNewPhotoDataUrl] = useState<string | null>(null);
   const [newCommentText, setNewCommentText] = useState('');
+  const [isSendingComment, setIsSendingComment] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const getUserById = (id: string | null) => users.find(u => u.uid === id);
@@ -154,7 +155,7 @@ export function TicketDetailsDialog({
         photoUrl = null;
       }
       
-      const dataForDb: Partial<Ticket> & {comments?: any} = {
+      const dataForDb: Partial<Ticket> = {
           status: finalStatus,
           completionPhotoUrl: photoUrl,
       };
@@ -163,24 +164,6 @@ export function TicketDetailsDialog({
         dataForDb.approvedBy = currentUser.uid;
       }
       
-      let optimisticComment: Comment | null = null;
-      if (newCommentText.trim()) {
-        const newCommentForDb = {
-            userId: currentUser.uid,
-            userName: currentUser.name || "Unknown User",
-            text: newCommentText.trim(),
-            createdAt: serverTimestamp(),
-        };
-        dataForDb.comments = arrayUnion(newCommentForDb);
-        
-        optimisticComment = {
-            userId: currentUser.uid,
-            userName: currentUser.name || "Unknown User",
-            text: newCommentText.trim(),
-            createdAt: new Date(), // Use client-side date for optimistic update
-        };
-      }
-
       const ticketRef = doc(firestore, 'tasks', ticket.id);
       updateDocumentNonBlocking(ticketRef, dataForDb);
 
@@ -193,9 +176,6 @@ export function TicketDetailsDialog({
         updatedTicketData.approvedBy = currentUser.uid;
       }
       const newTicketState = { ...ticket, ...updatedTicketData };
-      if(optimisticComment) {
-        newTicketState.comments = [...(ticket.comments || []), optimisticComment];
-      }
 
       onUpdate(newTicketState);
 
@@ -218,6 +198,38 @@ export function TicketDetailsDialog({
     }
   };
 
+  const handleSendComment = async () => {
+    if (!firestore || !currentUser || !newCommentText.trim()) return;
+
+    setIsSendingComment(true);
+
+    const newCommentForDb = {
+        userId: currentUser.uid,
+        userName: currentUser.name || "Unknown User",
+        text: newCommentText.trim(),
+        createdAt: serverTimestamp(),
+    };
+
+    const optimisticComment: Comment = {
+        userId: currentUser.uid,
+        userName: currentUser.name || "Unknown User",
+        text: newCommentText.trim(),
+        createdAt: new Date(),
+    };
+
+    const ticketRef = doc(firestore, 'tasks', ticket.id);
+    updateDocumentNonBlocking(ticketRef, {
+        comments: arrayUnion(newCommentForDb)
+    });
+    
+    onUpdate({ ...ticket, comments: [...(ticket.comments || []), optimisticComment] });
+    setNewCommentText('');
+    setIsSendingComment(false);
+     toast({
+        title: "Comment Added",
+    });
+  };
+
   const handleDelete = () => {
     if (!firestore) return;
     const ticketRef = doc(firestore, 'tasks', ticket.id);
@@ -238,6 +250,10 @@ export function TicketDetailsDialog({
   const isStaff = currentUser?.role === 'Staff';
   const isPendingReview = ticket.status === 'Pending Review';
   const canEditStatus = isAdmin;
+  const isAssignedToCurrentUser = ticket.assignedToId === currentUser?.uid;
+  
+  const canInteractWithForm = isAdmin || (isStaff && (isAssignedToCurrentUser || !ticket.assignedToId));
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -299,45 +315,55 @@ export function TicketDetailsDialog({
                     height={400}
                     className="rounded-md object-cover aspect-video"
                   />
-                   <Button
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-2 right-2 h-6 w-6"
-                    onClick={removePhoto}
-                    disabled={isSaving || isViewer}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  {canInteractWithForm && (
+                     <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-6 w-6"
+                        onClick={removePhoto}
+                        disabled={isSaving || isViewer}
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div>
-                  <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isSaving || isViewer}>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Photo
-                  </Button>
-                  <Input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
-                    onChange={handleFileChange}
-                    accept="image/*"
-                    disabled={isSaving || isViewer}
-                  />
+                  {canInteractWithForm && (
+                    <>
+                    <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isSaving || isViewer}>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload Photo
+                    </Button>
+                    <Input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        onChange={handleFileChange}
+                        accept="image/*"
+                        disabled={isSaving || isViewer}
+                    />
+                    </>
+                  )}
                 </div>
               )}
             </div>
 
             <div className="space-y-4">
                 <h4 className="font-medium text-muted-foreground">Comments</h4>
-                <div className="space-y-2">
-                    <Label htmlFor="comments">Add Comment</Label>
+                <div className="flex items-start gap-2">
                     <Textarea 
                         id="comments" 
                         placeholder="Add any relevant comments..." 
                         value={newCommentText}
                         onChange={(e) => setNewCommentText(e.target.value)}
-                        disabled={isSaving || isViewer}
+                        disabled={isSaving || isViewer || isSendingComment}
+                        className="flex-1"
                     />
+                    <Button onClick={handleSendComment} disabled={isSendingComment || !newCommentText.trim()} size="icon">
+                        {isSendingComment ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                        <span className="sr-only">Send Comment</span>
+                    </Button>
                 </div>
                 <div className="space-y-4">
                     {sortedComments.map((comment, index) => {
@@ -402,9 +428,9 @@ export function TicketDetailsDialog({
                 </Button>
                 </div>
             ) : (
-                <Button onClick={() => handleUpdate()} disabled={isSaving || (isViewer)}>
-                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSaving ? "Saving..." : "Save Changes"}
+                 <Button onClick={() => handleUpdate()} disabled={isSaving || !canInteractWithForm}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isSaving ? "Saving..." : "Save Changes"}
                 </Button>
             )}
             </div>
@@ -413,5 +439,3 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
-
-    
