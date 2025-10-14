@@ -31,7 +31,7 @@ import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, X, Trash2 } from 'lucide-react';
 import { useFirestore, useStorage, updateDocumentNonBlocking, useUser, deleteDocumentNonBlocking } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { doc, arrayUnion, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 import {
   AlertDialog,
@@ -44,7 +44,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Textarea } from './ui/textarea';
+import { format } from 'date-fns';
+import { toDate } from 'date-fns';
 
 interface TicketDetailsDialogProps {
   open: boolean;
@@ -215,6 +216,12 @@ export function TicketDetailsDialog({
           <DialogDescription>ID: {ticket.id}</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto pr-6 -mr-6 grid gap-4 py-4">
+           <div className="space-y-2">
+              <Label>Description</Label>
+              <p className="text-sm text-muted-foreground p-4 border rounded-md bg-muted/50">
+                  {ticket.description}
+              </p>
+           </div>
           <div className="grid grid-cols-2 gap-4">
              <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Category</p>
@@ -233,7 +240,7 @@ export function TicketDetailsDialog({
                  <Select 
                     value={currentStatus} 
                     onValueChange={(value) => setCurrentStatus(value as TicketStatus)}
-                    disabled={isSaving || !canEditStatus || isViewer || isStaff}
+                    disabled={isSaving || !isAdmin }
                 >
                     <SelectTrigger className="w-full">
                         <SelectValue placeholder="Set status" />
@@ -252,12 +259,6 @@ export function TicketDetailsDialog({
                 </Select>
             </div>
           </div>
-           <div className="space-y-2">
-              <Label>Description</Label>
-              <p className="text-sm text-muted-foreground p-4 border rounded-md bg-muted/50">
-                  {ticket.description}
-              </p>
-           </div>
            <div className="space-y-2">
               <Label>Completion Photo</Label>
               {completionPhoto ? (
@@ -354,5 +355,3 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
-
-    
