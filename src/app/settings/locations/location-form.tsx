@@ -90,6 +90,19 @@ export function LocationForm({
     });
     onOpenChange(false);
   };
+  
+  const handleStep = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const currentValue = form.getValues('numberOfFloors') || 0;
+    const nextValue = e.target.valueAsNumber;
+    
+    if (currentValue === 0 && nextValue > 0) {
+        form.setValue('numberOfFloors', 2);
+    } else if (currentValue === 2 && nextValue < 2) {
+        form.setValue('numberOfFloors', 0);
+    } else {
+        form.setValue('numberOfFloors', nextValue);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -123,7 +136,13 @@ export function LocationForm({
                 <FormItem>
                   <FormLabel>Number of Floors</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="e.g., 5" {...field} />
+                    <Input
+                      type="number"
+                      placeholder="e.g., 5"
+                      {...field}
+                      min="0"
+                      onChange={handleStep}
+                    />
                   </FormControl>
                   <p className="text-sm text-muted-foreground">
                     Use 0 for single-story or non-applicable locations. Use 2 or
