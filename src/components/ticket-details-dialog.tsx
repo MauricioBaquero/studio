@@ -225,7 +225,7 @@ export function TicketDetailsDialog({
           <DialogTitle>Ticket Details</DialogTitle>
           <DialogDescription>ID: {ticket.id}</DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto pr-6 -mr-6 grid gap-6 py-4">
+        <div className="flex-1 overflow-y-auto p-1 grid gap-6 py-4">
            <div className="space-y-2">
               <Label>Description</Label>
               <p className="text-sm text-muted-foreground p-4 border rounded-md bg-muted/50">
