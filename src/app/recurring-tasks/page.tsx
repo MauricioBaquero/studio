@@ -128,24 +128,42 @@ export default function RecurringTasksPage() {
       completedBy: currentUser.uid,
     });
 
-    // 2. Create a new one-off task to log the completion
-    const newTaskId = `T${Date.now()}`;
-    const newTaskRef = doc(firestore, 'tasks', newTaskId);
-    const newTaskData = {
-        id: newTaskId,
-        title: recurringTask.title,
+    // 2. Create a new one-off task to log the COMPLETION of the current task
+    const completedTaskId = `T${Date.now()}`;
+    const completedTaskRef = doc(firestore, 'tasks', completedTaskId);
+    const completedTaskData = {
+        id: completedTaskId,
+        title: `(Recurring) ${recurringTask.title}`,
         description: `Completed recurring task: ${recurringTask.title}`,
         categoryId: recurringTask.categoryId,
-        location: "N/A", 
+        location: "N/A", // Recurring tasks don't have locations yet
         locationId: null,
-        requestedCompletionDate: serverTime,
-        actualCompletionDate: serverTime,
+        requestedCompletionDate: now,
+        actualCompletionDate: now,
         status: "Completed",
         assignedToId: currentUser.uid,
-        approvedBy: currentUser.uid,
+        approvedBy: currentUser.uid, // Self-approved for recurring tasks
         createdAt: serverTime,
     };
-    batch.set(newTaskRef, newTaskData);
+    batch.set(completedTaskRef, completedTaskData);
+
+    // 3. Create a NEW future one-off task for the NEXT due date
+    const nextDueDate = getNextDueDate(updatedRecurringTask);
+    const futureTaskId = `T${Date.now() + 1}`; // Ensure unique ID
+    const futureTaskRef = doc(firestore, 'tasks', futureTaskId);
+    const futureTaskData = {
+        id: futureTaskId,
+        title: `(Recurring) ${recurringTask.title}`,
+        description: `Scheduled recurring task: ${recurringTask.title}`,
+        categoryId: recurringTask.categoryId,
+        location: "N/A",
+        locationId: null,
+        requestedCompletionDate: nextDueDate,
+        status: "Not Started",
+        assignedToId: null,
+        createdAt: serverTime,
+    };
+    batch.set(futureTaskRef, futureTaskData);
     
     batch.commit().catch(error => {
         console.error("Failed to complete recurring task:", error);
