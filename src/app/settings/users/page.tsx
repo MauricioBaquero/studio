@@ -45,7 +45,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { UserRoleForm } from './user-role-form';
+import { UserForm } from './user-form';
 
 const roleColors: Record<UserRole, BadgeProps['color']> = {
   Admin: 'purple',
@@ -158,7 +158,7 @@ export default function UsersPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleOpenForm(user)}>
-                          Edit Role
+                          Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-destructive"
@@ -176,7 +176,7 @@ export default function UsersPage() {
         </CardContent>
       </Card>
       {editingUser && (
-        <UserRoleForm
+        <UserForm
           open={isFormOpen}
           onOpenChange={handleCloseForm}
           user={editingUser}

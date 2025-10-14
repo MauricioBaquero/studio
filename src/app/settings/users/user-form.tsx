@@ -19,6 +19,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -29,30 +30,31 @@ import {
 import { Button } from '@/components/ui/button';
 import { User, USER_ROLES } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
-import { userRoleSchema } from '@/lib/schemas';
+import { userUpdateSchema } from '@/lib/schemas';
 import { useFirestore, updateDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { z } from 'zod';
 
-type UserRoleFormValues = z.infer<typeof userRoleSchema>;
+type UserFormValues = z.infer<typeof userUpdateSchema>;
 
-interface UserRoleFormProps {
+interface UserFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: User;
 }
 
-export function UserRoleForm({
+export function UserForm({
   open,
   onOpenChange,
   user,
-}: UserRoleFormProps) {
+}: UserFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  const form = useForm<UserRoleFormValues>({
-    resolver: zodResolver(userRoleSchema),
+  const form = useForm<UserFormValues>({
+    resolver: zodResolver(userUpdateSchema),
     defaultValues: {
+      name: '',
       role: 'Viewer',
     },
   });
@@ -60,20 +62,21 @@ export function UserRoleForm({
   useEffect(() => {
     if (user) {
       form.reset({
+        name: user.name,
         role: user.role,
       });
     }
   }, [user, form]);
 
-  const onSubmit = (data: UserRoleFormValues) => {
+  const onSubmit = (data: UserFormValues) => {
     if (!firestore) return;
 
     const userRef = doc(firestore, 'users', user.uid);
-    updateDocumentNonBlocking(userRef, { role: data.role });
+    updateDocumentNonBlocking(userRef, data);
 
     toast({
       title: 'Success!',
-      description: `${user.name}'s role has been updated to ${data.role}.`,
+      description: `${user.name}'s information has been updated.`,
     });
     onOpenChange(false);
   };
@@ -82,13 +85,26 @@ export function UserRoleForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit User Role</DialogTitle>
+          <DialogTitle>Edit User</DialogTitle>
           <DialogDescription>
-            Change the role for {user.name}.
+            Update the name and role for {user.name}.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., Jane Doe" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="role"
@@ -121,7 +137,7 @@ export function UserRoleForm({
               >
                 Cancel
               </Button>
-              <Button type="submit">Update Role</Button>
+              <Button type="submit">Update User</Button>
             </DialogFooter>
           </form>
         </Form>

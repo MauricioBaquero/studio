@@ -21,7 +21,8 @@ export const categorySchema = z.object({
   color: z.string().optional(),
 });
 
-export const userRoleSchema = z.object({
+export const userUpdateSchema = z.object({
+  name: z.string().min(3, "Name must be at least 3 characters."),
   role: z.enum(["Admin", "Staff", "Viewer"]),
 });
 
