@@ -59,10 +59,19 @@ export default function RecurringTasksPage() {
     useCollection<User>(usersQuery);
 
   const [allTasks, setAllTasks] = useState<RecurringTask[]>([]);
+  const [completedTodayIds, setCompletedTodayIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (initialTasks) {
+      const initialCompleted = new Set<string>();
+      initialTasks.forEach(task => {
+        const lastCompletedDate = task.lastCompleted instanceof Timestamp ? task.lastCompleted.toDate() : task.lastCompleted;
+        if(lastCompletedDate && isToday(lastCompletedDate)) {
+          initialCompleted.add(task.id);
+        }
+      });
       setAllTasks(initialTasks);
+      setCompletedTodayIds(initialCompleted);
     }
   }, [initialTasks]);
 
@@ -75,20 +84,21 @@ export default function RecurringTasksPage() {
     const stillPending: RecurringTask[] = [];
 
     allTasks.forEach(task => {
-        const lastCompletedDate = task.lastCompleted instanceof Timestamp ? task.lastCompleted.toDate() : task.lastCompleted;
-        if (lastCompletedDate && isToday(lastCompletedDate)) {
+        if (completedTodayIds.has(task.id)) {
+           const lastCompletedDate = task.lastCompleted instanceof Timestamp ? task.lastCompleted.toDate() : task.lastCompleted;
            const completingUser = users.find(u => u.uid === task.completedBy);
-           if(completingUser) {
+           if(completingUser && lastCompletedDate) {
              todayCompleted.push({ ...task, completedBy: completingUser, completedAt: lastCompletedDate });
            }
         }
+        // ALL tasks are added to pending, but their due date calculation will differ
         stillPending.push(task);
     });
 
     const sortedPending = stillPending.sort((a,b) => getNextDueDate(a).getTime() - getNextDueDate(b).getTime());
 
     return { pendingTasks: sortedPending, completedTasks: todayCompleted };
-  }, [allTasks, users]);
+  }, [allTasks, users, completedTodayIds]);
 
 
   const getCategoryById = (id: string) => categories?.find(c => c.id === id);
@@ -117,6 +127,7 @@ export default function RecurringTasksPage() {
     setAllTasks(prevTasks => 
       prevTasks.map(t => t.id === recurringTask.id ? updatedRecurringTask : t)
     );
+    setCompletedTodayIds(prevIds => new Set(prevIds).add(recurringTask.id));
 
     // Perform non-blocking database updates
     const batch = writeBatch(firestore);
@@ -171,6 +182,11 @@ export default function RecurringTasksPage() {
         setAllTasks(prevTasks => 
           prevTasks.map(t => t.id === recurringTask.id ? recurringTask : t)
         );
+        setCompletedTodayIds(prevIds => {
+            const newIds = new Set(prevIds);
+            newIds.delete(recurringTask.id);
+            return newIds;
+        });
     });
   };
 
@@ -211,20 +227,18 @@ export default function RecurringTasksPage() {
                     const category = getCategoryById(task.categoryId);
                     const color = getCategoryColor(task.categoryId);
                     const nextDueDate = getNextDueDate(task);
-                    const isTaskOverdue = isPast(nextDueDate) && !isToday(nextDueDate);
-
-                    const lastCompletedDate = task.lastCompleted instanceof Timestamp ? task.lastCompleted.toDate() : task.lastCompleted;
-                    const isCompletedToday = lastCompletedDate && isToday(lastCompletedDate);
+                    const isTaskOverdue = isPast(nextDueDate) && !isToday(startOfDay(nextDueDate));
+                    const isCompleted = completedTodayIds.has(task.id);
 
                     return (
-                      <TableRow key={task.id}>
+                      <TableRow key={task.id} className={cn(isCompleted && "text-muted-foreground line-through")}>
                         <TableCell className="text-center">
                           <Checkbox
                             id={`task-${task.id}`}
                             aria-label={`Complete ${task.title}`}
                             onCheckedChange={() => handleTaskCheck(task)}
-                            disabled={isCompletedToday}
-                            checked={isCompletedToday}
+                            disabled={isCompleted}
+                            checked={isCompleted}
                           />
                         </TableCell>
                         <TableCell className="font-medium">
@@ -237,9 +251,9 @@ export default function RecurringTasksPage() {
                             '-'
                           )}
                         </TableCell>
-                        <TableCell className={cn(isTaskOverdue && "text-destructive font-semibold")}>
+                        <TableCell className={cn(isTaskOverdue && !isCompleted && "text-destructive font-semibold")}>
                           {format(nextDueDate, 'PPP')}
-                          {isTaskOverdue && <span className="ml-2">(Overdue)</span>}
+                          {isTaskOverdue && !isCompleted && <span className="ml-2">(Overdue)</span>}
                         </TableCell>
                       </TableRow>
                     );
@@ -247,7 +261,7 @@ export default function RecurringTasksPage() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={4} className="h-24 text-center">
-                      All tasks completed!
+                      No scheduled maintenance tasks.
                     </TableCell>
                   </TableRow>
                 )}
@@ -308,3 +322,5 @@ export default function RecurringTasksPage() {
     </div>
   );
 }
+
+    
