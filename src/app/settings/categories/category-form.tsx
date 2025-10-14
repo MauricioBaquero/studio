@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -31,7 +32,6 @@ import { Button } from '@/components/ui/button';
 import { Category, CATEGORY_COLORS } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { categorySchema } from '@/lib/schemas';
 import {
   useFirestore,
   addDocumentNonBlocking,
@@ -40,7 +40,13 @@ import {
 import { collection, doc } from 'firebase/firestore';
 import type { z } from 'zod';
 
-type CategoryFormValues = z.infer<typeof categorySchema>;
+const formSchema = z.object({
+  name: z.string().min(3, "Category name must be at least 3 characters."),
+  parentId: z.string().nullable(),
+  color: z.string().optional(),
+});
+
+type CategoryFormValues = z.infer<typeof formSchema>;
 
 interface CategoryFormProps {
   open: boolean;
@@ -60,7 +66,7 @@ export function CategoryForm({
   const isEditMode = !!category;
 
   const form = useForm<CategoryFormValues>({
-    resolver: zodResolver(categorySchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       parentId: null,

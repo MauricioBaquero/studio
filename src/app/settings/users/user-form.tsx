@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -30,12 +31,17 @@ import {
 import { Button } from '@/components/ui/button';
 import { User, USER_ROLES } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
-import { userUpdateSchema } from '@/lib/schemas';
 import { useFirestore, updateDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import type { z } from 'zod';
+import { z } from 'zod';
 
-type UserFormValues = z.infer<typeof userUpdateSchema>;
+
+const formSchema = z.object({
+  name: z.string().min(3, "Name must be at least 3 characters."),
+  role: z.enum(["Admin", "Staff", "Viewer"]),
+});
+
+type UserFormValues = z.infer<typeof formSchema>;
 
 interface UserFormProps {
   open: boolean;
@@ -52,7 +58,7 @@ export function UserForm({
   const firestore = useFirestore();
 
   const form = useForm<UserFormValues>({
-    resolver: zodResolver(userUpdateSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       role: 'Viewer',

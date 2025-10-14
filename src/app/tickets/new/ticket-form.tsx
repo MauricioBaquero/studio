@@ -8,7 +8,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { addDays } from "date-fns";
-import { ticketSchema } from "@/lib/schemas";
 import { Category, Location } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -43,6 +42,19 @@ interface TicketFormProps {
 
 const MINIMUM_NOTICE_DAYS = 7;
 
+const formSchema = z.object({
+  categoryId: z.string().min(1, "Category is required."),
+  subcategoryId: z.string().min(1, "Subcategory is required."),
+  description: z.string().min(10, "Description must be at least 10 characters.").max(1000),
+  locationId: z.string().min(1, "Location is required."),
+  floor: z.string().optional(),
+  additionalDetails: z.string().optional(),
+  requestedCompletionDate: z.date({
+    required_error: "A completion date is required.",
+  }),
+});
+
+
 export function TicketForm({ parentCategories, allSubcategories, locations }: TicketFormProps) {
   const { toast } = useToast();
   const router = useRouter();
@@ -51,8 +63,8 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<z.infer<typeof ticketSchema>>({
-    resolver: zodResolver(ticketSchema),
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       categoryId: "",
       subcategoryId: "",
@@ -84,7 +96,7 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
   }, [selectedLocation]);
 
 
-  async function onSubmit(values: z.infer<typeof ticketSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!firestore) {
         toast({
             title: "Error",

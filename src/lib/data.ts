@@ -1,73 +1,88 @@
 
+
 import { addDays, addWeeks, addMonths, setDay, setDate, nextDay, startOfDay, isAfter, isSameDay, toDate as fnsToDate } from "date-fns";
 import type { Timestamp } from 'firebase/firestore';
+import { z } from "zod";
 
-export type UserRole = "Admin" | "Staff" | "Viewer";
-export const USER_ROLES: UserRole[] = ["Admin", "Staff", "Viewer"];
+export const USER_ROLES = ["Admin", "Staff", "Viewer"] as const;
+export const TICKET_STATUSES = ["Not Started", "In Progress", "Pending Review", "Completed"] as const;
+export const RECURRING_FREQUENCIES = ["Daily", "Weekly", "Monthly"] as const;
+export const CATEGORY_COLORS = ["red", "orange", "yellow", "green", "blue", "purple", "gray"] as const;
 
-export type TicketStatus = "Not Started" | "In Progress" | "Pending Review" | "Completed";
-export const TICKET_STATUSES: TicketStatus[] = ["Not Started", "In Progress", "Pending Review", "Completed"];
-
-export type RecurringFrequency = "Daily" | "Weekly" | "Monthly";
-export const RECURRING_FREQUENCIES: RecurringFrequency[] = ["Daily", "Weekly", "Monthly"];
-
-export const CATEGORY_COLORS = ["red", "orange", "yellow", "green", "blue", "purple", "gray"];
+export type UserRole = (typeof USER_ROLES)[number];
+export type TicketStatus = (typeof TICKET_STATUSES)[number];
+export type RecurringFrequency = (typeof RECURRİNG_FREQUENCIES)[number];
 export type CategoryColor = (typeof CATEGORY_COLORS)[number];
 
-export interface User {
-  uid: string;
-  name: string;
-  email: string;
-  role: UserRole;
-}
+// Schemas and Types
+export const userSchema = z.object({
+  uid: z.string(),
+  name: z.string(),
+  email: z.string().email(),
+  role: z.enum(USER_ROLES),
+});
+export type User = z.infer<typeof userSchema>;
 
-export interface Category {
-  id: string;
-  name:string;
-  parentId: string | null;
-  color?: CategoryColor;
-}
+export const categorySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  parentId: z.string().nullable(),
+  color: z.enum(CATEGORY_COLORS).optional(),
+});
+export type Category = z.infer<typeof categorySchema>;
 
-export interface Location {
-  id: string;
-  name: string;
-  numberOfFloors?: number;
-}
+export const locationSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    numberOfFloors: z.number().optional(),
+});
+export type Location = z.infer<typeof locationSchema>;
 
-export interface Comment {
-    userId: string;
-    userName: string;
-    text: string;
-    createdAt: Timestamp | Date;
-}
 
-export interface Ticket {
-  id: string;
-  title: string;
-  description: string;
-  status: TicketStatus;
-  location: string;
-  categoryId: string;
-  assignedToId: string | null;
-  requestedCompletionDate: Date | Timestamp;
-  createdAt: Date | Timestamp;
-  completionPhotoUrl?: string | null;
-  approvedBy?: string | null;
-  actualCompletionDate?: Date | Timestamp;
-}
+const timestampSchema = z.custom<Timestamp | Date>((data) => data instanceof Date || (data as Timestamp)?.toDate, {
+  message: "Invalid date or timestamp",
+});
 
-export interface RecurringTask {
-  id: string;
-  title: string;
-  categoryId: string;
-  locationId: string;
-  frequency: RecurringFrequency;
-  lastCompleted: (Date | Timestamp)[];
-  completedBy?: string;
-  dayOfWeek?: number; // Sunday - Saturday : 0 - 6
-  weekOfMonth?: number; // 1-4
-}
+export const commentSchema = z.object({
+    userId: z.string(),
+    userName: z.string(),
+    text: z.string(),
+    createdAt: timestampSchema,
+});
+export type Comment = z.infer<typeof commentSchema>;
 
+export const ticketSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string(),
+  status: z.enum(TICKET_STATUSES),
+  location: z.string(),
+  locationId: z.string(),
+  categoryId: z.string(),
+  assignedToId: z.string().nullable(),
+  requestedCompletionDate: timestampSchema,
+  createdAt: timestampSchema,
+  completionPhotoUrl: z.string().url().nullable().optional(),
+  approvedBy: z.string().nullable().optional(),
+  actualCompletionDate: timestampSchema.optional().nullable(),
+});
+export type Ticket = z.infer<typeof ticketSchema>;
+
+export const recurringTaskSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  categoryId: z.string(),
+  locationId: z.string(),
+  frequency: z.enum(RECURRING_FREQUENCIES),
+  lastCompleted: z.array(timestampSchema),
+  completedBy: z.string().optional(),
+  dayOfWeek: z.number().optional(),
+  weekOfMonth: z.number().optional(),
+});
+export type RecurringTask = z.infer<typeof recurringTaskSchema>;
+
+
+// Data Accessor Functions
 export const toDate = (date: Date | Timestamp): Date => {
     if (date instanceof Date) {
         return date;
@@ -75,7 +90,6 @@ export const toDate = (date: Date | Timestamp): Date => {
     return date.toDate();
 }
 
-// Data Accessor Functions
 export const getCategoryColor = (categoryId: string, categories: Category[]): CategoryColor | 'gray' => {
     const getCategoryById = (id: string) => categories.find(c => c.id === id);
     let category = getCategoryById(categoryId);
@@ -84,7 +98,6 @@ export const getCategoryColor = (categoryId: string, categories: Category[]): Ca
     }
     return category?.color || 'gray';
 }
-
 
 export const getNextDueDate = (task: RecurringTask): Date => {
   const today = startOfDay(new Date());

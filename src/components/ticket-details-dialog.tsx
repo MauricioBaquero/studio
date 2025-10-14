@@ -9,6 +9,7 @@ import {
   TicketStatus,
   User,
   Category,
+  toDate,
 } from '@/lib/data';
 import {
   Dialog,
@@ -31,7 +32,7 @@ import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, X, Trash2 } from 'lucide-react';
 import { useFirestore, useStorage, updateDocumentNonBlocking, useUser, deleteDocumentNonBlocking } from '@/firebase';
-import { doc, arrayUnion, serverTimestamp } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 import {
   AlertDialog,
@@ -44,7 +45,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { format, toDate } from 'date-fns';
+import { format } from 'date-fns';
 
 interface TicketDetailsDialogProps {
   open: boolean;
@@ -52,8 +53,6 @@ interface TicketDetailsDialogProps {
   ticket: Ticket;
   users: User[];
   categories: Category[];
-  onUpdate: (ticket: Ticket) => void;
-  onDelete: (ticketId: string) => void;
 }
 
 export function TicketDetailsDialog({
@@ -62,8 +61,6 @@ export function TicketDetailsDialog({
   ticket,
   users,
   categories,
-  onUpdate,
-  onDelete,
 }: TicketDetailsDialogProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -161,18 +158,6 @@ export function TicketDetailsDialog({
       const ticketRef = doc(firestore, 'tasks', ticket.id);
       updateDocumentNonBlocking(ticketRef, dataForDb);
 
-      const updatedTicketData: Partial<Ticket> = {
-          status: finalStatus,
-          completionPhotoUrl: photoUrl,
-          assignedToId: assignedTo
-      };
-      if (finalStatus === 'Completed') {
-        updatedTicketData.approvedBy = currentUser.uid;
-      }
-      const newTicketState = { ...ticket, ...updatedTicketData };
-
-      onUpdate(newTicketState);
-
       toast({
           title: "Ticket Updated",
           description: "Your changes have been saved."
@@ -200,7 +185,6 @@ export function TicketDetailsDialog({
         title: "Ticket Deleted",
         description: `Ticket ${ticket.id} has been permanently deleted.`
     });
-    onDelete(ticket.id);
     onOpenChange(false);
   }
   

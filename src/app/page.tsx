@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Ticket, User, Category, Location } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
@@ -15,7 +15,6 @@ import { collection, query, Timestamp } from 'firebase/firestore';
 export default function TaskBoardPage() {
   const firestore = useFirestore();
   const { user: currentUser } = useUser();
-  const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [filters, setFilters] = useState<FilterValues>({
     assignee: 'all',
     location: 'all',
@@ -48,18 +47,12 @@ export default function TaskBoardPage() {
   const { data: categories, isLoading: isLoadingCategories } = useCollection<Category>(categoriesQuery);
   const { data: locations, isLoading: isLoadingLocations } = useCollection<Location>(locationsQuery);
 
-  useEffect(() => {
-    if (tickets) {
-      setAllTickets(tickets);
-    }
-  }, [tickets]);
-  
   const parentCategories = useMemo(() => categories?.filter(c => !c.parentId) || [], [categories]);
   
   const filteredTickets = useMemo(() => {
-    if (!allTickets || !currentUser) return [];
+    if (!tickets || !currentUser) return [];
 
-    return allTickets.filter(ticket => {
+    return tickets.filter(ticket => {
       const requestedCompletionDate = ticket.requestedCompletionDate instanceof Timestamp 
         ? ticket.requestedCompletionDate.toDate() 
         : ticket.requestedCompletionDate;
@@ -89,16 +82,8 @@ export default function TaskBoardPage() {
 
       return true;
     });
-  }, [allTickets, filters, currentUser, categories]);
+  }, [tickets, filters, currentUser, categories]);
 
-  const handleTicketUpdate = (updatedTicket: Ticket) => {
-    setAllTickets(prev => prev.map(t => t.id === updatedTicket.id ? updatedTicket : t));
-  };
-  
-  const handleTicketDelete = (ticketId: string) => {
-    setAllTickets(prev => prev.filter(t => t.id !== ticketId));
-  }
-  
   const isLoading = isLoadingTickets || isLoadingUsers || isLoadingCategories || isLoadingLocations;
 
   return (
@@ -123,11 +108,9 @@ export default function TaskBoardPage() {
       
       {!isLoading && tickets && users && categories && (
           <TicketBoard 
-            initialTickets={filteredTickets} 
+            tickets={filteredTickets} 
             users={users}
             categories={categories}
-            onTicketUpdate={handleTicketUpdate}
-            onTicketDelete={handleTicketDelete}
           />
       )}
       

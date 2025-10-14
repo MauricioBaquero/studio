@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -23,16 +24,28 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Location } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
-import { locationSchema } from '@/lib/schemas';
 import {
   useFirestore,
   addDocumentNonBlocking,
   updateDocumentNonBlocking,
 } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
-import type { z } from 'zod';
+import { z } from 'zod';
 
-type LocationFormValues = z.infer<typeof locationSchema>;
+const formSchema = z.object({
+  name: z.string().min(3, "Location name must be at least 3 characters."),
+  numberOfFloors: z.coerce
+    .number()
+    .int()
+    .min(0, "Number of floors cannot be negative.")
+    .refine(value => value !== 1, {
+      message: "Use 0 for single-story buildings. Enter 2 or more for multi-story buildings.",
+    })
+    .optional(),
+});
+
+
+type LocationFormValues = z.infer<typeof formSchema>;
 
 interface LocationFormProps {
   open: boolean;
@@ -50,7 +63,7 @@ export function LocationForm({
   const isEditMode = !!location;
 
   const form = useForm<LocationFormValues>({
-    resolver: zodResolver(locationSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       numberOfFloors: 0,

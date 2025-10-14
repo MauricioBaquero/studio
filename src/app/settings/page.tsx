@@ -1,10 +1,10 @@
+
 'use client';
 
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { settingsSchema } from '@/lib/schemas';
-import type { z } from 'zod';
+import { z } from 'zod';
 
 import {
   Card,
@@ -25,6 +25,11 @@ import {
 } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+
+const settingsSchema = z.object({
+  completionDateRange: z.coerce.number().min(1, "Minimum date range must be at least 1 day.").max(30),
+});
+
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
 

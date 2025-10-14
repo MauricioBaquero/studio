@@ -1,12 +1,13 @@
+
 "use server";
 
 import { z } from "zod";
-import { ticketSchema } from "./schemas";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { getLocationById } from "./data";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { firestore } from "@/firebase/server";
+import { firestore } from "@/firebase/index";
+import { ticketSchema } from "./data";
+import { getLocationById } from "./data";
 
 export async function createTicketAction(values: z.infer<typeof ticketSchema>) {
   if (!firestore) {

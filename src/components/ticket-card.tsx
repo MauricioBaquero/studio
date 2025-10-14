@@ -6,6 +6,7 @@ import {
   Ticket,
   User,
   Category,
+  toDate,
 } from '@/lib/data';
 import {
   Card,
@@ -17,7 +18,7 @@ import {
 } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Calendar, CheckCircle, MapPin, Tag } from 'lucide-react';
-import { format, toDate } from 'date-fns';
+import { format } from 'date-fns';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -41,25 +42,18 @@ interface TicketCardProps {
   ticket: Ticket;
   users: User[];
   categories: Category[];
-  onUpdate: (ticket: Ticket) => void;
-  onDelete: (ticketId: string) => void;
 }
 
-export default function TicketCard({ ticket: initialTicket, users, categories, onUpdate, onDelete }: TicketCardProps) {
+export default function TicketCard({ ticket, users, categories }: TicketCardProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user: currentUser } = useUser();
-  const [ticket, setTicket] = useState(initialTicket);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [claimSaying, setClaimSaying] = useState('');
 
   useEffect(() => {
     setClaimSaying(claimSayings[Math.floor(Math.random() * claimSayings.length)]);
   }, []);
-  
-  useEffect(() => {
-    setTicket(initialTicket);
-  }, [initialTicket]);
 
   const getUserById = (id: string | null) => users.find(u => u.uid === id);
   const getCategoryById = (id: string) => categories.find(c => c.id === id);
@@ -90,9 +84,6 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
         status: 'In Progress' as const
     };
     updateDocumentNonBlocking(ticketRef, updatedTicketData);
-    const updatedTicket = { ...ticket, ...updatedTicketData };
-    setTicket(updatedTicket);
-    onUpdate(updatedTicket);
     toast({
         title: "Task Claimed!",
         description: `You are now assigned to "${ticket.title}".`
@@ -106,9 +97,6 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
       status: 'Pending Review' as const,
     };
     updateDocumentNonBlocking(ticketRef, updatedTicketData);
-    const updatedTicket = { ...ticket, ...updatedTicketData };
-    setTicket(updatedTicket);
-    onUpdate(updatedTicket);
     toast({
       title: 'Task Ready for Review!',
       description: `"${ticket.title}" is now pending review.`,
@@ -124,14 +112,7 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
     setIsDialogOpen(true);
   }
 
-  const handleTicketUpdate = (updatedTicket: Ticket) => {
-    setTicket(updatedTicket);
-    onUpdate(updatedTicket);
-  }
-
-  const requestedCompletionDate = ticket.requestedCompletionDate instanceof Timestamp
-    ? ticket.requestedCompletionDate.toDate()
-    : toDate(ticket.requestedCompletionDate);
+  const requestedCompletionDate = toDate(ticket.requestedCompletionDate);
 
   const canClaimTask = !isViewer && (isAdmin || (isStaff && !ticket.assignedToId));
   const canMarkForReview = (isStaff || isAdmin) && isAssignedToCurrentUser;
@@ -205,8 +186,6 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
             open={isDialogOpen}
             onOpenChange={setIsDialogOpen}
             ticket={ticket}
-            onUpdate={handleTicketUpdate}
-            onDelete={onDelete}
             users={users}
             categories={categories}
         />
