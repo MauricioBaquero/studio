@@ -107,25 +107,9 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     const unsubscribe = onAuthStateChanged(
       auth,
       async (firebaseUser) => {
-        if (firebaseUser) {
-          // User is signed in. Check if they have a document in Firestore.
-          const userRef = doc(firestore, 'users', firebaseUser.uid);
-          const userSnap = await getDoc(userRef);
-
-          if (!userSnap.exists()) {
-            // New user! Create their document in Firestore with a default role.
-            try {
-              await setDoc(userRef, {
-                uid: firebaseUser.uid,
-                name: firebaseUser.displayName || firebaseUser.email || 'New User',
-                email: firebaseUser.email,
-                role: 'Viewer', // Assign a default role
-              });
-            } catch (error) {
-              console.error("Error creating user document:", error);
-            }
-          }
-        }
+        // We no longer automatically create a user document.
+        // The user must be created in the backend (e.g., Firebase Console)
+        // for them to have a profile and corresponding role.
         setAuthState({ user: firebaseUser, isUserLoading: false, userError: null });
       },
       (error) => setAuthState({ user: null, isUserLoading: false, userError: error })
