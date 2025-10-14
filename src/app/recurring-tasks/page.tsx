@@ -27,7 +27,6 @@ import {
   query,
   doc,
   arrayUnion,
-  writeBatch,
   Timestamp,
 } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
@@ -73,16 +72,18 @@ export default function RecurringTasksPage() {
       const allCompleted: CompletedTask[] = [];
       recurringTasks.forEach(task => {
         if (task.lastCompleted && task.lastCompleted.length > 0) {
-            const latestCompletion = toDate(task.lastCompleted[task.lastCompleted.length - 1]);
-            const completedByUser = users?.find(u => u.uid === task.completedBy);
-            if (completedByUser) {
-                allCompleted.push({
-                    id: task.id,
-                    title: task.title,
-                    completedAt: latestCompletion,
-                    completedBy: completedByUser
-                });
-            }
+            task.lastCompleted.forEach(completion => {
+                const latestCompletion = toDate(completion);
+                const completedByUser = users?.find(u => u.uid === task.completedBy);
+                if (completedByUser) {
+                    allCompleted.push({
+                        id: task.id,
+                        title: task.title,
+                        completedAt: latestCompletion,
+                        completedBy: completedByUser
+                    });
+                }
+            })
         }
       });
       setCompletedTasks(allCompleted.sort((a,b) => b.completedAt.getTime() - a.completedAt.getTime()));
@@ -95,11 +96,19 @@ export default function RecurringTasksPage() {
     }
     return allTasks
       .filter(task => {
+        const nextDueDate = getNextDueDate(task);
         const lastCompletion =
           task.lastCompleted && task.lastCompleted.length > 0
             ? toDate(task.lastCompleted[task.lastCompleted.length - 1] as Timestamp)
             : null;
-        return !(lastCompletion && isToday(lastCompletion));
+        
+        // If it was completed today, we don't show it in the pending list for today.
+        // It will show up again tomorrow (or whenever its next due date is).
+        if (lastCompletion && isToday(lastCompletion)) {
+            return false;
+        }
+
+        return true;
       })
       .sort(
         (a, b) => getNextDueDate(a).getTime() - getNextDueDate(b).getTime()
@@ -126,12 +135,13 @@ export default function RecurringTasksPage() {
 
     if (user) {
         const recurringTaskRef = doc(firestore, 'recurringTasks', task.id);
-        const updatedLastCompleted = (Array.isArray(task.lastCompleted) ? task.lastCompleted : []).concat(now);
         
         updateDocumentNonBlocking(recurringTaskRef, {
             lastCompleted: arrayUnion(now),
             completedBy: currentUser.uid,
         });
+
+        const updatedLastCompleted = (Array.isArray(task.lastCompleted) ? task.lastCompleted : []).concat(now);
 
         const optimisticCompletedTask: CompletedTask = {
             id: task.id,
