@@ -1,0 +1,6 @@
+# See https://www.robotstxt.org/robotstxt.html for documentation on how to use the robots.txt file
+#
+# This file is for preventing web crawlers from indexing your site.
+
+User-agent: *
+Disallow: /
