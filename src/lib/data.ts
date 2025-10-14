@@ -45,6 +45,7 @@ export interface Ticket {
   requestedCompletionDate: Date | Timestamp;
   createdAt: Date | Timestamp;
   completionPhotoUrl?: string | null;
+  approvedBy?: string | null;
 }
 
 export interface RecurringTask {

@@ -72,6 +72,7 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
   }
 
   const assignedUser = getUserById(ticket.assignedToId);
+  const approver = getUserById(ticket.approvedBy || null);
   const category = getCategoryById(ticket.categoryId);
   const parentCategory = category?.parentId ? getCategoryById(category.parentId) : null;
   const color = getCategoryColor(ticket.categoryId);
@@ -176,7 +177,11 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
             ) : (
                 <span className="text-sm text-muted-foreground italic">Unassigned</span>
             )}
-
+             {ticket.status === 'Completed' && approver && (
+              <div className="text-xs text-muted-foreground">
+                Approved by {approver.name}
+              </div>
+            )}
             {ticket.status === 'Not Started' && !ticket.assignedToId && canClaimTask && (
                 <Button variant="success" size="sm" onClick={handleClaimTask}>
                    {claimSaying}

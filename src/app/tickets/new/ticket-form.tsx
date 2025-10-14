@@ -110,9 +110,17 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
 
     const ticketId = 'T' + Date.now();
 
+    const generateTitle = (description: string) => {
+        const words = description.split(' ');
+        if (words.length > 5) {
+            return words.slice(0, 5).join(' ') + '...';
+        }
+        return description;
+    }
+
     const ticketData = {
         id: ticketId,
-        title: `New Ticket: ${values.description.substring(0, 30)}...`, // Generate a simple title
+        title: generateTitle(values.description),
         description: values.description,
         categoryId: values.subcategoryId, // We save the subcategory ID
         location: fullLocation,

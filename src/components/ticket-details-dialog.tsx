@@ -126,7 +126,7 @@ export function TicketDetailsDialog({
 
 
   const handleUpdate = async (newStatus?: TicketStatus) => {
-    if (!firestore) return;
+    if (!firestore || !currentUser) return;
     setIsSaving(true);
     let photoUrl: string | null = ticket.completionPhotoUrl || null;
 
@@ -143,8 +143,12 @@ export function TicketDetailsDialog({
       
       const updatedTicketData: Partial<Ticket> = {
           status: finalStatus,
-          completionPhotoUrl: photoUrl,
+          completionPhotoUrl: photoUrl === undefined ? null : photoUrl,
       };
+
+      if (finalStatus === 'Completed') {
+        updatedTicketData.approvedBy = currentUser.uid;
+      }
       
       if (comments) {
           console.log(`Comment added for ticket ${ticket.id}: ${comments}`);
@@ -223,7 +227,7 @@ export function TicketDetailsDialog({
                  <Select 
                     value={currentStatus} 
                     onValueChange={(value) => setCurrentStatus(value as TicketStatus)}
-                    disabled={isSaving || (!isAdmin && ticket.status === 'Completed')}
+                    disabled={isSaving || (!isAdmin && (ticket.status === 'Completed' || ticket.status === 'Pending Review'))}
                 >
                     <SelectTrigger className="w-full">
                         <SelectValue placeholder="Set status" />
