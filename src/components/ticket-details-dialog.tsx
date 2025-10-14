@@ -157,7 +157,7 @@ export function TicketDetailsDialog({
       
       const dataForDb: Partial<Ticket> = {
           status: finalStatus,
-          completionPhotoUrl: photoUrl !== undefined ? photoUrl : null,
+          completionPhotoUrl: photoUrl,
       };
 
       if (finalStatus === 'Completed') {
@@ -170,7 +170,7 @@ export function TicketDetailsDialog({
       // Optimistic update for UI
       const updatedTicketData: Partial<Ticket> = {
           status: finalStatus,
-          completionPhotoUrl: photoUrl !== undefined ? photoUrl : null,
+          completionPhotoUrl: photoUrl,
       };
       if (finalStatus === 'Completed') {
         updatedTicketData.approvedBy = currentUser.uid;
@@ -253,6 +253,7 @@ export function TicketDetailsDialog({
   const isAssignedToCurrentUser = ticket.assignedToId === currentUser?.uid;
   
   const canInteractWithForm = isAdmin || (isStaff && (isAssignedToCurrentUser || !ticket.assignedToId));
+  const canComment = isAdmin || isStaff;
 
 
   return (
@@ -351,24 +352,25 @@ export function TicketDetailsDialog({
 
             <div className="space-y-4">
                 <h4 className="font-medium text-muted-foreground">Comments</h4>
-                <div className="flex items-start gap-2">
-                    <Textarea 
-                        id="comments" 
-                        placeholder="Add any relevant comments..." 
-                        value={newCommentText}
-                        onChange={(e) => setNewCommentText(e.target.value)}
-                        disabled={isSaving || isViewer || isSendingComment}
-                        className="flex-1"
-                    />
-                    <Button onClick={handleSendComment} disabled={isSendingComment || !newCommentText.trim()} size="icon">
-                        {isSendingComment ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                        <span className="sr-only">Send Comment</span>
-                    </Button>
-                </div>
+                {canComment && (
+                    <div className="flex items-start gap-2">
+                        <Textarea 
+                            id="comments" 
+                            placeholder="Add any relevant comments..." 
+                            value={newCommentText}
+                            onChange={(e) => setNewCommentText(e.target.value)}
+                            disabled={isSaving || isSendingComment}
+                            className="flex-1"
+                        />
+                        <Button onClick={handleSendComment} disabled={isSendingComment || !newCommentText.trim()} size="icon">
+                            {isSendingComment ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                            <span className="sr-only">Send Comment</span>
+                        </Button>
+                    </div>
+                )}
                 <div className="space-y-4">
                     {sortedComments.map((comment, index) => {
                          const createdAt = comment.createdAt instanceof Timestamp ? comment.createdAt.toDate() : comment.createdAt;
-                         const user = getUserById(comment.userId);
                          return (
                             <div key={index} className="flex items-start gap-3">
                                 <Avatar className="h-8 w-8">
@@ -439,5 +441,7 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
+
+    
 
     
