@@ -60,6 +60,7 @@ export interface RecurringTask {
   id: string;
   title: string;
   categoryId: string;
+  locationId: string;
   frequency: RecurringFrequency;
   lastCompleted: (Date | Timestamp)[];
   completedBy?: string;

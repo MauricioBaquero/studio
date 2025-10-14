@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { RecurringTask, Category, User, getNextDueDate, toDate } from '@/lib/data';
+import { RecurringTask, Category, User, getNextDueDate, toDate, Location } from '@/lib/data';
 import {
   Table,
   TableBody,
@@ -64,6 +64,13 @@ export default function RecurringTasksPage() {
   );
   const { data: users, isLoading: isLoadingUsers } =
     useCollection<User>(usersQuery);
+
+  const locationsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'locations')) : null),
+    [firestore]
+  );
+  const { data: locations, isLoading: isLoadingLocations } =
+    useCollection<Location>(locationsQuery);
   
   useEffect(() => {
     if (recurringTasks) {
@@ -118,6 +125,8 @@ export default function RecurringTasksPage() {
 
   const getCategoryById = (id: string) => categories?.find(c => c.id === id);
   const getUserById = (id: string | null) => users?.find(u => u.uid === id);
+  const getLocationById = (id: string | null) => locations?.find(l => l.id === id);
+
 
   const getCategoryColor = (categoryId: string) => {
     let category = getCategoryById(categoryId);
@@ -156,7 +165,7 @@ export default function RecurringTasksPage() {
     }
   };
 
-  const isLoading = isLoadingRecurringTasks || isLoadingCategories || isLoadingUsers;
+  const isLoading = isLoadingRecurringTasks || isLoadingCategories || isLoadingUsers || isLoadingLocations;
 
   if (isLoading) {
     return (
@@ -184,6 +193,7 @@ export default function RecurringTasksPage() {
                   <TableHead className="w-[50px]"></TableHead>
                   <TableHead>Task</TableHead>
                   <TableHead>Category</TableHead>
+                  <TableHead>Location</TableHead>
                   <TableHead>Next Due Date</TableHead>
                 </TableRow>
               </TableHeader>
@@ -191,6 +201,7 @@ export default function RecurringTasksPage() {
                 {pendingTasks.length > 0 ? (
                   pendingTasks.map(task => {
                     const category = getCategoryById(task.categoryId);
+                    const location = getLocationById(task.locationId);
                     const color = getCategoryColor(task.categoryId);
                     const nextDueDate = getNextDueDate(task);
                     const isTaskOverdue =
@@ -215,6 +226,9 @@ export default function RecurringTasksPage() {
                             '-'
                           )}
                         </TableCell>
+                        <TableCell>
+                          {location?.name || '-'}
+                        </TableCell>
                         <TableCell
                           className={cn(
                             isTaskOverdue && 'text-destructive font-semibold'
@@ -230,7 +244,7 @@ export default function RecurringTasksPage() {
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">
+                    <TableCell colSpan={5} className="h-24 text-center">
                       All recurring tasks for today are complete!
                     </TableCell>
                   </TableRow>
@@ -284,4 +298,3 @@ export default function RecurringTasksPage() {
     </div>
   );
 }
-

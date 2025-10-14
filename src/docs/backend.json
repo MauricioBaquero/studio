@@ -124,6 +124,10 @@
           "type": "string",
           "description": "Reference to Category."
         },
+        "locationId": {
+          "type": "string",
+          "description": "Reference to Location."
+        },
         "frequency": {
           "type": "string",
           "enum": [
@@ -153,6 +157,7 @@
       "required": [
         "title",
         "categoryId",
+        "locationId",
         "frequency"
       ]
     },

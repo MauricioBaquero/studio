@@ -32,6 +32,7 @@ import {
 import { Button } from '@/components/ui/button';
 import {
   Category,
+  Location,
   RECURRING_FREQUENCIES,
   RecurringTask,
 } from '@/lib/data';
@@ -47,6 +48,7 @@ const recurringTaskSchema = z.object({
   title: z.string().min(3, 'Title is required'),
   categoryId: z.string().min(1, 'Category is required'),
   subcategoryId: z.string().min(1, 'Subcategory is required'),
+  locationId: z.string().min(1, 'Location is required'),
   frequency: z.enum(RECURRING_FREQUENCIES),
   dayOfWeek: z.coerce.number().optional(),
   weekOfMonth: z.coerce.number().optional(),
@@ -59,6 +61,7 @@ interface AddTaskFormProps {
   onOpenChange: (open: boolean) => void;
   parentCategories: Category[];
   allSubcategories: Category[];
+  locations: Location[];
   editingTask: RecurringTask | null;
 }
 
@@ -67,6 +70,7 @@ export function AddTaskForm({
   onOpenChange,
   parentCategories,
   allSubcategories,
+  locations,
   editingTask,
 }: AddTaskFormProps) {
   const { toast } = useToast();
@@ -91,6 +95,7 @@ export function AddTaskForm({
       title: '',
       categoryId: '',
       subcategoryId: '',
+      locationId: '',
       frequency: 'Daily',
       dayOfWeek: undefined,
       weekOfMonth: undefined,
@@ -104,6 +109,7 @@ export function AddTaskForm({
         title: editingTask.title,
         categoryId: parentId || '',
         subcategoryId: editingTask.categoryId,
+        locationId: editingTask.locationId,
         frequency: editingTask.frequency,
         dayOfWeek: editingTask.dayOfWeek,
         weekOfMonth: editingTask.weekOfMonth,
@@ -114,6 +120,7 @@ export function AddTaskForm({
         title: '',
         categoryId: '',
         subcategoryId: '',
+        locationId: '',
         frequency: 'Daily',
         dayOfWeek: undefined,
         weekOfMonth: undefined,
@@ -134,9 +141,14 @@ export function AddTaskForm({
     const taskData: any = {
       title: data.title,
       categoryId: data.subcategoryId, // We save subcategory id as the main categoryId
+      locationId: data.locationId,
       frequency: data.frequency,
-      lastCompleted: null, // Always initialize as null
     };
+    
+    if (!isEditMode) {
+        taskData.lastCompleted = []; // Only initialize for new tasks
+    }
+
 
     if (data.frequency === 'Weekly') {
       taskData.dayOfWeek = data.dayOfWeek;
@@ -195,6 +207,7 @@ export function AddTaskForm({
                 </FormItem>
               )}
             />
+            <div className="grid grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="categoryId"
@@ -246,6 +259,34 @@ export function AddTaskForm({
                       {subcategoryOptions.map(cat => (
                         <SelectItem key={cat.id} value={cat.id}>
                           {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            </div>
+             <FormField
+              control={form.control}
+              name="locationId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Location</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a location" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {locations.map(loc => (
+                        <SelectItem key={loc.id} value={loc.id}>
+                          {loc.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

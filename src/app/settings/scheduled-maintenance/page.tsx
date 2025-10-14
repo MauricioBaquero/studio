@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -11,6 +12,7 @@ import { collection, query, doc } from 'firebase/firestore';
 import {
   RecurringTask,
   Category,
+  Location,
 } from '@/lib/data';
 import {
   Card,
@@ -81,8 +83,16 @@ export default function ScheduledMaintenancePage() {
   );
   const { data: categories, isLoading: isLoadingCategories } =
     useCollection<Category>(categoriesQuery);
+
+  const locationsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'locations')) : null),
+    [firestore]
+  );
+  const { data: locations, isLoading: isLoadingLocations } =
+    useCollection<Location>(locationsQuery);
     
   const getCategoryById = (id: string) => categories?.find(c => c.id === id);
+  const getLocationById = (id: string) => locations?.find(l => l.id === id);
 
   const getCategoryColor = (categoryId: string) => {
     let category = getCategoryById(categoryId);
@@ -146,7 +156,7 @@ export default function ScheduledMaintenancePage() {
     return categories?.find(c => c.id === categoryId);
   };
 
-  const isLoading = isLoadingTasks || isLoadingCategories;
+  const isLoading = isLoadingTasks || isLoadingCategories || isLoadingLocations;
 
   return (
     <>
@@ -172,6 +182,7 @@ export default function ScheduledMaintenancePage() {
                 <TableRow>
                   <TableHead>Task</TableHead>
                   <TableHead>Category</TableHead>
+                  <TableHead>Location</TableHead>
                   <TableHead>Frequency</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -179,6 +190,7 @@ export default function ScheduledMaintenancePage() {
               <TableBody>
                 {tasks?.map(task => {
                   const category = getFullCategory(task.categoryId);
+                  const location = getLocationById(task.locationId);
                   const color = getCategoryColor(task.categoryId);
                   return (
                     <TableRow key={task.id}>
@@ -190,6 +202,7 @@ export default function ScheduledMaintenancePage() {
                           '-'
                         )}
                       </TableCell>
+                      <TableCell>{location?.name || '-'}</TableCell>
                       <TableCell>
                         {task.frequency}{' '}
                         <span className="text-muted-foreground">
@@ -231,6 +244,7 @@ export default function ScheduledMaintenancePage() {
         onOpenChange={handleCloseForm}
         parentCategories={parentCategories}
         allSubcategories={allSubcategories}
+        locations={locations || []}
         editingTask={editingTask}
       />
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
