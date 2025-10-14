@@ -58,7 +58,8 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
       subcategoryId: "",
       description: "",
       locationId: "",
-      locationDetail: "",
+      floor: "",
+      additionalDetails: "",
     },
   });
 
@@ -96,17 +97,15 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
     setIsSubmitting(true);
     const locationName = locations.find(l => l.id === values.locationId)?.name;
 
-    let locationDetailDisplay = "";
-    if (values.locationDetail) {
-      const floorOption = floorOptions.find(f => f.value === values.locationDetail);
+    let floorDisplay = "";
+    if (values.floor) {
+      const floorOption = floorOptions.find(f => f.value === values.floor);
       if (floorOption && floorOption.value !== 'none') {
-        locationDetailDisplay = floorOption.label;
-      } else if (floorOption?.value !== 'none') {
-        locationDetailDisplay = values.locationDetail;
+        floorDisplay = floorOption.label;
       }
     }
     
-    const fullLocation = [locationName, locationDetailDisplay].filter(Boolean).join(', ');
+    const fullLocation = [locationName, floorDisplay, values.additionalDetails].filter(Boolean).join(', ');
 
     const ticketId = 'T' + Date.now();
 
@@ -248,7 +247,7 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
                     onValueChange={(value) => {
                         field.onChange(value);
                         setSelectedLocationId(value);
-                        form.setValue('locationDetail', '');
+                        form.setValue('floor', '');
                     }}
                     defaultValue={field.value}
                   >
@@ -269,46 +268,47 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
                 </FormItem>
               )}
             />
-             {selectedLocation && selectedLocation.numberOfFloors && selectedLocation.numberOfFloors > 0 ? (
+            <div className="space-y-6">
+                {selectedLocation && selectedLocation.numberOfFloors && selectedLocation.numberOfFloors > 0 && (
+                    <FormField
+                        control={form.control}
+                        name="floor"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Floor (optional)</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a floor" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                {floorOptions.map((floor) => (
+                                    <SelectItem key={floor.value} value={floor.value}>
+                                    {floor.label}
+                                    </SelectItem>
+                                ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
                 <FormField
                     control={form.control}
-                    name="locationDetail"
-                    render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Floor</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a floor" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {floorOptions.map((floor) => (
-                                <SelectItem key={floor.value} value={floor.value}>
-                                  {floor.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                    )}
-                />
-             ) : (
-                <FormField
-                    control={form.control}
-                    name="locationDetail"
+                    name="additionalDetails"
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Additional Details (optional)</FormLabel>
                         <FormControl>
-                            <Input placeholder="e.g., Near the main entrance" {...field} />
+                            <Input placeholder="e.g., Room 203, near the main entrance" {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
                     )}
                 />
-             )}
+            </div>
              <FormField
               control={form.control}
               name="requestedCompletionDate"

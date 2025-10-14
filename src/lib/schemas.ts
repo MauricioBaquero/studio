@@ -5,7 +5,8 @@ export const ticketSchema = z.object({
   subcategoryId: z.string().min(1, "Subcategory is required."),
   description: z.string().min(10, "Description must be at least 10 characters.").max(1000),
   locationId: z.string().min(1, "Location is required."),
-  locationDetail: z.string().optional(),
+  floor: z.string().optional(),
+  additionalDetails: z.string().optional(),
   requestedCompletionDate: z.date({
     required_error: "A completion date is required.",
   }),
