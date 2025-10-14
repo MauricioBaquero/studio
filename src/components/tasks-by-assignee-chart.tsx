@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Ticket, User } from '@/lib/data';
@@ -13,12 +14,15 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Cell } from 'recharts';
 
 interface TasksByAssigneeChartProps {
   tickets: Ticket[];
   users: User[];
 }
+
+const primaryColor = 'hsl(var(--primary))';
+const grayColor = 'hsl(var(--muted-foreground))';
 
 export function TasksByAssigneeChart({
   tickets,
@@ -27,12 +31,13 @@ export function TasksByAssigneeChart({
   const tasksByAssignee = users.map(user => ({
     name: user.name.split(' ')[0], // Use first name for brevity
     value: tickets.filter(ticket => ticket.assignedToId === user.uid).length,
+    fill: primaryColor,
   }));
 
   const unassignedTasks = tickets.filter(ticket => !ticket.assignedToId).length;
   let unassignedData = null;
   if (unassignedTasks > 0) {
-    unassignedData = { name: 'Unassigned', value: unassignedTasks };
+    unassignedData = { name: 'Unassigned', value: unassignedTasks, fill: grayColor };
   }
 
   // Sort assigned users alphabetically by name
@@ -78,7 +83,11 @@ export function TasksByAssigneeChart({
               cursor={false}
               content={<ChartTooltipContent hideLabel />}
             />
-            <Bar dataKey="value" fill="hsl(var(--primary))" radius={5} />
+            <Bar dataKey="value" radius={5}>
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.fill} />
+              ))}
+            </Bar>
           </BarChart>
         </ChartContainer>
       </CardContent>
