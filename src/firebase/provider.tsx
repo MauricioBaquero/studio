@@ -25,7 +25,7 @@ export interface FirebaseContextState {
   firestore: Firestore | null;
   auth: Auth | null;
   storage: FirebaseStorage | null;
-  user: (User & AuthUser) | null;
+  user: AuthUser | null;
   isUserLoading: boolean;
   userError: Error | null;
 }
@@ -36,7 +36,7 @@ export interface FirebaseServicesAndUser {
   firestore: Firestore;
   auth: Auth;
   storage: FirebaseStorage;
-  user: (User & AuthUser) | null;
+  user: AuthUser | null;
   isUserLoading: boolean;
   userError: Error | null;
 }
@@ -107,7 +107,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     const unsubscribe = onAuthStateChanged(
       auth,
       (firebaseUser) => setAuthState({ user: firebaseUser, isUserLoading: false, userError: null }),
-      (error) => setAuthState({ user: null, isUserloading: false, userError: error })
+      (error) => setAuthState({ user: null, isUserLoading: false, userError: error })
     );
     return () => unsubscribe();
   }, [auth]);
@@ -146,7 +146,12 @@ export const useFirebase = (): FirebaseServicesAndUser => {
     throw new Error('Firebase core services not available. Check FirebaseProvider props.');
   }
 
-  return context as unknown as FirebaseServicesAndUser;
+  return {
+    ...context,
+    user: context.user,
+    isUserLoading: context.isUserLoading,
+    userError: context.userError,
+  } as FirebaseServicesAndUser;
 };
 
 /** Hook to access Firebase Auth instance. */

@@ -16,15 +16,8 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user: authUser, isUserLoading } = useUser();
-  const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
   const isLoginPage = pathname === '/login';
-
-  const userDocRef = useMemoFirebase(
-    () => (firestore && authUser ? doc(firestore, 'users', authUser.uid) : null),
-    [firestore, authUser]
-  );
-  const { data: user, isLoading: isUserDataLoading } = useDoc<User>(userDocRef);
 
   useEffect(() => {
     // Wait until authentication status is resolved
@@ -33,15 +26,15 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
 
     // If user is not authenticated and not on the login page, redirect to login
-    if (!authUser && !isLoginPage) {
+    if (!user && !isLoginPage) {
       router.replace('/login');
     }
 
     // If user is authenticated and on the login page, redirect to the dashboard
-    if (authUser && isLoginPage) {
+    if (user && isLoginPage) {
       router.replace('/');
     }
-  }, [authUser, isUserLoading, isLoginPage, router]);
+  }, [user, isUserLoading, isLoginPage, router]);
 
 
   // If we are on the login page, just render the children without the layout
@@ -49,10 +42,8 @@ export function AppLayout({ children }: AppLayoutProps) {
     return <>{children}</>;
   }
 
-  const isLoading = isUserLoading || isUserDataLoading;
-
   // Show a loading indicator while we verify auth and fetch user data, or if we are about to redirect.
-  if (isLoading || !authUser) {
+  if (isUserLoading || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p>Loading...</p>
