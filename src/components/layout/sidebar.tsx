@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -15,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { UserNav } from "../user-nav";
 import { ThemeToggle } from "../theme-toggle";
+import { useUser } from "@/firebase";
 
 const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -26,6 +28,7 @@ const settingsItem = { href: "/settings", label: "Settings", icon: Settings };
 
 export default function AppSidebar() {
   const pathname = usePathname();
+  const { user } = useUser();
 
   const isActive = (path: string) => {
     if (path === "/") return pathname === "/";
@@ -63,18 +66,20 @@ export default function AppSidebar() {
           <ThemeToggle />
         </div>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={isActive(settingsItem.href)}
-              tooltip={settingsItem.label}
-            >
-              <Link href={settingsItem.href}>
-                <settingsItem.icon />
-                <span>{settingsItem.label}</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          {user?.role === 'Admin' && (
+            <SidebarMenuItem>
+                <SidebarMenuButton
+                asChild
+                isActive={isActive(settingsItem.href)}
+                tooltip={settingsItem.label}
+                >
+                <Link href={settingsItem.href}>
+                    <settingsItem.icon />
+                    <span>{settingsItem.label}</span>
+                </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
         <div className="p-2 flex justify-center group-data-[collapsible=icon]:-ml-2">
             <UserNav />

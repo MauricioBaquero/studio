@@ -1,45 +1,56 @@
+
 'use client';
 
 import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/layout/sidebar';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import type { User } from '@/lib/data';
 
-export function AppLayout({ children }: { children: React.ReactNode }) {
+interface AppLayoutProps {
+  children: React.ReactNode;
+}
+
+export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isUserLoading } = useUser();
+  const { user: authUser, isUserLoading } = useUser();
+  const firestore = useFirestore();
   const isLoginPage = pathname === '/login';
 
+  const userDocRef = useMemoFirebase(
+    () => (firestore && authUser ? doc(firestore, 'users', authUser.uid) : null),
+    [firestore, authUser]
+  );
+  const { data: user, isLoading: isUserDataLoading } = useDoc<User>(userDocRef);
+
   useEffect(() => {
-    // Wait until the auth state is determined
-    if (isUserLoading) {
+    if (isUserLoading || isUserDataLoading) {
       return;
     }
 
-    // If there is no user and we're not on the login page, redirect to login
-    if (!user && !isLoginPage) {
+    if (!authUser && !isLoginPage) {
       router.replace('/login');
     }
 
-    // If there is a user and we're on the login page, redirect to the home page
-    if (user && isLoginPage) {
+    if (authUser && isLoginPage) {
       router.replace('/');
     }
-  }, [user, isUserLoading, isLoginPage, router]);
 
+  }, [authUser, user, isUserLoading, isUserDataLoading, isLoginPage, router, pathname]);
 
-  // While loading auth state, or if we are redirecting, show a loading screen
-  if (isUserLoading || (!user && !isLoginPage) || (user && isLoginPage)) {
+  const isLoading = isUserLoading || isUserDataLoading;
+
+  if (isLoading || (!authUser && !isLoginPage) || (authUser && isLoginPage)) {
     return (
-        <div className="flex items-center justify-center min-h-screen">
-            <p>Loading...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Loading...</p>
+      </div>
     );
   }
-
-  // If on the login page (and not logged in), render only the children
+  
   if (isLoginPage) {
     return <>{children}</>;
   }

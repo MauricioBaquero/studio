@@ -10,6 +10,7 @@ interface TicketBoardColumnProps {
   users: User[];
   categories: Category[];
   onTicketUpdate: (ticket: Ticket) => void;
+  onTicketDelete: (ticketId: string) => void;
 }
 
 const statusColors: { [key: string]: string } = {
@@ -32,6 +33,7 @@ export default function TicketBoardColumn({
   users,
   categories,
   onTicketUpdate,
+  onTicketDelete,
 }: TicketBoardColumnProps) {
   return (
     <div className="flex flex-col rounded-lg bg-card shadow-sm h-full">
@@ -59,6 +61,7 @@ export default function TicketBoardColumn({
                 users={users}
                 categories={categories}
                 onUpdate={onTicketUpdate}
+                onDelete={onTicketDelete}
               />
             ))
           ) : (

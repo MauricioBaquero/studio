@@ -10,9 +10,10 @@ interface TicketBoardProps {
     users: User[];
     categories: Category[];
     onTicketUpdate: (ticket: Ticket) => void;
+    onTicketDelete: (ticketId: string) => void;
 }
 
-export default function TicketBoard({ initialTickets, users, categories, onTicketUpdate }: TicketBoardProps) {
+export default function TicketBoard({ initialTickets, users, categories, onTicketUpdate, onTicketDelete }: TicketBoardProps) {
   const [tickets, setTickets] = useState(initialTickets);
 
   useEffect(() => {
@@ -34,6 +35,7 @@ export default function TicketBoard({ initialTickets, users, categories, onTicke
           users={users}
           categories={categories}
           onTicketUpdate={onTicketUpdate}
+          onTicketDelete={onTicketDelete}
         />
       ))}
     </div>

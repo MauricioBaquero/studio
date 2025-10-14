@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Ticket,
   User,
@@ -42,18 +42,25 @@ interface TicketCardProps {
   users: User[];
   categories: Category[];
   onUpdate: (ticket: Ticket) => void;
+  onDelete: (ticketId: string) => void;
 }
 
-export default function TicketCard({ ticket: initialTicket, users, categories, onUpdate }: TicketCardProps) {
+export default function TicketCard({ ticket: initialTicket, users, categories, onUpdate, onDelete }: TicketCardProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user: currentUser } = useUser();
   const [ticket, setTicket] = useState(initialTicket);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [claimSaying] = useState(
-    () => claimSayings[Math.floor(Math.random() * claimSayings.length)]
-  );
+  const [claimSaying, setClaimSaying] = useState('');
+
+  useEffect(() => {
+    setClaimSaying(claimSayings[Math.floor(Math.random() * claimSayings.length)]);
+  }, []);
   
+  useEffect(() => {
+    setTicket(initialTicket);
+  }, [initialTicket]);
+
   const getUserById = (id: string | null) => users.find(u => u.uid === id);
   const getCategoryById = (id: string) => categories.find(c => c.id === id);
   const getCategoryColor = (categoryId: string) => {
@@ -69,8 +76,9 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
   const parentCategory = category?.parentId ? getCategoryById(category.parentId) : null;
   const color = getCategoryColor(ticket.categoryId);
 
-  const isAssignedToOtherUser = ticket.assignedToId && ticket.assignedToId !== currentUser?.uid;
-  
+  const isAdmin = currentUser?.role === 'Admin';
+  const isAssignedToCurrentUser = ticket.assignedToId === currentUser?.uid;
+
   const handleClaimTask = () => {
     if (!firestore || !currentUser) return;
     const ticketRef = doc(firestore, 'tasks', ticket.id);
@@ -79,7 +87,6 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
         status: 'In Progress' as const
     };
     updateDocumentNonBlocking(ticketRef, updatedTicketData);
-    // Optimistic update for the UI
     const updatedTicket = { ...ticket, ...updatedTicketData };
     setTicket(updatedTicket);
     onUpdate(updatedTicket);
@@ -106,7 +113,6 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
   };
 
   const handleOpenDialog = (e: React.MouseEvent) => {
-    if (isAssignedToOtherUser) return;
     if ((e.target as HTMLElement).closest('button')) {
         return;
     }
@@ -125,10 +131,7 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
   return (
     <>
       <Card 
-        className={cn(
-          "relative transition-shadow",
-          !isAssignedToOtherUser && "hover:shadow-md cursor-pointer"
-        )}
+        className="relative transition-shadow hover:shadow-md cursor-pointer"
         onClick={handleOpenDialog}
       >
         {ticket.status === 'Completed' && (
@@ -175,7 +178,7 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
                 </Button>
             )}
 
-            {ticket.status === 'In Progress' && ticket.assignedToId === currentUser?.uid && (
+            {ticket.status === 'In Progress' && isAssignedToCurrentUser && (
                 <Button variant="success" size="sm" onClick={handleReadyForReview}>
                    Ready for Review
                 </Button>
@@ -187,6 +190,7 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
         onOpenChange={setIsDialogOpen}
         ticket={ticket}
         onUpdate={handleTicketUpdate}
+        onDelete={onDelete}
         users={users}
         categories={categories}
       />

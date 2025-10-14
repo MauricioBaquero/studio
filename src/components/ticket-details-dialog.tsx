@@ -30,10 +30,21 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from './ui/textarea';
 import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, X } from 'lucide-react';
-import { useFirestore, useStorage, updateDocumentNonBlocking } from '@/firebase';
+import { Loader2, Upload, X, Trash2 } from 'lucide-react';
+import { useFirestore, useStorage, updateDocumentNonBlocking, useUser, deleteDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface TicketDetailsDialogProps {
   open: boolean;
@@ -42,6 +53,7 @@ interface TicketDetailsDialogProps {
   users: User[];
   categories: Category[];
   onUpdate: (ticket: Ticket) => void;
+  onDelete: (ticketId: string) => void;
 }
 
 export function TicketDetailsDialog({
@@ -51,10 +63,12 @@ export function TicketDetailsDialog({
   users,
   categories,
   onUpdate,
+  onDelete,
 }: TicketDetailsDialogProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const storage = useStorage();
+  const { user: currentUser } = useUser();
   const [isSaving, setIsSaving] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<TicketStatus>(ticket.status);
   const [completionPhoto, setCompletionPhoto] = useState<string | null>(ticket.completionPhotoUrl || null);
@@ -64,7 +78,6 @@ export function TicketDetailsDialog({
   
   const getUserById = (id: string | null) => users.find(u => u.uid === id);
   const getCategoryById = (id: string) => categories.find(c => c.id === id);
-
 
   useEffect(() => {
     if (open) {
@@ -90,7 +103,6 @@ export function TicketDetailsDialog({
   };
 
   const removePhoto = async () => {
-    // If the photo was just uploaded (newPhotoDataUrl exists), just clear the state
     if (newPhotoDataUrl) {
       setNewPhotoDataUrl(null);
       setCompletionPhoto(null);
@@ -100,56 +112,47 @@ export function TicketDetailsDialog({
       return;
     }
 
-    // If it's an existing photo from storage, we need to delete it.
     if (ticket.completionPhotoUrl && storage) {
       try {
         const photoRef = ref(storage, ticket.completionPhotoUrl);
         await deleteObject(photoRef);
         toast({ title: "Photo removed."});
       } catch (error: any) {
-        // If it fails to delete, it might be because the URL is not a storage URL, or permissions.
-        // We still clear it from the UI.
         console.error("Could not delete photo from storage, but removing from UI:", error);
       }
     }
-
-    // Clear from UI and prepare for update
     setCompletionPhoto(null); 
   };
 
 
-  const handleUpdate = async () => {
-    if (!firestore || !storage) return;
+  const handleUpdate = async (newStatus?: TicketStatus) => {
+    if (!firestore) return;
     setIsSaving(true);
     let photoUrl = ticket.completionPhotoUrl;
 
+    const finalStatus = newStatus || currentStatus;
+
     try {
-      // 1. If a new photo was selected, upload it
-      if (newPhotoDataUrl) {
+      if (newPhotoDataUrl && storage) {
         const storageRef = ref(storage, `ticket-photos/${ticket.id}/${Date.now()}`);
         const uploadResult = await uploadString(storageRef, newPhotoDataUrl, 'data_url');
         photoUrl = await getDownloadURL(uploadResult.ref);
       } else if (completionPhoto === null && ticket.completionPhotoUrl) {
-        // 2. If photo was removed (completionPhoto is null but it existed before)
         photoUrl = null;
       }
       
-      // 3. Prepare data for Firestore
       const updatedTicketData: Partial<Ticket> = {
-          status: currentStatus,
+          status: finalStatus,
           completionPhotoUrl: photoUrl,
       };
       
       if (comments) {
           console.log(`Comment added for ticket ${ticket.id}: ${comments}`);
-          // In a real app, you would add this to a 'comments' subcollection.
       }
 
-      // 4. Update Firestore document (non-blocking)
       const ticketRef = doc(firestore, 'tasks', ticket.id);
       updateDocumentNonBlocking(ticketRef, updatedTicketData);
 
-      // 5. Optimistically update local state and notify parent
       const newTicketState = { ...ticket, ...updatedTicketData };
       onUpdate(newTicketState);
 
@@ -171,9 +174,24 @@ export function TicketDetailsDialog({
         setIsSaving(false);
     }
   };
+
+  const handleDelete = () => {
+    if (!firestore) return;
+    const ticketRef = doc(firestore, 'tasks', ticket.id);
+    deleteDocumentNonBlocking(ticketRef);
+    toast({
+        title: "Ticket Deleted",
+        description: `Ticket ${ticket.id} has been permanently deleted.`
+    });
+    onDelete(ticket.id);
+    onOpenChange(false);
+  }
   
   const assignedUser = getUserById(ticket.assignedToId);
   const category = getCategoryById(ticket.categoryId);
+
+  const isAdmin = currentUser?.role === 'Admin';
+  const isPendingReview = ticket.status === 'Pending Review';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -205,14 +223,14 @@ export function TicketDetailsDialog({
                  <Select 
                     value={currentStatus} 
                     onValueChange={(value) => setCurrentStatus(value as TicketStatus)}
-                    disabled={isSaving}
+                    disabled={isSaving || (isPendingReview && !isAdmin)}
                 >
                     <SelectTrigger className="w-full">
                         <SelectValue placeholder="Set status" />
                     </SelectTrigger>
                     <SelectContent>
                         {TICKET_STATUSES.map(status => (
-                            <SelectItem key={status} value={status}>
+                            <SelectItem key={status} value={status} disabled={isPendingReview && !isAdmin && status !== 'Pending Review'}>
                                 {status}
                             </SelectItem>
                         ))}
@@ -271,14 +289,51 @@ export function TicketDetailsDialog({
             />
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
-            Cancel
-          </Button>
-          <Button onClick={handleUpdate} disabled={isSaving}>
-            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isSaving ? "Saving..." : "Save Changes"}
-          </Button>
+        <DialogFooter className="sm:justify-between">
+            <div>
+            {isAdmin && (
+                <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={isSaving}>
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete Ticket
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This will permanently delete the ticket. This action cannot be undone.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+                </AlertDialog>
+            )}
+            </div>
+            <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
+                Cancel
+            </Button>
+            {isAdmin && isPendingReview ? (
+                <div className="flex gap-2">
+                <Button onClick={() => handleUpdate('In Progress')} disabled={isSaving} variant="secondary">
+                    Reject
+                </Button>
+                <Button onClick={() => handleUpdate('Completed')} disabled={isSaving}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Approve
+                </Button>
+                </div>
+            ) : (
+                <Button onClick={() => handleUpdate()} disabled={isSaving}>
+                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSaving ? "Saving..." : "Save Changes"}
+                </Button>
+            )}
+            </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

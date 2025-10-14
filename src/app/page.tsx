@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
-import { Ticket, getParentCategories, User, Category, Location } from "@/lib/data";
+import { useState, useMemo, useEffect } from 'react';
+import { Ticket, User, Category, Location } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
@@ -10,11 +10,12 @@ import TicketBoard from "@/components/ticket-board";
 import { TicketFilters, FilterValues } from '@/components/ticket-filters';
 import { isWithinInterval } from 'date-fns';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where, Timestamp } from 'firebase/firestore';
+import { collection, query, Timestamp } from 'firebase/firestore';
 
 export default function TaskBoardPage() {
   const firestore = useFirestore();
   const { user: currentUser } = useUser();
+  const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [filters, setFilters] = useState<FilterValues>({
     assignee: 'all',
     location: 'all',
@@ -46,13 +47,19 @@ export default function TaskBoardPage() {
   const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
   const { data: categories, isLoading: isLoadingCategories } = useCollection<Category>(categoriesQuery);
   const { data: locations, isLoading: isLoadingLocations } = useCollection<Location>(locationsQuery);
+
+  useEffect(() => {
+    if (tickets) {
+      setAllTickets(tickets);
+    }
+  }, [tickets]);
   
   const parentCategories = useMemo(() => categories?.filter(c => !c.parentId) || [], [categories]);
   
   const filteredTickets = useMemo(() => {
-    if (!tickets || !currentUser) return [];
+    if (!allTickets || !currentUser) return [];
 
-    return tickets.filter(ticket => {
+    return allTickets.filter(ticket => {
       const requestedCompletionDate = ticket.requestedCompletionDate instanceof Timestamp 
         ? ticket.requestedCompletionDate.toDate() 
         : ticket.requestedCompletionDate;
@@ -82,11 +89,15 @@ export default function TaskBoardPage() {
 
       return true;
     });
-  }, [tickets, filters, currentUser, categories]);
+  }, [allTickets, filters, currentUser, categories]);
 
   const handleTicketUpdate = (updatedTicket: Ticket) => {
-    console.log('Ticket updated, Firestore will sync:', updatedTicket);
+    setAllTickets(prev => prev.map(t => t.id === updatedTicket.id ? updatedTicket : t));
   };
+  
+  const handleTicketDelete = (ticketId: string) => {
+    setAllTickets(prev => prev.filter(t => t.id !== ticketId));
+  }
   
   const isLoading = isLoadingTickets || isLoadingUsers || isLoadingCategories || isLoadingLocations;
 
@@ -116,6 +127,7 @@ export default function TaskBoardPage() {
             users={users}
             categories={categories}
             onTicketUpdate={handleTicketUpdate}
+            onTicketDelete={handleTicketDelete}
           />
       )}
       
