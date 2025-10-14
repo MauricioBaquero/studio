@@ -1,15 +1,18 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
-import { TICKET_STATUSES, Ticket } from "@/lib/data";
+import { TICKET_STATUSES, Ticket, User, Category } from "@/lib/data";
 import TicketBoardColumn from "@/components/ticket-board-column";
 
 interface TicketBoardProps {
     initialTickets: Ticket[];
+    users: User[];
+    categories: Category[];
     onTicketUpdate: (ticket: Ticket) => void;
 }
 
-export default function TicketBoard({ initialTickets, onTicketUpdate }: TicketBoardProps) {
+export default function TicketBoard({ initialTickets, users, categories, onTicketUpdate }: TicketBoardProps) {
   const [tickets, setTickets] = useState(initialTickets);
 
   useEffect(() => {
@@ -28,6 +31,8 @@ export default function TicketBoard({ initialTickets, onTicketUpdate }: TicketBo
           key={status}
           status={status}
           tickets={ticketsByStatus[status]}
+          users={users}
+          categories={categories}
           onTicketUpdate={onTicketUpdate}
         />
       ))}

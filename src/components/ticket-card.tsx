@@ -4,10 +4,9 @@
 import { useState } from 'react';
 import {
   Ticket,
-  getUserById,
-  getCategoryById,
-  getCategoryColor,
-  getCurrentUser,
+  User,
+  Category,
+  getCurrentUser, // Still needed for current user's ID
 } from '@/lib/data';
 import {
   Card,
@@ -42,10 +41,12 @@ const claimSayings = [
 
 interface TicketCardProps {
   ticket: Ticket;
+  users: User[];
+  categories: Category[];
   onUpdate: (ticket: Ticket) => void;
 }
 
-export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCardProps) {
+export default function TicketCard({ ticket: initialTicket, users, categories, onUpdate }: TicketCardProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const [ticket, setTicket] = useState(initialTicket);
@@ -54,11 +55,24 @@ export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCa
     () => claimSayings[Math.floor(Math.random() * claimSayings.length)]
   );
   
-  const currentUser = getCurrentUser();
+  const currentUser = getCurrentUser(); // Mock for now, but provides current user ID
+  
+  // --- Start of Changes ---
+  const getUserById = (id: string | null) => users.find(u => u.uid === id);
+  const getCategoryById = (id: string) => categories.find(c => c.id === id);
+  const getCategoryColor = (categoryId: string) => {
+    let category = getCategoryById(categoryId);
+    if (category?.parentId) {
+      category = getCategoryById(category.parentId);
+    }
+    return category?.color || 'gray';
+  }
+
   const assignedUser = getUserById(ticket.assignedToId);
   const category = getCategoryById(ticket.categoryId);
   const parentCategory = category?.parentId ? getCategoryById(category.parentId) : null;
   const color = getCategoryColor(ticket.categoryId);
+  // --- End of Changes ---
 
   const isAssignedToOtherUser = ticket.assignedToId && ticket.assignedToId !== currentUser.uid;
   
@@ -105,10 +119,8 @@ export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCa
   }
 
   const handleTicketUpdate = (updatedTicket: Ticket) => {
-    // The update is now coming from the dialog, which already called Firestore.
-    // We just update the local state to reflect it.
     setTicket(updatedTicket);
-    onUpdate(updatedTicket); // Notify the parent board
+    onUpdate(updatedTicket);
   }
 
   const requestedCompletionDate = ticket.requestedCompletionDate instanceof Timestamp
@@ -180,6 +192,8 @@ export default function TicketCard({ ticket: initialTicket, onUpdate }: TicketCa
         onOpenChange={setIsDialogOpen}
         ticket={ticket}
         onUpdate={handleTicketUpdate}
+        users={users}
+        categories={categories}
       />
     </>
   );

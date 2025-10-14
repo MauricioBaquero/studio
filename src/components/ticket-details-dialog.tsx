@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -6,8 +7,8 @@ import {
   Ticket,
   TICKET_STATUSES,
   TicketStatus,
-  getUserById,
-  getCategoryById,
+  User,
+  Category,
 } from '@/lib/data';
 import {
   Dialog,
@@ -38,6 +39,8 @@ interface TicketDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   ticket: Ticket;
+  users: User[];
+  categories: Category[];
   onUpdate: (ticket: Ticket) => void;
 }
 
@@ -45,6 +48,8 @@ export function TicketDetailsDialog({
   open,
   onOpenChange,
   ticket,
+  users,
+  categories,
   onUpdate,
 }: TicketDetailsDialogProps) {
   const { toast } = useToast();
@@ -56,6 +61,10 @@ export function TicketDetailsDialog({
   const [newPhotoDataUrl, setNewPhotoDataUrl] = useState<string | null>(null);
   const [comments, setComments] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const getUserById = (id: string | null) => users.find(u => u.uid === id);
+  const getCategoryById = (id: string) => categories.find(c => c.id === id);
+
 
   useEffect(() => {
     if (open) {

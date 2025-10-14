@@ -1,7 +1,8 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
-import { Ticket, getParentCategories, getLocations, getCurrentUser, getSubCategories } from "@/lib/data";
+import { Ticket, getParentCategories, getLocations, getCurrentUser, getSubCategories, User, Category } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
@@ -20,54 +21,55 @@ export default function TaskBoardPage() {
     dateRange: { from: undefined, to: undefined },
   });
 
-  const currentUser = getCurrentUser();
+  const currentUser = getCurrentUser(); // This is still mock, will be replaced later
 
   const ticketsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    
-    let q = collection(firestore, 'tasks');
-
-    // This is a basic example; complex queries with different fields might require composite indexes in Firestore.
-    // For simplicity, we apply filters on the client side for this demonstration.
-    return query(q);
-
+    return query(collection(firestore, 'tasks'));
   }, [firestore]);
 
-  const { data: tickets, isLoading } = useCollection<Ticket>(ticketsQuery);
+  const usersQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'users'));
+  }, [firestore]);
 
-  const parentCategories = getParentCategories();
-  const locations = getLocations();
+  const categoriesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'categories'));
+  }, [firestore]);
+  
+  const { data: tickets, isLoading: isLoadingTickets } = useCollection<Ticket>(ticketsQuery);
+  const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
+  const { data: categories, isLoading: isLoadingCategories } = useCollection<Category>(categoriesQuery);
+  
+  const parentCategories = useMemo(() => categories?.filter(c => !c.parentId) || [], [categories]);
+  const locations = getLocations(); // Still mock, can be updated later
   
   const filteredTickets = useMemo(() => {
     if (!tickets) return [];
 
     return tickets.filter(ticket => {
-      // Convert Firestore Timestamps to JS Dates for filtering
       const requestedCompletionDate = ticket.requestedCompletionDate instanceof Timestamp 
         ? ticket.requestedCompletionDate.toDate() 
         : ticket.requestedCompletionDate;
 
-      // Assignee filter
       if (filters.assignee === 'me') {
         if (ticket.assignedToId !== currentUser.uid && ticket.assignedToId !== null) {
           return false;
         }
       }
 
-      // Location filter
       if (filters.location !== 'all' && !ticket.location.startsWith(filters.location)) {
          return false;
       }
 
-      // Category filter
       if (filters.category !== 'all') {
-        const subCat = getSubCategories(filters.category).find(s => s.id === ticket.categoryId);
+        const subCat = categories?.find(s => s.id === ticket.categoryId && s.parentId === filters.category);
         if (ticket.categoryId !== filters.category && !subCat) {
           return false;
         }
       }
       
-      // Date range filter
       if (filters.dateRange.from && filters.dateRange.to) {
         if (!isWithinInterval(requestedCompletionDate, filters.dateRange)) {
             return false;
@@ -76,15 +78,13 @@ export default function TaskBoardPage() {
 
       return true;
     });
-  }, [tickets, filters, currentUser.uid]);
+  }, [tickets, filters, currentUser.uid, categories]);
 
-  // The onTicketUpdate is now handled optimistically by useCollection.
-  // We can remove the local state management for ticket updates.
   const handleTicketUpdate = (updatedTicket: Ticket) => {
-    // This function can be used for more complex logic if needed in the future,
-    // but for now, Firestore's real-time updates handle the UI changes.
     console.log('Ticket updated, Firestore will sync:', updatedTicket);
   };
+  
+  const isLoading = isLoadingTickets || isLoadingUsers || isLoadingCategories;
 
   return (
     <div className="flex flex-col h-full gap-6">
@@ -106,8 +106,13 @@ export default function TaskBoardPage() {
       
       {isLoading && <div className="flex justify-center items-center h-full"><p>Loading tasks...</p></div>}
       
-      {!isLoading && tickets && (
-          <TicketBoard initialTickets={filteredTickets} onTicketUpdate={handleTicketUpdate}/>
+      {!isLoading && tickets && users && categories && (
+          <TicketBoard 
+            initialTickets={filteredTickets} 
+            users={users}
+            categories={categories}
+            onTicketUpdate={handleTicketUpdate}
+          />
       )}
       
       {!isLoading && !tickets && (

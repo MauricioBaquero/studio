@@ -1,4 +1,5 @@
-import { Ticket } from "@/lib/data";
+
+import { Ticket, User, Category } from "@/lib/data";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import TicketCard from "@/components/ticket-card";
 import { cn } from "@/lib/utils";
@@ -6,6 +7,8 @@ import { cn } from "@/lib/utils";
 interface TicketBoardColumnProps {
   status: string;
   tickets: Ticket[];
+  users: User[];
+  categories: Category[];
   onTicketUpdate: (ticket: Ticket) => void;
 }
 
@@ -26,6 +29,8 @@ const statusEmojis: { [key: string]: string } = {
 export default function TicketBoardColumn({
   status,
   tickets,
+  users,
+  categories,
   onTicketUpdate,
 }: TicketBoardColumnProps) {
   return (
@@ -51,6 +56,8 @@ export default function TicketBoardColumn({
               <TicketCard 
                 key={ticket.id} 
                 ticket={ticket}
+                users={users}
+                categories={categories}
                 onUpdate={onTicketUpdate}
               />
             ))
