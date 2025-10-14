@@ -128,7 +128,7 @@ export function TicketDetailsDialog({
   const handleUpdate = async (newStatus?: TicketStatus) => {
     if (!firestore) return;
     setIsSaving(true);
-    let photoUrl = ticket.completionPhotoUrl;
+    let photoUrl: string | null = ticket.completionPhotoUrl || null;
 
     const finalStatus = newStatus || currentStatus;
 
@@ -346,5 +346,3 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
-
-    
