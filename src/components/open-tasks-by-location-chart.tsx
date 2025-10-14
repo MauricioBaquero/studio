@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Ticket } from "@/lib/data";
+import { Ticket, Location } from "@/lib/data";
 import {
   Card,
   CardContent,
@@ -18,6 +18,7 @@ import { BarChart, Bar, XAxis, YAxis, Cell } from "recharts";
 
 interface OpenTasksByLocationChartProps {
   tickets: Ticket[];
+  locations: Location[];
 }
 
 const chartColors = [
@@ -28,13 +29,13 @@ const chartColors = [
   "hsl(var(--chart-5))",
 ];
 
-export function OpenTasksByLocationChart({ tickets }: OpenTasksByLocationChartProps) {
+export function OpenTasksByLocationChart({ tickets, locations }: OpenTasksByLocationChartProps) {
     const openTickets = tickets.filter(t => t.status !== 'Completed');
 
     const tasksByLocation = openTickets.reduce((acc, ticket) => {
-        // Extract the main location name (e.g., "Building A" from "Building A, Floor 2")
-        const mainLocation = ticket.location.split(',')[0].trim();
-        acc[mainLocation] = (acc[mainLocation] || 0) + 1;
+        const location = locations.find(l => l.id === ticket.locationId);
+        const locationName = location ? location.name : 'Unknown';
+        acc[locationName] = (acc[locationName] || 0) + 1;
         return acc;
     }, {} as { [key: string]: number });
 
@@ -47,13 +48,13 @@ export function OpenTasksByLocationChart({ tickets }: OpenTasksByLocationChartPr
     .sort((a, b) => b.value - a.value);
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col h-full">
       <CardHeader>
         <CardTitle>Open Tasks by Location</CardTitle>
         <CardDescription>Breakdown of active tickets by facility location.</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
-        <ChartContainer config={{}} className="h-[250px] w-full">
+        <ChartContainer config={{}} className="h-[550px] w-full">
           <BarChart
             accessibilityLayer
             data={chartData}

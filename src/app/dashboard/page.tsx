@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { Ticket, User, Category, RecurringTask } from '@/lib/data';
+import type { Ticket, User, Category, RecurringTask, Location } from '@/lib/data';
 import { TaskStatusChart } from '@/components/task-status-chart';
 import { TaskTypeChart } from '@/components/task-type-chart';
 import { TasksByAssigneeChart } from '@/components/tasks-by-assignee-chart';
@@ -40,12 +40,20 @@ export default function DashboardPage() {
   );
   const { data: recurringTasks, isLoading: isLoadingRecurringTasks } =
     useCollection<RecurringTask>(recurringTasksQuery);
+  
+  const locationsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'locations')) : null),
+    [firestore]
+    );
+  const { data: locations, isLoading: isLoadingLocations } =
+    useCollection<Location>(locationsQuery);
 
   const isLoading =
     isLoadingTickets ||
     isLoadingUsers ||
     isLoadingCategories ||
-    isLoadingRecurringTasks;
+    isLoadingRecurringTasks ||
+    isLoadingLocations;
 
   if (isLoading) {
     return (
@@ -60,16 +68,21 @@ export default function DashboardPage() {
   const chartUsers = users || [];
   const chartCategories = categories || [];
   const chartRecurringTasks = recurringTasks || [];
+  const chartLocations = locations || [];
 
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-3xl font-bold font-headline">Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 [grid-auto-flow:dense]">
         <TaskStatusChart tickets={chartTickets} />
         <RecurringTasksSummaryChart recurringTasks={chartRecurringTasks} />
         <TasksByAssigneeChart tickets={chartTickets} users={chartUsers} />
-        <TaskTypeChart tickets={chartTickets} categories={chartCategories} />
-        <OpenTasksByLocationChart tickets={chartTickets} />
+        <div className="lg:row-span-2">
+            <TaskTypeChart tickets={chartTickets} categories={chartCategories} />
+        </div>
+        <div className="lg:row-span-2">
+            <OpenTasksByLocationChart tickets={chartTickets} locations={chartLocations} />
+        </div>
       </div>
     </div>
   );

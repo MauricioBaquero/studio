@@ -57,7 +57,7 @@ export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
     .sort((a, b) => b.value - a.value);
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col h-full">
       <CardHeader>
         <CardTitle>Tasks by Category</CardTitle>
         <CardDescription>
@@ -65,7 +65,7 @@ export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
-        <ChartContainer config={{}} className="h-[250px] w-full">
+        <ChartContainer config={{}} className="h-[550px] w-full">
           <BarChart
             accessibilityLayer
             data={chartData}
