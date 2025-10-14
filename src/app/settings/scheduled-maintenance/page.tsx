@@ -11,8 +11,6 @@ import { collection, query, doc } from 'firebase/firestore';
 import {
   RecurringTask,
   Category,
-  getCategoryById,
-  getCategoryColor,
 } from '@/lib/data';
 import {
   Card,
@@ -83,6 +81,16 @@ export default function ScheduledMaintenancePage() {
   );
   const { data: categories, isLoading: isLoadingCategories } =
     useCollection<Category>(categoriesQuery);
+    
+  const getCategoryById = (id: string) => categories?.find(c => c.id === id);
+
+  const getCategoryColor = (categoryId: string) => {
+    let category = getCategoryById(categoryId);
+    if (category?.parentId) {
+      category = getCategoryById(category.parentId);
+    }
+    return category?.color || 'gray';
+  }
 
   const parentCategories = useMemo(
     () => categories?.filter(c => !c.parentId) || [],
@@ -177,7 +185,7 @@ export default function ScheduledMaintenancePage() {
                       <TableCell className="font-medium">{task.title}</TableCell>
                       <TableCell>
                         {category ? (
-                          <Badge color={color}>{category.name}</Badge>
+                          <Badge color={color as any}>{category.name}</Badge>
                         ) : (
                           '-'
                         )}

@@ -8,7 +8,7 @@ import {
   deleteDocumentNonBlocking,
 } from '@/firebase';
 import { collection, query, where, doc } from 'firebase/firestore';
-import { Category, getCategoryColor } from '@/lib/data';
+import { Category } from '@/lib/data';
 import {
   Card,
   CardContent,
@@ -63,6 +63,17 @@ export default function CategoriesPage() {
     () => categories?.filter(c => !!c.parentId) || [],
     [categories]
   );
+  
+  const getCategoryById = (id: string) => categories?.find(c => c.id === id);
+
+  const getCategoryColor = (categoryId: string) => {
+    let category = getCategoryById(categoryId);
+    if (category?.parentId) {
+      category = getCategoryById(category.parentId);
+    }
+    return category?.color || 'gray';
+  }
+
 
   const handleOpenForm = (category: Category | null) => {
     setEditingCategory(category);
@@ -126,7 +137,7 @@ export default function CategoriesPage() {
           <Accordion type="multiple" className="w-full">
             {parentCategories.map(pCat => {
               const subCats = subCategories.filter(s => s.parentId === pCat.id);
-              const color = getCategoryColor(pCat.id);
+              const color = pCat.color || 'gray';
               return (
                 <AccordionItem value={pCat.id} key={pCat.id}>
                   <div className="flex items-center group">
