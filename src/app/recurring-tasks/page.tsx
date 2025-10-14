@@ -186,7 +186,7 @@ export default function RecurringTasksPage() {
             id={`task-${task.id}`}
             aria-label={`Complete ${task.title}`}
             onCheckedChange={() => handleTaskCheck(task)}
-            checked={isCompleted}
+            checked={isCompleted ? false : undefined}
             disabled={isCompleted}
           />
         </TableCell>
@@ -264,7 +264,7 @@ export default function RecurringTasksPage() {
                         <TableCell colSpan={5} className="!p-0">
                           <div className="flex items-center gap-4 py-2 px-4">
                             <Separator className="flex-1" />
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">Already completed today</span>
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">Already completed today, Upcoming tasks.</span>
                             <Separator className="flex-1" />
                           </div>
                         </TableCell>
