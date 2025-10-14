@@ -168,7 +168,7 @@ export default function TicketCard({ ticket: initialTicket, users, categories, o
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <Calendar className="h-4 w-4" />
-            <span>Due: {format(requestedCompletionDate, 'MMM d, yyyy')}</span>
+            <span>Due: {format(requestedCompletionDate, 'MM/dd/yyyy')}</span>
           </div>
         </CardContent>
         <CardFooter className="flex items-center justify-between">

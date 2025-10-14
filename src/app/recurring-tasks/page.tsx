@@ -73,8 +73,7 @@ export default function RecurringTasksPage() {
     if (!allTasks || !users) {
       return [];
     }
-    // Filter out any tasks that might have been completed in the current session
-    const pending = allTasks.filter(task => !completedTasks.some(c => c.id === task.id));
+    const pending = allTasks.filter(task => !completedTasks.some(c => c.id === task.id && isToday(c.completedAt)));
     return pending.sort((a,b) => getNextDueDate(a).getTime() - getNextDueDate(b).getTime());
   }, [allTasks, users, completedTasks]);
 
@@ -93,20 +92,17 @@ export default function RecurringTasksPage() {
     if (!firestore || !currentUser) return;
     
     const now = new Date();
-
-    // --- Optimistic UI Update ---
-    // 1. Move from pending to completed
     const user = users?.find(u => u.uid === currentUser.uid);
+
+    // Optimistic UI Update
     if (user) {
         setCompletedTasks(prev => [...prev, { ...recurringTask, completedBy: user, completedAt: now }]);
+        setAllTasks(prevTasks => prevTasks.filter(t => t.id !== recurringTask.id));
     }
-    // 2. Remove from the pending list UI
-    setAllTasks(prevTasks => prevTasks.filter(t => t.id !== recurringTask.id));
 
-    // --- Database Operations ---
+
     const batch = writeBatch(firestore);
 
-    // 1. Create a new one-off task to log the COMPLETION of the current task
     const completedTaskId = `T${Date.now()}`;
     const completedTaskRef = doc(firestore, 'tasks', completedTaskId);
     const completedTaskData = {
@@ -125,27 +121,26 @@ export default function RecurringTasksPage() {
     };
     batch.set(completedTaskRef, completedTaskData);
 
-    // 2. Delete the old recurring task template
     const oldRecurringTaskRef = doc(firestore, 'recurringTasks', recurringTask.id);
     batch.delete(oldRecurringTaskRef);
     
-    // 3. Create a new recurring task template with the updated `lastCompleted` date
     const newRecurringTaskRef = doc(collection(firestore, 'recurringTasks'));
-    const newRecurringTaskData = {
+    const newRecurringTaskData: Omit<RecurringTask, 'id'> = {
         ...recurringTask,
-        id: newRecurringTaskRef.id, // Give it a new ID
         lastCompleted: now,
-        completedBy: currentUser.uid,
     };
-    batch.set(newRecurringTaskRef, newRecurringTaskData);
+    
+    // Remove id before saving to Firestore, as it's auto-generated for the new doc
+    const { id, ...dataToSave } = newRecurringTaskData;
+
+    batch.set(newRecurringTaskRef, dataToSave);
 
     batch.commit().then(() => {
-        // The optimistic update already handled the immediate UI change.
-        // We add the new task to the list to make sure it appears for the next cycle.
-        setAllTasks(prevTasks => [...prevTasks, newRecurringTaskData]);
+        const newUITask = { ...newRecurringTaskData, id: newRecurringTaskRef.id };
+        setAllTasks(prevTasks => [...prevTasks, newUITask]);
     }).catch(error => {
         console.error("Failed to complete recurring task:", error);
-        // --- Revert UI on failure ---
+        // Revert UI on failure
         setCompletedTasks(prev => prev.filter(t => t.id !== recurringTask.id));
         setAllTasks(prevTasks => {
             if (!prevTasks.some(t => t.id === recurringTask.id)) {
@@ -215,7 +210,7 @@ export default function RecurringTasksPage() {
                           )}
                         </TableCell>
                         <TableCell className={cn(isTaskOverdue && "text-destructive font-semibold")}>
-                          {format(nextDueDate, 'PPP')}
+                          {format(nextDueDate, 'MM/dd/yyyy')}
                           {isTaskOverdue && <span className="ml-2">(Overdue)</span>}
                         </TableCell>
                       </TableRow>
