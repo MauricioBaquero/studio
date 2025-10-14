@@ -154,13 +154,13 @@ export function TicketDetailsDialog({
         photoUrl = null;
       }
       
-      const updatedTicketData: Partial<Ticket> & {comments?: any} = {
+      const dataForDb: Partial<Ticket> & {comments?: any} = {
           status: finalStatus,
-          completionPhotoUrl: photoUrl === undefined ? null : photoUrl,
+          completionPhotoUrl: photoUrl,
       };
 
       if (finalStatus === 'Completed') {
-        updatedTicketData.approvedBy = currentUser.uid;
+        dataForDb.approvedBy = currentUser.uid;
       }
       
       let optimisticComment: Comment | null = null;
@@ -171,20 +171,27 @@ export function TicketDetailsDialog({
             text: newCommentText.trim(),
             createdAt: serverTimestamp(),
         };
-        updatedTicketData.comments = arrayUnion(newCommentForDb);
+        dataForDb.comments = arrayUnion(newCommentForDb);
         
         optimisticComment = {
             userId: currentUser.uid,
             userName: currentUser.name || "Unknown User",
             text: newCommentText.trim(),
-            createdAt: new Date(),
+            createdAt: new Date(), // Use client-side date for optimistic update
         };
       }
 
       const ticketRef = doc(firestore, 'tasks', ticket.id);
-      updateDocumentNonBlocking(ticketRef, updatedTicketData);
+      updateDocumentNonBlocking(ticketRef, dataForDb);
 
       // Optimistic update for UI
+      const updatedTicketData: Partial<Ticket> = {
+          status: finalStatus,
+          completionPhotoUrl: photoUrl,
+      };
+      if (finalStatus === 'Completed') {
+        updatedTicketData.approvedBy = currentUser.uid;
+      }
       const newTicketState = { ...ticket, ...updatedTicketData };
       if(optimisticComment) {
         newTicketState.comments = [...(ticket.comments || []), optimisticComment];
@@ -406,3 +413,5 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
+
+    
