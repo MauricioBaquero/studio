@@ -269,7 +269,7 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
               )}
             />
             <div className="space-y-6">
-                {selectedLocation && selectedLocation.numberOfFloors && selectedLocation.numberOfFloors > 0 && (
+                {selectedLocation && selectedLocation.numberOfFloors && selectedLocation.numberOfFloors > 0 ? (
                     <FormField
                         control={form.control}
                         name="floor"
@@ -294,7 +294,7 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
                             </FormItem>
                         )}
                     />
-                )}
+                ) : null}
                 <FormField
                     control={form.control}
                     name="additionalDetails"
