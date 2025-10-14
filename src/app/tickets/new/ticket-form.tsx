@@ -9,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { addDays } from "date-fns";
 import { ticketSchema } from "@/lib/schemas";
-import { Category, Location, getLocationById } from "@/lib/data";
+import { Category, Location } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import {
@@ -94,7 +94,7 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
     }
 
     setIsSubmitting(true);
-    const locationName = getLocationById(values.locationId)?.name;
+    const locationName = locations.find(l => l.id === values.locationId)?.name;
 
     let locationDetailDisplay = "";
     if (values.locationDetail) {
