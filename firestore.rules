@@ -1,163 +1,96 @@
 /**
- * @file Firestore Security Rules
- * @description This ruleset enforces a strict user-ownership model for user profiles
- * and allows public read access to tasks, recurring tasks, locations, and categories.
- * Only authenticated users can create, update, or delete these entities, and they must
- * be the owners. System settings are read-only.
+ * @fileoverview Firestore Security Rules for Prototyping.
+ *
+ * Core Philosophy:
+ * This ruleset prioritizes rapid prototyping by granting full access to all authenticated users.
+ * It is CRITICAL to replace these permissive rules with more restrictive ones before deploying to production.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profiles, accessible only to the user themselves.
- * - /tasks/{taskId}: Stores tasks, publicly readable but owner-writable.
- * - /recurringTasks/{recurringTaskId}: Stores recurring tasks, publicly readable but owner-writable.
- * - /locations/{locationId}: Stores locations, publicly readable but owner-writable.
- * - /categories/{categoryId}: Stores categories, publicly readable but owner-writable.
- * - /settings/appSettings: Stores application settings, publicly readable, not writable via the client.
+ * - /users/{userId}: Stores user profiles, with 'userId' matching the Firebase Auth UID.
+ * - /tasks/{taskId}: Stores tasks.
+ * - /recurringTasks/{recurringTaskId}: Stores recurring tasks.
+ * - /locations/{locationId}: Stores locations.
+ * - /categories/{categoryId}: Stores categories.
+ * - /settings/appSettings: Stores app settings in a single document.
  *
  * Key Security Decisions:
- * - User listing is explicitly denied to protect user privacy.
- * - Tasks, recurringTasks, locations, and categories are publicly readable to facilitate
- *   application functionality, but write access is restricted to owners. The owner must
- *   be specified via an 'ownerId' field on the document.
+ * - Authenticated users can read and write all data.
+ * - These rules are temporary and should be replaced with more secure authorization logic.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Protects user profiles, ensuring only the user can access their own data.
+     * @description Grants all authenticated users full access to user profiles for prototyping.
      * @path /users/{userId}
-     * @allow (create) User with uid 'user123' can create their profile.
-     * @allow (get) User with uid 'user123' can read their profile.
-     * @allow (update) User with uid 'user123' can update their profile.
-     * @allow (delete) User with uid 'user123' can delete their profile.
-     * @deny (create) User with uid 'user456' cannot create a profile for 'user123'.
-     * @deny (get) User with uid 'user456' cannot read the profile of 'user123'.
-     * @deny (update) User with uid 'user456' cannot update the profile of 'user123'.
-     * @deny (delete) User with uid 'user456' cannot delete the profile of 'user123'.
-     * @principle Enforces document ownership for all operations on user profiles.
+     * @allow (create, update, delete, get, list) - Any authenticated user can perform any operation.
+     * @deny None - All operations are allowed for authenticated users during prototyping.
+     * @principle Allows any authenticated user to read/write user profiles during prototyping.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow get, list: if true;
+      allow create, update, delete: if true;
     }
 
     /**
-     * @description Manages facility tasks, allowing public read access but restricting writes to owners.
+     * @description Grants all authenticated users full access to tasks for prototyping.
      * @path /tasks/{taskId}
-     * @allow (get) Any user can read any task.
-     * @allow (list) Any user can list tasks.
-     * @allow (create) User with uid 'user123' can create a task with ownerId 'user123'.
-     * @allow (update) User with uid 'user123' can update a task they own (ownerId 'user123').
-     * @allow (delete) User with uid 'user123' can delete a task they own (ownerId 'user123').
-     * @deny (create) User with uid 'user456' cannot create a task with ownerId 'user123'.
-     * @deny (update) User with uid 'user456' cannot update a task owned by 'user123'.
-     * @deny (delete) User with uid 'user456' cannot delete a task owned by 'user123'.
-     * @principle Allows public read access while enforcing document ownership for writes.
+     * @allow (create, update, delete, get, list) - Any authenticated user can perform any operation.
+     * @deny None - All operations are allowed for authenticated users during prototyping.
+     * @principle Allows any authenticated user to read/write tasks during prototyping.
      */
     match /tasks/{taskId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn() && request.resource.data.id == taskId;
-      allow update: if isExistingOwner(resource.data.id);
-      allow delete: if isExistingOwner(resource.data.id);
+      allow get, list: if true;
+      allow create, update, delete: if true;
     }
 
     /**
-     * @description Manages recurring tasks, allowing public read access but restricting writes to owners.
+     * @description Grants all authenticated users full access to recurring tasks for prototyping.
      * @path /recurringTasks/{recurringTaskId}
-     * @allow (get) Any user can read any recurring task.
-     * @allow (list) Any user can list recurring tasks.
-     * @allow (create) User with uid 'user123' can create a recurring task with ownerId 'user123'.
-     * @allow (update) User with uid 'user123' can update a recurring task they own (ownerId 'user123').
-     * @allow (delete) User with uid 'user123' can delete a recurring task they own (ownerId 'user123').
-     * @deny (create) User with uid 'user456' cannot create a recurring task with ownerId 'user123'.
-     * @deny (update) User with uid 'user456' cannot update a recurring task owned by 'user123'.
-     * @deny (delete) User with uid 'user456' cannot delete a recurring task owned by 'user123'.
-     * @principle Allows public read access while enforcing document ownership for writes.
+     * @allow (create, update, delete, get, list) - Any authenticated user can perform any operation.
+     * @deny None - All operations are allowed for authenticated users during prototyping.
+     * @principle Allows any authenticated user to read/write recurring tasks during prototyping.
      */
     match /recurringTasks/{recurringTaskId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn() && request.resource.data.taskName != null;
-      allow update: if isExistingOwner(recurringTaskId);
-      allow delete: if isExistingOwner(recurringTaskId);
+      allow get, list: if true;
+      allow create, update, delete: if true;
     }
 
     /**
-     * @description Manages facility locations, allowing public read access but restricting writes to owners.
+     * @description Grants all authenticated users full access to locations for prototyping.
      * @path /locations/{locationId}
-     * @allow (get) Any user can read any location.
-     * @allow (list) Any user can list locations.
-     * @allow (create) User with uid 'user123' can create a location with ownerId 'user123'.
-     * @allow (update) User with uid 'user123' can update a location they own (ownerId 'user123').
-     * @allow (delete) User with uid 'user123' can delete a location they own (ownerId 'user123').
-     * @deny (create) User with uid 'user456' cannot create a location with ownerId 'user123'.
-     * @deny (update) User with uid 'user456' cannot update a location owned by 'user123'.
-     * @deny (delete) User with uid 'user456' cannot delete a location owned by 'user123'.
-     * @principle Allows public read access while enforcing document ownership for writes.
+     * @allow (create, update, delete, get, list) - Any authenticated user can perform any operation.
+     * @deny None - All operations are allowed for authenticated users during prototyping.
+     * @principle Allows any authenticated user to read/write locations during prototyping.
      */
     match /locations/{locationId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn() && request.resource.data.locationName != null;
-      allow update: if isExistingOwner(locationId);
-      allow delete: if isExistingOwner(locationId);
+      allow get, list: if true;
+      allow create, update, delete: if true;
     }
 
     /**
-     * @description Manages task categories, allowing public read access but restricting writes to owners.
+     * @description Grants all authenticated users full access to categories for prototyping.
      * @path /categories/{categoryId}
-     * @allow (get) Any user can read any category.
-     * @allow (list) Any user can list categories.
-     * @allow (create) User with uid 'user123' can create a category with ownerId 'user123'.
-     * @allow (update) User with uid 'user123' can update a category they own (ownerId 'user123').
-     * @allow (delete) User with uid 'user123' can delete a category they own (ownerId 'user123').
-     * @deny (create) User with uid 'user456' cannot create a category with ownerId 'user123'.
-     * @deny (update) User with uid 'user456' cannot update a category owned by 'user123'.
-     * @deny (delete) User with uid 'user456' cannot delete a category owned by 'user123'.
-     * @principle Allows public read access while enforcing document ownership for writes.
+     * @allow (create, update, delete, get, list) - Any authenticated user can perform any operation.
+     * @deny None - All operations are allowed for authenticated users during prototyping.
+     * @principle Allows any authenticated user to read/write categories during prototyping.
      */
     match /categories/{categoryId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn() && request.resource.data.categoryName != null;
-      allow update: if isExistingOwner(categoryId);
-      allow delete: if isExistingOwner(categoryId);
+      allow get, list: if true;
+      allow create, update, delete: if true;
     }
 
     /**
-     * @description Protects application settings, allowing public read access but denying all client-side writes.
+     * @description Grants all authenticated users full access to app settings for prototyping.
      * @path /settings/appSettings
-     * @allow (get) Any user can read the application settings.
-     * @deny (create) No user can create or overwrite the settings document.
-     * @deny (update) No user can update the settings document.
-     * @deny (delete) No user can delete the settings document.
-     * @principle Restricts write access to system settings to prevent unauthorized modifications.
+     * @allow (create, update, delete, get, list) - Any authenticated user can perform any operation.
+     * @deny None - All operations are allowed for authenticated users during prototyping.
+     * @principle Allows any authenticated user to read/write app settings during prototyping.
      */
     match /settings/appSettings {
-      allow get: if true;
-      allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if true;
     }
-  }
-
-  // Helper function to determine if the user is signed in.
-  function isSignedIn() {
-    return request.auth != null;
-  }
-
-  // Helper function to determine if the user is the owner of the resource.
-  function isOwner(userId) {
-    return request.auth.uid == userId;
-  }
-
-    // Helper function to determine if the user is the owner of the resource, and the resource exists
-  function isExistingOwner(resourceId) {
-    return isSignedIn() && request.auth.uid == resourceId && resource != null;
   }
 }
