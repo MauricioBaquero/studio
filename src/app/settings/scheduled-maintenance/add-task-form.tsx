@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -129,14 +130,20 @@ export function AddTaskForm({
 
   const onSubmit = (data: RecurringTaskFormValues) => {
     if (!firestore) return;
-    const taskData = {
+
+    const taskData: any = {
       title: data.title,
       categoryId: data.subcategoryId, // We save subcategory id as the main categoryId
       frequency: data.frequency,
-      dayOfWeek: data.dayOfWeek,
-      weekOfMonth: data.weekOfMonth,
       lastCompleted: null, // Always initialize as null
     };
+
+    if (data.frequency === 'Weekly') {
+      taskData.dayOfWeek = data.dayOfWeek;
+    } else if (data.frequency === 'Monthly') {
+      taskData.dayOfWeek = data.dayOfWeek;
+      taskData.weekOfMonth = data.weekOfMonth;
+    }
 
     if (isEditMode && editingTask) {
       const taskRef = doc(firestore, 'recurringTasks', editingTask.id);
