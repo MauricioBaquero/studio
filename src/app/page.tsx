@@ -2,26 +2,25 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { Ticket, getParentCategories, getLocations, getCurrentUser, getSubCategories, User, Category } from "@/lib/data";
+import { Ticket, getParentCategories, User, Category, Location } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
 import TicketBoard from "@/components/ticket-board";
 import { TicketFilters, FilterValues } from '@/components/ticket-filters';
 import { isWithinInterval } from 'date-fns';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, where, Timestamp } from 'firebase/firestore';
 
 export default function TaskBoardPage() {
   const firestore = useFirestore();
+  const { user: currentUser } = useUser();
   const [filters, setFilters] = useState<FilterValues>({
     assignee: 'all',
     location: 'all',
     category: 'all',
     dateRange: { from: undefined, to: undefined },
   });
-
-  const currentUser = getCurrentUser(); // This is still mock, will be replaced later
 
   const ticketsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -37,16 +36,21 @@ export default function TaskBoardPage() {
     if (!firestore) return null;
     return query(collection(firestore, 'categories'));
   }, [firestore]);
+
+  const locationsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'locations'));
+  }, [firestore]);
   
   const { data: tickets, isLoading: isLoadingTickets } = useCollection<Ticket>(ticketsQuery);
   const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
   const { data: categories, isLoading: isLoadingCategories } = useCollection<Category>(categoriesQuery);
+  const { data: locations, isLoading: isLoadingLocations } = useCollection<Location>(locationsQuery);
   
   const parentCategories = useMemo(() => categories?.filter(c => !c.parentId) || [], [categories]);
-  const locations = getLocations(); // Still mock, can be updated later
   
   const filteredTickets = useMemo(() => {
-    if (!tickets) return [];
+    if (!tickets || !currentUser) return [];
 
     return tickets.filter(ticket => {
       const requestedCompletionDate = ticket.requestedCompletionDate instanceof Timestamp 
@@ -54,7 +58,7 @@ export default function TaskBoardPage() {
         : ticket.requestedCompletionDate;
 
       if (filters.assignee === 'me') {
-        if (ticket.assignedToId !== currentUser.uid && ticket.assignedToId !== null) {
+        if (ticket.assignedToId !== currentUser.uid) {
           return false;
         }
       }
@@ -78,13 +82,13 @@ export default function TaskBoardPage() {
 
       return true;
     });
-  }, [tickets, filters, currentUser.uid, categories]);
+  }, [tickets, filters, currentUser, categories]);
 
   const handleTicketUpdate = (updatedTicket: Ticket) => {
     console.log('Ticket updated, Firestore will sync:', updatedTicket);
   };
   
-  const isLoading = isLoadingTickets || isLoadingUsers || isLoadingCategories;
+  const isLoading = isLoadingTickets || isLoadingUsers || isLoadingCategories || isLoadingLocations;
 
   return (
     <div className="flex flex-col h-full gap-6">
@@ -100,7 +104,7 @@ export default function TaskBoardPage() {
 
       <TicketFilters
         parentCategories={parentCategories}
-        locations={locations}
+        locations={locations || []}
         onFilterChange={setFilters}
       />
       
