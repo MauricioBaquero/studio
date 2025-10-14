@@ -9,7 +9,6 @@ import {
   TicketStatus,
   User,
   Category,
-  Comment,
 } from '@/lib/data';
 import {
   Dialog,
@@ -28,12 +27,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Textarea } from './ui/textarea';
 import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, X, Trash2, Send } from 'lucide-react';
+import { Loader2, Upload, X, Trash2 } from 'lucide-react';
 import { useFirestore, useStorage, updateDocumentNonBlocking, useUser, deleteDocumentNonBlocking } from '@/firebase';
-import { doc, serverTimestamp, Timestamp, arrayUnion } from 'firebase/firestore';
+import { doc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 import {
   AlertDialog,
@@ -46,8 +44,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Avatar, AvatarFallback } from './ui/avatar';
-import { format } from 'date-fns';
+import { formatRelative } from 'date-fns';
 
 interface TicketDetailsDialogProps {
   open: boolean;
@@ -222,7 +219,6 @@ export function TicketDetailsDialog({
         <div className="flex-1 overflow-y-auto pr-6 -mr-6 grid gap-4 py-4">
           <div className="space-y-1">
             <h3 className="font-semibold">{ticket.title}</h3>
-            <p className="text-sm text-muted-foreground">{ticket.description}</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
              <div className="space-y-1">
@@ -252,6 +248,7 @@ export function TicketDetailsDialog({
                             <SelectItem 
                                 key={status} 
                                 value={status}
+                                disabled={!isAdmin}
                             >
                                 {status}
                             </SelectItem>
@@ -260,7 +257,12 @@ export function TicketDetailsDialog({
                 </Select>
             </div>
           </div>
-          
+           <div className="space-y-2">
+              <Label>Description</Label>
+              <p className="text-sm text-muted-foreground p-4 border rounded-md bg-muted/50">
+                  {ticket.description}
+              </p>
+           </div>
            <div className="space-y-2">
               <Label>Completion Photo</Label>
               {completionPhoto ? (
