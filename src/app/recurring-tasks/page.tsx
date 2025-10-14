@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { RecurringTask, Category, User, getNextDueDate } from '@/lib/data';
+import { RecurringTask, Category, User, getNextDueDate, toDate } from '@/lib/data';
 import {
   Table,
   TableBody,
@@ -21,6 +21,7 @@ import {
   useMemoFirebase,
   useUser,
   updateDocumentNonBlocking,
+  addDocumentNonBlocking,
 } from '@/firebase';
 import {
   collection,
@@ -28,6 +29,7 @@ import {
   doc,
   arrayUnion,
   Timestamp,
+  writeBatch,
 } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 
@@ -69,10 +71,6 @@ export default function RecurringTasksPage() {
     );
 
     const pending = recurringTasks.filter(task => {
-      if (todayCompletedIds.has(task.id)) {
-        return false;
-      }
-      
       const lastCompletion = task.lastCompleted && task.lastCompleted.length > 0 
         ? toDate(task.lastCompleted[task.lastCompleted.length - 1] as Timestamp) 
         : null;
@@ -117,9 +115,34 @@ export default function RecurringTasksPage() {
         setCompletedToday(prev => [...prev, optimisticCompletedTask]);
 
         // --- Database Operation ---
-        const taskRef = doc(firestore, 'recurringTasks', task.id);
-        updateDocumentNonBlocking(taskRef, {
+        const batch = writeBatch(firestore);
+
+        // 1. Update the recurring task template with the new completion date
+        const recurringTaskRef = doc(firestore, 'recurringTasks', task.id);
+        batch.update(recurringTaskRef, {
             lastCompleted: arrayUnion(now)
+        });
+
+        // 2. Create a one-off completed task for the records
+        const ticketId = 'T' + Date.now();
+        const newTaskRef = doc(firestore, 'tasks', ticketId);
+        batch.set(newTaskRef, {
+            id: ticketId,
+            title: task.title,
+            description: `Completed recurring task: ${task.title}`,
+            categoryId: task.categoryId,
+            status: "Completed",
+            assignedToId: currentUser.uid,
+            createdAt: serverTimestamp(),
+            requestedCompletionDate: now,
+            actualCompletionDate: now,
+            location: 'N/A' // Recurring tasks don't have a location
+        });
+        
+        batch.commit().catch(error => {
+            console.error("Error completing recurring task:", error);
+             // Revert optimistic UI update on failure
+            setCompletedToday(prev => prev.filter(p => p.id !== task.id));
         });
     }
   };

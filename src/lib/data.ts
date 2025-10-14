@@ -1,6 +1,5 @@
 
-
-import { addDays, addWeeks, addMonths, setDay, setDate, nextDay, startOfDay, isAfter, isSameDay } from "date-fns";
+import { addDays, addWeeks, addMonths, setDay, setDate, nextDay, startOfDay, isAfter, isSameDay, toDate as fnsToDate } from "date-fns";
 import type { Timestamp } from 'firebase/firestore';
 
 export type UserRole = "Admin" | "Staff" | "Viewer";
@@ -54,6 +53,7 @@ export interface Ticket {
   createdAt: Date | Timestamp;
   completionPhotoUrl?: string | null;
   approvedBy?: string | null;
+  actualCompletionDate?: Date | Timestamp;
 }
 
 export interface RecurringTask {
@@ -67,56 +67,16 @@ export interface RecurringTask {
   weekOfMonth?: number; // 1-4
 }
 
-// Mock Data
-const users: User[] = [
-  { uid: "user-1", name: "Jane Doe", email: "jane.doe@facilityflow.com", role: "Admin" },
-  { uid: "user-2", name: "John Smith", email: "john.smith@facilityflow.com", role: "Staff" },
-  { uid: "user-3", name: "Mike Johnson", email: "mike.johnson@facilityflow.com", role: "Staff" },
-  { uid: "user-4", name: "Sarah Williams", email: "sarah.williams@facilityflow.com", role: "Viewer" },
-  { uid: "uca9XP90Q1agS7AA6gPREGyhIAE2", name: "Mauricio Baquero", email: "mbaquero@fortlauderdale.gov", role: "Admin" },
-];
-
-const categories: Category[] = [
-  { id: "cat-1", name: "Interior Maintenance & Cleaning", parentId: null, color: "blue" },
-  { id: "sub-1-1", name: "Check AC units", parentId: "cat-1" },
-  { id: "sub-1-2", name: "Clean restrooms", parentId: "cat-1" },
-  { id: "sub-1-3", name: "Clean electrical rooms", parentId: "cat-1" },
-  { id: "sub-1-4", name: "Check cleaning supplies", parentId: "cat-1" },
-  { id: "sub-1-5", name: "Carpet cleaning", parentId: "cat-1" },
-  { id: "sub-1-6", name: "Floor repairs", parentId: "cat-1" },
-  { id: "sub-1-7", name: "Building repairs", parentId: "cat-1" },
-
-  { id: "cat-2", name: "Exterior Maintenance", parentId: null, color: "green" },
-  { id: "sub-2-1", name: "Landscaping", parentId: "cat-2" },
-  { id: "sub-2-2", name: "Parking lot cleaning", parentId: "cat-2" },
-  { id: "sub-2-3", name: "Window washing", parentId: "cat-2" },
-];
-
-const locations: Location[] = [
-    { id: 'loc-1', name: 'Building A', numberOfFloors: 5 },
-    { id: 'loc-2', name: 'Building B', numberOfFloors: 3 },
-    { id: 'loc-3', name: 'Main Lobby' },
-    { id: 'loc-4', name: 'Exterior - Parking Lot' },
-];
-
-let tickets: Ticket[] = []; // This is now empty, data comes from Firestore
-
-const recurringTasks: RecurringTask[] = [
-    { id: "rec-1", title: "Daily Restroom Checks", categoryId: "sub-1-2", frequency: "Daily", lastCompleted: [addDays(new Date(), -1)] },
-    { id: "rec-2", title: "Weekly Lobby Cleaning", categoryId: "sub-1-6", frequency: "Weekly", lastCompleted: [addWeeks(new Date(), -1)], dayOfWeek: 1 },
-    { id: "rec-3", title: "Monthly AC Filter Change", categoryId: "sub-1-1", frequency: "Monthly", lastCompleted: [addMonths(new Date(), -1)], weekOfMonth: 2, dayOfWeek: 2 },
-];
+export const toDate = (date: Date | Timestamp): Date => {
+    if (date instanceof Date) {
+        return date;
+    }
+    return date.toDate();
+}
 
 // Data Accessor Functions
-export const getUsers = () => users;
-export const getUserById = (id: string | null) => users.find(u => u.uid === id);
-export const getCurrentUser = () => users[0]; // For demo, always return the first user
-
-export const getCategories = () => categories;
-export const getParentCategories = () => categories.filter(c => c.parentId === null);
-export const getSubCategories = (parentId: string) => categories.filter(c => c.parentId === parentId);
-export const getCategoryById = (id: string) => categories.find(c => c.id === id);
-export const getCategoryColor = (categoryId: string): CategoryColor | 'gray' => {
+export const getCategoryColor = (categoryId: string, categories: Category[]): CategoryColor | 'gray' => {
+    const getCategoryById = (id: string) => categories.find(c => c.id === id);
     let category = getCategoryById(categoryId);
     if (category?.parentId) {
         category = getCategoryById(category.parentId);
@@ -124,29 +84,18 @@ export const getCategoryColor = (categoryId: string): CategoryColor | 'gray' => 
     return category?.color || 'gray';
 }
 
-export const getLocations = () => locations;
-export const getLocationById = (id: string) => locations.find(l => l.id === id);
-
-// Ticket functions now interact with Firestore via hooks/server actions
-// We keep updateTicket here for now to be used in client components, but it will be updated to use Firestore.
-export const updateTicket = (id: string, updatedTicketData: Partial<Ticket>) => {
-    console.log(`Updating ticket ${id} in Firestore with:`, updatedTicketData);
-    // This will be replaced with a a firestore update call.
-};
-
-export const getRecurringTasks = () => recurringTasks;
 
 export const getNextDueDate = (task: RecurringTask): Date => {
   const today = startOfDay(new Date());
 
   const mostRecentCompletion = task.lastCompleted && task.lastCompleted.length > 0
-    ? new Date(Math.max(...task.lastCompleted.map(d => ((d as Timestamp).toDate ? (d as Timestamp).toDate() : d as Date).getTime())))
+    ? new Date(Math.max(...task.lastCompleted.map(d => toDate(d).getTime())))
     : null;
 
   const lastCompleted = mostRecentCompletion ? startOfDay(mostRecentCompletion) : null;
 
+  // If it was completed today, the next due date is in the future
   if (lastCompleted && isSameDay(lastCompleted, today)) {
-     // If it was completed today, the next due date is in the future
      switch (task.frequency) {
       case "Daily":
         return addDays(today, 1);
@@ -171,19 +120,25 @@ export const getNextDueDate = (task: RecurringTask): Date => {
     case 'Monthly': {
       if (task.weekOfMonth && task.dayOfWeek !== undefined) {
         let candidateDate = setDate(baseDate, 1); // Start of month
-        candidateDate = setDay(candidateDate, task.dayOfWeek, { weekStartsOn: 0 }); // First dayOfWeek of month
         
-        // Adjust for week of month
-        let dayOfMonth = candidateDate.getDate() + (task.weekOfMonth - 1) * 7;
+        let firstDayOfWeekInMonth = setDay(candidateDate, task.dayOfWeek, { weekStartsOn: 0 });
+        if (isAfter(candidateDate, firstDayOfWeekInMonth)) {
+            firstDayOfWeekInMonth = addWeeks(firstDayOfWeekInMonth, 1);
+        }
+        
+        let dayOfMonth = firstDayOfWeekInMonth.getDate() + (task.weekOfMonth - 1) * 7;
         
         candidateDate = setDate(candidateDate, dayOfMonth);
 
         // If this month's date is already past, move to next month
         if (isAfter(baseDate, candidateDate) || isSameDay(baseDate, candidateDate)) {
-          candidateDate = addMonths(candidateDate, 1);
+          candidateDate = addMonths(baseDate, 1);
           candidateDate = setDate(candidateDate, 1); // Start of next month
-          candidateDate = setDay(candidateDate, task.dayOfWeek, { weekStartsOn: 0 });
-          dayOfMonth = candidateDate.getDate() + (task.weekOfMonth - 1) * 7;
+          firstDayOfWeekInMonth = setDay(candidateDate, task.dayOfWeek, { weekStartsOn: 0 });
+            if (isAfter(candidateDate, firstDayOfWeekInMonth)) {
+                firstDayOfWeekInMonth = addWeeks(firstDayOfWeekInMonth, 1);
+            }
+          dayOfMonth = firstDayOfWeekInMonth.getDate() + (task.weekOfMonth - 1) * 7;
           candidateDate = setDate(candidateDate, dayOfMonth);
         }
         return candidateDate;
