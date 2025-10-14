@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { RecurringTask, Category, User, getNextDueDate, toDate, Ticket } from '@/lib/data';
+import { RecurringTask, Category, User, getNextDueDate, toDate } from '@/lib/data';
 import {
   Table,
   TableBody,
@@ -27,17 +27,22 @@ import {
   doc,
   arrayUnion,
   writeBatch,
-  serverTimestamp,
-  where,
   Timestamp,
 } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 
-type CompletedTask = RecurringTask & { completedBy: User; completedAt: Date };
+type CompletedTask = {
+    id: string;
+    title: string;
+    completedAt: Date;
+    completedBy: User;
+};
 
 export default function RecurringTasksPage() {
   const firestore = useFirestore();
   const { user: currentUser } = useUser();
+  const [allTasks, setAllTasks] = useState<RecurringTask[]>([]);
+  const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>([]);
 
   const recurringTasksQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, 'recurringTasks')) : null),
@@ -45,21 +50,6 @@ export default function RecurringTasksPage() {
   );
   const { data: recurringTasks, isLoading: isLoadingRecurringTasks } =
     useCollection<RecurringTask>(recurringTasksQuery);
-
-  const completedRecurringTasksQuery = useMemoFirebase(
-    () =>
-      firestore
-        ? query(
-            collection(firestore, 'tasks'),
-            where('description', '>=', 'Completed recurring task:'),
-            where('description', '<', 'Completed recurring task' + '\uf8ff')
-          )
-        : null,
-    [firestore]
-  );
-  const { data: completedTasks, isLoading: isLoadingCompletedTasks } =
-    useCollection<Ticket>(completedRecurringTasksQuery);
-
 
   const categoriesQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, 'categories')) : null),
@@ -74,37 +64,46 @@ export default function RecurringTasksPage() {
   );
   const { data: users, isLoading: isLoadingUsers } =
     useCollection<User>(usersQuery);
+  
+  useEffect(() => {
+    if (recurringTasks) {
+      setAllTasks(recurringTasks);
+
+      const allCompleted: CompletedTask[] = [];
+      recurringTasks.forEach(task => {
+        if (task.lastCompleted && task.lastCompleted.length > 0) {
+            const latestCompletion = toDate(task.lastCompleted[task.lastCompleted.length - 1]);
+            const completedByUser = users?.find(u => u.uid === task.completedBy);
+            if (completedByUser) {
+                allCompleted.push({
+                    id: task.id,
+                    title: task.title,
+                    completedAt: latestCompletion,
+                    completedBy: completedByUser
+                });
+            }
+        }
+      });
+      setCompletedTasks(allCompleted.sort((a,b) => b.completedAt.getTime() - a.completedAt.getTime()));
+    }
+  }, [recurringTasks, users]);
 
   const pendingTasks = useMemo(() => {
-    if (!recurringTasks) {
+    if (!allTasks) {
       return [];
     }
-
-    const pending = recurringTasks.filter(task => {
-      const lastCompletion = task.lastCompleted && task.lastCompleted.length > 0 
-        ? toDate(task.lastCompleted[task.lastCompleted.length - 1] as Timestamp) 
-        : null;
-      
-      if (lastCompletion && isToday(lastCompletion)) {
-         return false;
-      }
-      
-      return true;
-    });
-
-    return pending.sort(
-      (a, b) => getNextDueDate(a).getTime() - getNextDueDate(b).getTime()
-    );
-  }, [recurringTasks]);
-
-  const sortedCompletedTasks = useMemo(() => {
-    if (!completedTasks) return [];
-    return completedTasks.sort((a, b) => {
-        const dateA = a.actualCompletionDate ? toDate(a.actualCompletionDate).getTime() : 0;
-        const dateB = b.actualCompletionDate ? toDate(b.actualCompletionDate).getTime() : 0;
-        return dateB - dateA;
-    });
-  }, [completedTasks]);
+    return allTasks
+      .filter(task => {
+        const lastCompletion =
+          task.lastCompleted && task.lastCompleted.length > 0
+            ? toDate(task.lastCompleted[task.lastCompleted.length - 1] as Timestamp)
+            : null;
+        return !(lastCompletion && isToday(lastCompletion));
+      })
+      .sort(
+        (a, b) => getNextDueDate(a).getTime() - getNextDueDate(b).getTime()
+      );
+  }, [allTasks]);
 
 
   const getCategoryById = (id: string) => categories?.find(c => c.id === id);
@@ -125,35 +124,28 @@ export default function RecurringTasksPage() {
     const user = users.find(u => u.uid === currentUser.uid);
 
     if (user) {
-        const batch = writeBatch(firestore);
-
         const recurringTaskRef = doc(firestore, 'recurringTasks', task.id);
-        batch.update(recurringTaskRef, {
-            lastCompleted: arrayUnion(now)
+        const updatedLastCompleted = (Array.isArray(task.lastCompleted) ? task.lastCompleted : []).concat(now);
+        
+        updateDocumentNonBlocking(recurringTaskRef, {
+            lastCompleted: arrayUnion(now),
+            completedBy: currentUser.uid,
         });
 
-        const ticketId = 'T' + Date.now();
-        const newTaskRef = doc(firestore, 'tasks', ticketId);
-        batch.set(newTaskRef, {
-            id: ticketId,
+        const optimisticCompletedTask: CompletedTask = {
+            id: task.id,
             title: task.title,
-            description: `Completed recurring task: ${task.title}`,
-            categoryId: task.categoryId,
-            status: "Completed",
-            assignedToId: currentUser.uid,
-            createdAt: serverTimestamp(),
-            requestedCompletionDate: now,
-            actualCompletionDate: now,
-            location: 'N/A' // Recurring tasks don't have a location
-        });
-        
-        batch.commit().catch(error => {
-            console.error("Error completing recurring task:", error);
-        });
+            completedBy: user,
+            completedAt: now,
+        };
+        setCompletedTasks(prev => [optimisticCompletedTask, ...prev].sort((a,b) => b.completedAt.getTime() - a.completedAt.getTime()));
+
+        const updatedOptimisticTask = { ...task, lastCompleted: updatedLastCompleted, completedBy: user.uid };
+        setAllTasks(prev => prev.map(t => t.id === task.id ? updatedOptimisticTask : t));
     }
   };
 
-  const isLoading = isLoadingRecurringTasks || isLoadingCompletedTasks || isLoadingCategories || isLoadingUsers;
+  const isLoading = isLoadingRecurringTasks || isLoadingCategories || isLoadingUsers;
 
   if (isLoading) {
     return (
@@ -191,7 +183,7 @@ export default function RecurringTasksPage() {
                     const color = getCategoryColor(task.categoryId);
                     const nextDueDate = getNextDueDate(task);
                     const isTaskOverdue =
-                      isPast(nextDueDate) && !isToday(startOfDay(nextDueDate));
+                      isPast(nextDueDate) && !isSameDay(startOfDay(nextDueDate), startOfDay(new Date()));
 
                     return (
                       <TableRow key={task.id}>
@@ -250,19 +242,18 @@ export default function RecurringTasksPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedCompletedTasks.length > 0 ? (
-                  sortedCompletedTasks.map(task => {
-                    const completedByUser = getUserById(task.assignedToId);
+                {completedTasks.length > 0 ? (
+                  completedTasks.map(task => {
                     return (
                       <TableRow
-                        key={`completed-${task.id}`}
+                        key={`completed-${task.id}-${task.completedAt.getTime()}`}
                       >
                         <TableCell className="font-medium">
                           {task.title}
                         </TableCell>
-                        <TableCell>{completedByUser?.name || 'N/A'}</TableCell>
+                        <TableCell>{task.completedBy?.name || 'N/A'}</TableCell>
                         <TableCell>
-                            {task.actualCompletionDate ? format(toDate(task.actualCompletionDate), 'MM/dd/yyyy') : 'N/A'}
+                            {format(task.completedAt, 'MM/dd/yyyy')}
                         </TableCell>
                       </TableRow>
                     );
