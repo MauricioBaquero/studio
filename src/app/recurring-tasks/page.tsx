@@ -20,17 +20,14 @@ import {
   useFirestore,
   useMemoFirebase,
   useUser,
+  updateDocumentNonBlocking,
 } from '@/firebase';
 import {
   collection,
   query,
   doc,
-  serverTimestamp,
-  Timestamp,
-  writeBatch,
   arrayUnion,
-  addDoc,
-  deleteDoc,
+  Timestamp,
 } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 
@@ -44,7 +41,7 @@ export default function RecurringTasksPage() {
     () => (firestore ? query(collection(firestore, 'recurringTasks')) : null),
     [firestore]
   );
-  const { data: initialTasks, isLoading: isLoadingTasks } =
+  const { data: recurringTasks, isLoading: isLoadingTasks } =
     useCollection<RecurringTask>(recurringTasksQuery);
 
   const categoriesQuery = useMemoFirebase(
@@ -61,35 +58,37 @@ export default function RecurringTasksPage() {
   const { data: users, isLoading: isLoadingUsers } =
     useCollection<User>(usersQuery);
 
-  const [allTasks, setAllTasks] = useState<RecurringTask[]>([]);
-  const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>([]);
-
-  useEffect(() => {
-    if (initialTasks) {
-      setAllTasks(initialTasks);
-    }
-  }, [initialTasks]);
+  const [completedToday, setCompletedToday] = useState<CompletedTask[]>([]);
 
   const pendingTasks = useMemo(() => {
-    if (!allTasks || !users) {
+    if (!recurringTasks) {
       return [];
     }
     const todayCompletedIds = new Set(
-      completedTasks.filter(c => isToday(c.completedAt)).map(c => c.id)
+      completedToday.map(c => c.id)
     );
 
-    const pending = allTasks.filter(task => {
-      // Don't show if it's already been completed today
+    const pending = recurringTasks.filter(task => {
       if (todayCompletedIds.has(task.id)) {
         return false;
       }
+      
+      const lastCompletion = task.lastCompleted && task.lastCompleted.length > 0 
+        ? toDate(task.lastCompleted[task.lastCompleted.length - 1] as Timestamp) 
+        : null;
+      
+      if (lastCompletion && isToday(lastCompletion)) {
+         return false;
+      }
+      
       return true;
     });
 
     return pending.sort(
       (a, b) => getNextDueDate(a).getTime() - getNextDueDate(b).getTime()
     );
-  }, [allTasks, users, completedTasks]);
+  }, [recurringTasks, completedToday]);
+
 
   const getCategoryById = (id: string) => categories?.find(c => c.id === id);
 
@@ -101,91 +100,29 @@ export default function RecurringTasksPage() {
     return category?.color || 'gray';
   };
 
-  const handleTaskCheck = (recurringTask: RecurringTask) => {
-    if (!firestore || !currentUser) return;
+  const handleTaskCheck = (task: RecurringTask) => {
+    if (!firestore || !currentUser || !users) return;
 
     const now = new Date();
-    const user = users?.find(u => u.uid === currentUser.uid);
+    const user = users.find(u => u.uid === currentUser.uid);
 
     if (user) {
         // --- Optimistic UI Update ---
         const optimisticCompletedTask: CompletedTask = {
-            ...recurringTask,
+            ...task,
             completedBy: user,
             completedAt: now,
-            lastCompleted: [...(Array.isArray(recurringTask.lastCompleted) ? recurringTask.lastCompleted : []), now]
-          };
-        setCompletedTasks(prev => [...prev, optimisticCompletedTask]);
-        
-        // --- Database Operations ---
-        const batch = writeBatch(firestore);
-
-        // 1. Create a one-off "Completed" task for the main task board
-        const completedTaskRef = doc(collection(firestore, 'tasks'));
-        const completedTaskData = {
-            id: completedTaskRef.id,
-            title: `(Recurring) ${recurringTask.title}`,
-            description: `Completed recurring task: ${recurringTask.title}`,
-            categoryId: recurringTask.categoryId,
-            location: 'N/A', // Recurring tasks don't have locations yet
-            locationId: null,
-            requestedCompletionDate: now,
-            actualCompletionDate: now,
-            status: 'Completed',
-            assignedToId: currentUser.uid,
-            approvedBy: currentUser.uid,
-            createdAt: serverTimestamp(),
+            lastCompleted: [...(Array.isArray(task.lastCompleted) ? task.lastCompleted : []), now]
         };
-        batch.set(completedTaskRef, completedTaskData);
+        setCompletedToday(prev => [...prev, optimisticCompletedTask]);
 
-        // 2. Delete the old recurring task template
-        const oldRecurringTaskRef = doc(firestore, 'recurringTasks', recurringTask.id);
-        batch.delete(oldRecurringTaskRef);
-
-        // 3. Create a new recurring task template for the next cycle
-        const newRecurringTaskRef = doc(collection(firestore, 'recurringTasks'));
-        
-        const newRecurringTaskData: Omit<RecurringTask, 'id'> = {
-            title: recurringTask.title,
-            categoryId: recurringTask.categoryId,
-            frequency: recurringTask.frequency,
-            lastCompleted: [now],
-        };
-
-        if (recurringTask.frequency !== 'Daily') {
-            if (recurringTask.dayOfWeek !== undefined) newRecurringTaskData.dayOfWeek = recurringTask.dayOfWeek;
-            if (recurringTask.frequency === 'Monthly' && recurringTask.weekOfMonth !== undefined) {
-                newRecurringTaskData.weekOfMonth = recurringTask.weekOfMonth;
-            }
-        }
-        
-        batch.set(newRecurringTaskRef, newRecurringTaskData);
-
-        // Optimistically remove the old task from the list immediately
-        setAllTasks(prevTasks => prevTasks.filter(t => t.id !== recurringTask.id));
-
-        batch.commit().then(() => {
-            // On success, add the newly created recurring task (with its new ID) to the UI
-             setAllTasks(prevTasks => {
-                 const newTasks = prevTasks.filter(t => t.id !== recurringTask.id);
-                 newTasks.push({ ...newRecurringTaskData, id: newRecurringTaskRef.id } as RecurringTask);
-                 return newTasks;
-             });
-        }).catch(error => {
-            console.error('Failed to complete recurring task:', error);
-            // Revert UI on failure
-            setCompletedTasks(prev => prev.filter(t => t.id !== optimisticCompletedTask.id || t.completedAt !== optimisticCompletedTask.completedAt));
-            setAllTasks(prev => {
-                const reverted = [...prev];
-                // If the old task is not there, add it back
-                if (!reverted.some(t => t.id === recurringTask.id)) {
-                    reverted.push(recurringTask);
-                }
-                return reverted;
-            });
+        // --- Database Operation ---
+        const taskRef = doc(firestore, 'recurringTasks', task.id);
+        updateDocumentNonBlocking(taskRef, {
+            lastCompleted: arrayUnion(now)
         });
     }
-};
+  };
 
   const isLoading = isLoadingTasks || isLoadingCategories || isLoadingUsers;
 
@@ -262,7 +199,7 @@ export default function RecurringTasksPage() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={4} className="h-24 text-center">
-                      No scheduled maintenance tasks.
+                      All recurring tasks for today are complete!
                     </TableCell>
                   </TableRow>
                 )}
@@ -285,8 +222,8 @@ export default function RecurringTasksPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {completedTasks.length > 0 ? (
-                  completedTasks.map(task => {
+                {completedToday.length > 0 ? (
+                  completedToday.map(task => {
                     const category = getCategoryById(task.categoryId);
                     const color = getCategoryColor(task.categoryId);
                     return (
@@ -304,7 +241,7 @@ export default function RecurringTasksPage() {
                           )}
                         </TableCell>
                         <TableCell>{task.completedBy.name}</TableCell>
-                        <TableCell>{format(task.completedAt, 'p')}</TableCell>
+                        <TableCell>{format(task.completedAt, 'MM/dd/yyyy')}</TableCell>
                       </TableRow>
                     );
                   })
