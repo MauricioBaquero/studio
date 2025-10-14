@@ -1,11 +1,9 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { SidebarProvider } from '@/components/ui/sidebar';
-import AppSidebar from '@/components/layout/sidebar';
-import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeProvider } from '@/components/theme-provider';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { AppLayout } from '@/components/layout/app-layout';
 
 export const metadata: Metadata = {
   title: 'Facilities App',
@@ -32,19 +30,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <FirebaseClientProvider>
-            <SidebarProvider>
-              <div className="flex flex-1">
-                <AppSidebar />
-                <div className="flex flex-1 flex-col">
-                  <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
-                    <SidebarTrigger />
-                  </header>
-                  <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
-                    {children}
-                  </main>
-                </div>
-              </div>
-            </SidebarProvider>
+            <AppLayout>{children}</AppLayout>
           </FirebaseClientProvider>
           <Toaster />
         </ThemeProvider>
