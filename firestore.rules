@@ -1,148 +1,153 @@
 /**
- * @fileoverview Firestore Security Rules
+ * @fileoverview Firestore Security Rules for Facility Maintenance App.
  *
  * Core Philosophy:
- * This ruleset prioritizes secure authorization by enforcing role-based access
- * control.  Data validation is relaxed to facilitate rapid prototyping.
+ * This ruleset enforces role-based access control.  Users are assigned roles (Admin, Staff, Viewer),
+ * and permissions are granted based on these roles.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profiles, accessible only to the owner.
- * - /tasks/{taskId}: Stores tasks.
- * - /recurringTasks/{recurringTaskId}: Stores recurring tasks.
- * - /locations/{locationId}: Stores locations.
- * - /categories/{categoryId}: Stores categories.
- * - /settings/appSettings: Stores application settings, accessible only to admins.
+ * - /users/{userId}: Stores user profiles. Access is restricted based on role.
+ * - /tasks/{taskId}: Stores facility tasks. Access is restricted based on role.
+ * - /recurringTasks/{recurringTaskId}: Stores recurring tasks. Access is restricted based on role.
+ * - /locations/{locationId}: Stores facility locations. Access is restricted based on role.
+ * - /categories/{categoryId}: Stores task categories. Access is restricted based on role.
+ * - /settings/appSettings: Stores system settings. Only Admins can modify.
  *
  * Key Security Decisions:
- * - Users can only read/write their own user document.
- * - Settings are only editable by Admin users.
- *
- * Denormalization for Authorization:
- *  - User roles are denormalized onto the user document itself to simplify role checks.
+ * - Users collection can be read only by admins and staff.
+ * - Only admins can create, update, or delete settings.
+ * - All other collections can be read and write by admin and staff.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the current user is signed in.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the current user is the owner of the resource.
-     */
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the current user is an existing owner of the resource (for update/delete).
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Checks if the current user has the Admin role.
-     */
-    function isAdmin() {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
-    }
-
-    /**
-     * @description Rules for /users/{userId} collection.
+     * @description Manages user profiles. Only admins and staff can read users data.
      * @path /users/{userId}
-     * @allow (create) - User 'abc' can create their own user document: `auth.uid == 'abc'`
-     * @deny (create) - User 'def' cannot create a user document for 'abc': `auth.uid != 'abc'`
-     * @allow (get, update, delete) - User 'abc' can get, update and delete their own user document: `auth.uid == 'abc'`
-     * @deny (get, update, delete) - User 'def' cannot get, update and delete user document 'abc': `auth.uid != 'abc'`
-     * @principle Enforces document ownership for writes, restricts access to a user's own data tree.
+     * @allow (get, list) User with role admin or staff can access user data.
+     * @deny (get, list) User with role viewer cannot access user data.
+     * @allow (create) User with role admin or staff can create user data.
+     * @deny (create) User with role viewer cannot create user data.
+     * @allow (update) User with role admin or staff can update user data.
+     * @deny (update) User with role viewer cannot update user data.
+     * @allow (delete) User with role admin or staff can delete user data.
+     * @deny (delete) User with role viewer cannot delete user data.
+     * @principle Enforces role-based access control for user profiles.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow get, list: if isAdmin() || isStaff();
+      allow create, update, delete: if isAdmin() || isStaff();
     }
 
     /**
-     * @description Rules for /tasks/{taskId} collection.
+     * @description Manages facility tasks. Only admins and staff can manage tasks.
      * @path /tasks/{taskId}
-     * @allow (create) - Any signed-in user can create a task.
-     * @allow (get, list) - Any user can read tasks.
-     * @allow (update, delete) - Only the owner of the task can update or delete it.
-     * @deny (update, delete) - If the task does not have an owner, deny updates and deletes.
-     * @principle Public read with owner-only writes.
+     * @allow (get, list) User with role admin or staff can access task data.
+     * @deny (get, list) User with role viewer cannot access task data.
+     * @allow (create) User with role admin or staff can create task data.
+     * @deny (create) User with role viewer cannot create task data.
+     * @allow (update) User with role admin or staff can update task data.
+     * @deny (update) User with role viewer cannot update task data.
+     * @allow (delete) User with role admin or staff can delete task data.
+     * @deny (delete) User with role viewer cannot delete task data.
+     * @principle Enforces role-based access control for facility tasks.
      */
     match /tasks/{taskId} {
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow get, list: if isAdmin() || isStaff();
+      allow create, update, delete: if isAdmin() || isStaff();
     }
 
     /**
-     * @description Rules for /recurringTasks/{recurringTaskId} collection.
+     * @description Manages recurring tasks. Only admins and staff can manage recurring tasks.
      * @path /recurringTasks/{recurringTaskId}
-     * @allow (create) - Any signed-in user can create a recurring task.
-     * @allow (get, list) - Any user can read recurring tasks.
-     * @allow (update, delete) - Only the owner of the recurring task can update or delete it.
-     * @deny (update, delete) - If the recurring task does not have an owner, deny updates and deletes.
-     * @principle Public read with owner-only writes.
+     * @allow (get, list) User with role admin or staff can access recurring task data.
+     * @deny (get, list) User with role viewer cannot access recurring task data.
+     * @allow (create) User with role admin or staff can create recurring task data.
+     * @deny (create) User with role viewer cannot create user data.
+     * @allow (update) User with role admin or staff can update recurring task data.
+     * @deny (update) User with role viewer cannot update recurring task data.
+     * @allow (delete) User with role admin or staff can delete recurring task data.
+     * @deny (delete) User with role viewer cannot delete recurring task data.
+     * @principle Enforces role-based access control for recurring tasks.
      */
     match /recurringTasks/{recurringTaskId} {
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow get, list: if isAdmin() || isStaff();
+      allow create, update, delete: if isAdmin() || isStaff();
     }
 
     /**
-     * @description Rules for /locations/{locationId} collection.
+     * @description Manages facility locations. Only admins and staff can manage facility locations.
      * @path /locations/{locationId}
-     * @allow (create) - Any signed-in user can create a location.
-     * @allow (get, list) - Any user can read locations.
-     * @allow (update, delete) - Only the owner of the location can update or delete it.
-     * @deny (update, delete) - If the location does not have an owner, deny updates and deletes.
-     * @principle Public read with owner-only writes.
+     * @allow (get, list) User with role admin or staff can access location data.
+     * @deny (get, list) User with role viewer cannot access location data.
+     * @allow (create) User with role admin or staff can create location data.
+     * @deny (create) User with role viewer cannot create user data.
+     * @allow (update) User with role admin or staff can update location data.
+     * @deny (update) User with role viewer cannot update location data.
+     * @allow (delete) User with role admin or staff can delete location data.
+     * @deny (delete) User with role viewer cannot delete location data.
+     * @principle Enforces role-based access control for facility locations.
      */
     match /locations/{locationId} {
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow get, list: if isAdmin() || isStaff();
+      allow create, update, delete: if isAdmin() || isStaff();
     }
 
     /**
-     * @description Rules for /categories/{categoryId} collection.
+     * @description Manages task categories. Only admins and staff can manage categories.
      * @path /categories/{categoryId}
-     * @allow (create) - Any signed-in user can create a category.
-     * @allow (get, list) - Any user can read categories.
-     * @allow (update, delete) - Only the owner of the category can update or delete it.
-     * @deny (update, delete) - If the category does not have an owner, deny updates and deletes.
-     * @principle Public read with owner-only writes.
+     * @allow (get, list) User with role admin or staff can access category data.
+     * @deny (get, list) User with role viewer cannot access category data.
+     * @allow (create) User with role admin or staff can create category data.
+     * @deny (create) User with role viewer cannot create user data.
+     * @allow (update) User with role admin or staff can update category data.
+     * @deny (update) User with role viewer cannot update category data.
+     * @allow (delete) User with role admin or staff can delete category data.
+     * @deny (delete) User with role viewer cannot delete category data.
+     * @principle Enforces role-based access control for task categories.
      */
     match /categories/{categoryId} {
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow get, list: if isAdmin() || isStaff();
+      allow create, update, delete: if isAdmin() || isStaff();
     }
 
     /**
-     * @description Rules for /settings/appSettings document.
+     * @description Manages system-wide settings. Only admins can modify settings.
      * @path /settings/appSettings
-     * @allow (get) - Any user can read the app settings.
-     * @allow (update) - Only an admin user can update the app settings.
-     * @deny (create, delete) - No one can create or delete the app settings.
-     * @principle Role-based access control.
+     * @allow get: if true;
+     * @allow list: if false;
+     * @allow create: if isAdmin();
+     * @allow update: if isAdmin();
+     * @allow delete: if isAdmin();
+     * @principle Restricts modification of app settings to admins only.
      */
-    match /settings/appSettings {
+    match /settings/{document} {
       allow get: if true;
       allow list: if false;
-      allow create: if false;
+      allow create: if isAdmin();
       allow update: if isAdmin();
-      allow delete: if false;
+      allow delete: if isAdmin();
     }
+  }
+
+  function isSignedIn() {
+    return request.auth != null;
+  }
+
+  function isAdmin() {
+    return isSignedIn() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin');
+  }
+
+  function isStaff() {
+    return isSignedIn() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Staff');
+  }
+
+  function isViewer() {
+      return isSignedIn() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Viewer');
+  }
+
+  function isOwner(userId) {
+    return isSignedIn() && request.auth.uid == userId;
   }
 }
