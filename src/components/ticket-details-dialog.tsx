@@ -156,21 +156,29 @@ export function TicketDetailsDialog({
       
       const updatedTicketData: Partial<Ticket> & {comments?: any} = {
           status: finalStatus,
-          completionPhotoUrl: photoUrl,
+          completionPhotoUrl: photoUrl === undefined ? null : photoUrl,
       };
 
       if (finalStatus === 'Completed') {
         updatedTicketData.approvedBy = currentUser.uid;
       }
       
+      let optimisticComment: Comment | null = null;
       if (newCommentText.trim()) {
-        const newComment: Comment = {
+        const newCommentForDb = {
             userId: currentUser.uid,
             userName: currentUser.name || "Unknown User",
             text: newCommentText.trim(),
             createdAt: serverTimestamp(),
         };
-        updatedTicketData.comments = arrayUnion(newComment);
+        updatedTicketData.comments = arrayUnion(newCommentForDb);
+        
+        optimisticComment = {
+            userId: currentUser.uid,
+            userName: currentUser.name || "Unknown User",
+            text: newCommentText.trim(),
+            createdAt: new Date(),
+        };
       }
 
       const ticketRef = doc(firestore, 'tasks', ticket.id);
@@ -178,11 +186,7 @@ export function TicketDetailsDialog({
 
       // Optimistic update for UI
       const newTicketState = { ...ticket, ...updatedTicketData };
-      if(updatedTicketData.comments) {
-        const optimisticComment: Comment = {
-            ...updatedTicketData.comments[0],
-            createdAt: new Date(),
-        }
+      if(optimisticComment) {
         newTicketState.comments = [...(ticket.comments || []), optimisticComment];
       }
 
@@ -224,7 +228,9 @@ export function TicketDetailsDialog({
 
   const isAdmin = currentUser?.role === 'Admin';
   const isViewer = currentUser?.role === 'Viewer';
+  const isStaff = currentUser?.role === 'Staff';
   const isPendingReview = ticket.status === 'Pending Review';
+  const canEditStatus = isAdmin;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -256,7 +262,7 @@ export function TicketDetailsDialog({
                  <Select 
                     value={currentStatus} 
                     onValueChange={(value) => setCurrentStatus(value as TicketStatus)}
-                    disabled={isSaving || !isAdmin}
+                    disabled={isSaving || !canEditStatus}
                 >
                     <SelectTrigger className="w-full">
                         <SelectValue placeholder="Set status" />
