@@ -86,28 +86,3 @@ body {
     @apply bg-background text-foreground;
   }
 }
-
-@layer components {
-  .gradient-animation {
-    background-image: linear-gradient(
-      90deg,
-      hsl(248deg 91% 31%) 0%,
-      hsl(226deg 83% 51%) 29%,
-      hsl(210deg 100% 50%) 43%,
-      hsl(210deg 100% 50%) 57%,
-      hsl(226deg 83% 51%) 71%,
-      hsl(248deg 91% 31%) 100%
-    );
-    background-size: 300% 100%;
-    animation: gradient-animation 4s linear infinite;
-  }
-}
-
-@keyframes gradient-animation {
-  0% {
-    background-position: 100%;
-  }
-  100% {
-    background-position: 0%;
-  }
-}
