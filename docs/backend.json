@@ -21,7 +21,8 @@
         },
         "role": {
           "type": "string",
-          "description": "The role of the user (e.g., Admin, Staff, Viewer)."
+          "enum": ["Admin", "Staff", "Viewer"],
+          "description": "The role of the user."
         }
       },
       "required": [
@@ -164,23 +165,29 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Category",
       "type": "object",
-      "description": "Represents a task category.",
+      "description": "Represents a task category, which can be a parent or sub-category.",
       "properties": {
-        "categoryName": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Category."
+        },
+        "name": {
           "type": "string",
           "description": "The name of the category."
         },
-        "parentCategoryId": {
-          "type": "string",
-          "description": "The ID of the parent category, if this is a sub-category."
+        "parentId": {
+          "type": ["string", "null"],
+          "description": "The ID of the parent category. If null, this is a parent category."
         },
         "color": {
           "type": "string",
-          "description": "The color associated with the category."
+          "description": "The color associated with the category (for parent categories)."
         }
       },
       "required": [
-        "categoryName"
+        "id",
+        "name",
+        "parentId"
       ]
     },
     "Setting": {
