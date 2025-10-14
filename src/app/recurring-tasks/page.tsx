@@ -20,6 +20,7 @@ import {
   useFirestore,
   useMemoFirebase,
   useUser,
+  updateDocumentNonBlocking
 } from '@/firebase';
 import {
   collection,
@@ -273,3 +274,4 @@ export default function RecurringTasksPage() {
     </div>
   );
 }
+
