@@ -146,7 +146,7 @@ export function TicketDetailsDialog({
 
     try {
       if (newPhotoDataUrl && storage) {
-        const storageRef = ref(storage, `ticket-photos/${ticket.id}/${Date.now()}`);
+        const storageRef = ref(storage, `task photos/${ticket.id}/${Date.now()}`);
         const uploadResult = await uploadString(storageRef, newPhotoDataUrl, 'data_url');
         finalPhotoUrl = await getDownloadURL(uploadResult.ref);
       } else if (completionPhoto === null && ticket.completionPhotoUrl) {
