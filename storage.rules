@@ -1,0 +1,36 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Match the folder where task completion photos are stored.
+    // The {ticketId} wildcard captures the unique ID of the task.
+    // The {photoId} wildcard captures the unique name of the photo file.
+    match /task photos/{ticketId}/{photoId} {
+
+      /**
+       * @description Allows any authenticated user to read photo files.
+       * @path /task photos/{ticketId}/{photoId}
+       * @allow (read) - Any user who is signed in.
+       */
+      allow read: if request.auth != null;
+
+      /**
+       * @description Allows authenticated users to upload new photos if they are images and under 5MB.
+       * @path /task photos/{ticketId}/{photoId}
+       * @allow (create, update) - Any signed-in user, provided the file is an image and less than 5MB.
+       */
+      allow write: if request.auth != null
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+                   
+      /**
+       * @description Allows authenticated users to delete photos.
+       * @path /task photos/{ticketId}/{photoId}
+       * @allow (delete) - Any user who is signed in.
+       * @principle A more restrictive rule could limit this to Admins or the user who uploaded it.
+       */
+      allow delete: if request.auth != null;
+    }
+  }
+}
