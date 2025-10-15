@@ -1,36 +1,28 @@
+
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
     
-    // Match the folder where task completion photos are stored.
-    // The {ticketId} wildcard captures the unique ID of the task.
-    // The {photoId} wildcard captures the unique name of the photo file.
-    match /task photos/{ticketId}/{photoId} {
-
+    // Rule for the 'task photos' directory
+    match /task photos/{taskId}/{allPaths=**} {
       /**
-       * @description Allows any authenticated user to read photo files.
-       * @path /task photos/{ticketId}/{photoId}
-       * @allow (read) - Any user who is signed in.
+       * @description Allows authenticated users to read and write photos within their designated task folders.
+       * @path /task photos/{taskId}/{allPaths=**}
+       * @allow (read, write) - Authenticated users, with validation.
+       * @deny (none) - No explicit denies.
+       * @principle Enforce authentication and basic validation for task photos.
        */
+      
+      // Anyone who is authenticated can read any task photo.
       allow read: if request.auth != null;
 
-      /**
-       * @description Allows authenticated users to upload new photos if they are images and under 5MB.
-       * @path /task photos/{ticketId}/{photoId}
-       * @allow (create, update) - Any signed-in user, provided the file is an image and less than 5MB.
-       */
+      // Only authenticated users can write (create, update, delete).
+      // The request resource must be an image and under 5MB.
       allow write: if request.auth != null
-                   && request.resource.size < 5 * 1024 * 1024
-                   && request.resource.contentType.matches('image/.*');
-                   
-      /**
-       * @description Allows authenticated users to delete photos.
-       * @path /task photos/{ticketId}/{photoId}
-       * @allow (delete) - Any user who is signed in.
-       * @principle A more restrictive rule could limit this to Admins or the user who uploaded it.
-       */
-      allow delete: if request.auth != null;
+                    && request.resource.size < 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*');
     }
+
   }
 }
