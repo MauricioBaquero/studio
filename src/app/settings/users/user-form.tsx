@@ -38,7 +38,7 @@ import { z } from 'zod';
 
 const formSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters."),
-  role: z.enum(["Admin", "Staff", "Viewer"]),
+  role: z.enum(USER_ROLES),
 });
 
 type UserFormValues = z.infer<typeof formSchema>;
