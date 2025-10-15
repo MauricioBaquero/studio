@@ -68,6 +68,27 @@ const seedCategories = async (firestore: any) => {
     }
 };
 
+
+const seedSettings = async (firestore: any) => {
+    const settingsDocRef = doc(firestore, 'settings', 'appSettings');
+    const settingsSnap = await getDoc(settingsDocRef);
+
+    if (settingsSnap.exists()) {
+        return; // Document already exists, no need to seed.
+    }
+
+    console.log("Settings document not found, seeding with default values...");
+
+    try {
+        await setDoc(settingsDocRef, {
+            completionDateRange: 7 // Default value
+        });
+        console.log('Settings document seeded successfully.');
+    } catch (error) {
+        console.error('Error seeding settings document:', error);
+    }
+}
+
 export function FirebaseClientProvider({
   children,
 }: FirebaseClientProviderProps) {
@@ -79,6 +100,7 @@ export function FirebaseClientProvider({
     const seedData = async () => {
       if (!firebaseServices.firestore || !firebaseServices.auth) return;
       await seedCategories(firebaseServices.firestore);
+      await seedSettings(firebaseServices.firestore);
     };
 
     seedData();
