@@ -9,7 +9,7 @@ export default {
   ],
   safelist: [
     {
-      pattern: /bg-(red|orange|yellow|green|blue|purple|gray)-500/,
+      pattern: /bg-(red|orange|yellow|green|blue|purple|gray|pink|teal|indigo|cyan)-500/,
     }
   ],
   theme: {
