@@ -1,28 +1,18 @@
-
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    // Rule for the 'task photos' directory
-    match /task photos/{taskId}/{allPaths=**} {
-      /**
-       * @description Allows authenticated users to read and write photos within their designated task folders.
-       * @path /task photos/{taskId}/{allPaths=**}
-       * @allow (read, write) - Authenticated users, with validation.
-       * @deny (none) - No explicit denies.
-       * @principle Enforce authentication and basic validation for task photos.
-       */
-      
-      // Anyone who is authenticated can read any task photo.
+    // Rules for task photos
+    // Path segment with a space must be quoted
+    match /'task photos'/{taskId}/{fileName} {
+      // Allow reads if the user is authenticated.
       allow read: if request.auth != null;
-
-      // Only authenticated users can write (create, update, delete).
-      // The request resource must be an image and under 5MB.
+      
+      // Allow writes (uploads) if the user is authenticated, the file is an image,
+      // and the file is less than 5MB.
       allow write: if request.auth != null
-                    && request.resource.size < 5 * 1024 * 1024
-                    && request.resource.contentType.matches('image/.*');
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
     }
-
   }
 }
