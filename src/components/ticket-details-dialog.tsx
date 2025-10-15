@@ -135,11 +135,10 @@ export function TicketDetailsDialog({
   const handleUpdate = async (newStatus?: TicketStatus) => {
     if (!firestore || !currentUser) return;
     setIsSaving(true);
-    let photoUrl: string | null = ticket.completionPhotoUrl || null;
+    let finalPhotoUrl: string | null = ticket.completionPhotoUrl || null;
 
     let finalStatus = newStatus || currentStatus;
 
-    // If task is being assigned and is "Not Started", move it to "In Progress"
     if (assignedTo && ticket.status === 'Not Started' && assignedTo !== ticket.assignedToId) {
         finalStatus = 'In Progress';
     }
@@ -149,14 +148,14 @@ export function TicketDetailsDialog({
       if (newPhotoDataUrl && storage) {
         const storageRef = ref(storage, `ticket-photos/${ticket.id}/${Date.now()}`);
         const uploadResult = await uploadString(storageRef, newPhotoDataUrl, 'data_url');
-        photoUrl = await getDownloadURL(uploadResult.ref);
+        finalPhotoUrl = await getDownloadURL(uploadResult.ref);
       } else if (completionPhoto === null && ticket.completionPhotoUrl) {
-        photoUrl = null;
+        finalPhotoUrl = null;
       }
       
       const dataForDb: Partial<Ticket> = {
           status: finalStatus,
-          completionPhotoUrl: photoUrl,
+          completionPhotoUrl: finalPhotoUrl,
           assignedToId: assignedTo
       };
 
