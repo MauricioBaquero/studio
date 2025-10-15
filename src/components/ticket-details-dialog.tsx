@@ -329,12 +329,12 @@ export function TicketDetailsDialog({
             </div>
 
         </div>
-        <DialogFooter className="sm:justify-between pt-4 border-t">
-            <div>
+        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between pt-4 border-t gap-2">
+            <div className="w-full sm:w-auto">
             {isAdmin && (
                 <AlertDialog>
                 <AlertDialogTrigger asChild>
-                    <Button variant="destructive" disabled={isSaving}>
+                    <Button variant="destructive" disabled={isSaving} className="w-full sm:w-auto">
                     <Trash2 className="mr-2 h-4 w-4" /> Delete Ticket
                     </Button>
                 </AlertDialogTrigger>
@@ -353,7 +353,7 @@ export function TicketDetailsDialog({
                 </AlertDialog>
             )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col-reverse sm:flex-row gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
                 Cancel
             </Button>
