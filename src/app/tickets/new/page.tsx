@@ -25,11 +25,7 @@ export default function NewTicketPage() {
     useCollection<Location>(locationsQuery);
 
   const parentCategories = useMemo(
-    () => categories?.filter(c => !c.parentId) || [],
-    [categories]
-  );
-  const allSubcategories = useMemo(
-    () => categories?.filter(c => !!c.parentId) || [],
+    () => categories || [],
     [categories]
   );
 
@@ -48,7 +44,6 @@ export default function NewTicketPage() {
       ) : (
         <TicketForm
           parentCategories={parentCategories}
-          allSubcategories={allSubcategories}
           locations={locations || []}
         />
       )}

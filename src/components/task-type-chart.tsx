@@ -29,23 +29,36 @@ const colorMap: { [key: string]: string } = {
     yellow: 'hsl(var(--chart-5))',
     red: 'hsl(var(--destructive))',
     gray: 'hsl(var(--muted-foreground))',
+    pink: 'hsl(var(--chart-1))',
+    teal: 'hsl(var(--chart-2))',
+    indigo: 'hsl(var(--chart-4))',
+    cyan: 'hsl(var(--chart-5))',
 };
 
 export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
-  const getCategoryById = (id: string) => categories.find(c => c.id === id);
+  const findSubCategory = (subcategoryId: string) => {
+    if (!categories) return null;
+    for (const parent of categories) {
+        const sub = parent.subcategories?.find(s => s.id === subcategoryId);
+        if (sub) {
+            return { ...sub, parentName: parent.name, color: parent.color };
+        }
+    }
+    return null;
+  }
+
 
   const tasksByCategory = tickets.reduce(
     (acc, ticket) => {
-      const subCategory = getCategoryById(ticket.categoryId);
+      const subCategoryInfo = findSubCategory(ticket.categoryId);
       
-      if (subCategory) {
-        const parentCategory = subCategory.parentId ? getCategoryById(subCategory.parentId) : subCategory;
-        const color = parentCategory?.color || 'gray';
+      if (subCategoryInfo) {
+        const color = subCategoryInfo?.color || 'gray';
 
-        if (!acc[subCategory.name]) {
-          acc[subCategory.name] = { value: 0, color: color };
+        if (!acc[subCategoryInfo.name]) {
+          acc[subCategoryInfo.name] = { value: 0, color: color };
         }
-        acc[subCategory.name].value += 1;
+        acc[subCategoryInfo.name].value += 1;
       }
       return acc;
     },

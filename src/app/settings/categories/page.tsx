@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -7,7 +8,7 @@ import {
   useMemoFirebase,
   deleteDocumentNonBlocking,
 } from '@/firebase';
-import { collection, query, where, doc } from 'firebase/firestore';
+import { collection, query, doc } from 'firebase/firestore';
 import { Category } from '@/lib/data';
 import {
   Card,
@@ -55,25 +56,9 @@ export default function CategoriesPage() {
   const { data: categories, isLoading } = useCollection<Category>(categoriesQuery);
 
   const parentCategories = useMemo(
-    () => categories?.filter(c => !c.parentId) || [],
+    () => categories || [],
     [categories]
   );
-
-  const subCategories = useMemo(
-    () => categories?.filter(c => !!c.parentId) || [],
-    [categories]
-  );
-  
-  const getCategoryById = (id: string) => categories?.find(c => c.id === id);
-
-  const getCategoryColor = (categoryId: string) => {
-    let category = getCategoryById(categoryId);
-    if (category?.parentId) {
-      category = getCategoryById(category.parentId);
-    }
-    return category?.color || 'gray';
-  }
-
 
   const handleOpenForm = (category: Category | null) => {
     setEditingCategory(category);
@@ -136,7 +121,6 @@ export default function CategoriesPage() {
         <CardContent>
           <Accordion type="multiple" className="w-full">
             {parentCategories.map(pCat => {
-              const subCats = subCategories.filter(s => s.parentId === pCat.id);
               const color = pCat.color || 'gray';
               return (
                 <AccordionItem value={pCat.id} key={pCat.id}>
@@ -173,30 +157,12 @@ export default function CategoriesPage() {
                   </div>
                   <AccordionContent>
                     <ul className="space-y-2 pl-8 pt-2">
-                      {subCats.map(sCat => (
+                      {pCat.subcategories?.map(sCat => (
                         <li
                           key={sCat.id}
-                          className="group flex items-center justify-between p-2 rounded-md hover:bg-accent"
+                          className="group flex items-center justify-between p-2 rounded-md"
                         >
                           <span>{sCat.name}</span>
-                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => handleOpenForm(sCat)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
-                              onClick={() => confirmDelete(sCat.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
                         </li>
                       ))}
                     </ul>
@@ -211,7 +177,6 @@ export default function CategoriesPage() {
         open={isFormOpen}
         onOpenChange={handleCloseForm}
         category={editingCategory}
-        parentCategories={parentCategories}
       />
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>

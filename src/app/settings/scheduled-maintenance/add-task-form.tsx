@@ -35,6 +35,7 @@ import {
   Location,
   RECURRING_FREQUENCIES,
   RecurringTask,
+  Subcategory,
 } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -60,7 +61,6 @@ interface AddTaskFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   parentCategories: Category[];
-  allSubcategories: Category[];
   locations: Location[];
   editingTask: RecurringTask | null;
 }
@@ -69,7 +69,6 @@ export function AddTaskForm({
   open,
   onOpenChange,
   parentCategories,
-  allSubcategories,
   locations,
   editingTask,
 }: AddTaskFormProps) {
@@ -78,9 +77,12 @@ export function AddTaskForm({
   const isEditMode = !!editingTask;
 
   const getParentCategoryId = (subcategoryId: string) => {
-    return (
-      allSubcategories.find(sub => sub.id === subcategoryId)?.parentId || null
-    );
+    for (const parent of parentCategories) {
+      if (parent.subcategories.some(sub => sub.id === subcategoryId)) {
+        return parent.id;
+      }
+    }
+    return null;
   };
 
   const [selectedParent, setSelectedParent] = useState<string | null>(
@@ -127,13 +129,13 @@ export function AddTaskForm({
       });
       setSelectedParent(null);
     }
-  }, [editingTask, form, allSubcategories]);
+  }, [editingTask, form]);
 
   const subcategoryOptions = useMemo(() => {
-    return selectedParent
-      ? allSubcategories.filter(sub => sub.parentId === selectedParent)
-      : [];
-  }, [selectedParent, allSubcategories]);
+    if (!selectedParent) return [];
+    const parent = parentCategories.find(p => p.id === selectedParent);
+    return parent?.subcategories || [];
+  }, [selectedParent, parentCategories]);
 
   const onSubmit = (data: RecurringTaskFormValues) => {
     if (!firestore) return;

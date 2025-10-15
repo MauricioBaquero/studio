@@ -36,7 +36,6 @@ import { doc, serverTimestamp } from "firebase/firestore";
 
 interface TicketFormProps {
   parentCategories: Category[];
-  allSubcategories: Category[];
   locations: Location[];
 }
 
@@ -55,7 +54,7 @@ const formSchema = z.object({
 });
 
 
-export function TicketForm({ parentCategories, allSubcategories, locations }: TicketFormProps) {
+export function TicketForm({ parentCategories, locations }: TicketFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const firestore = useFirestore();
@@ -75,9 +74,11 @@ export function TicketForm({ parentCategories, allSubcategories, locations }: Ti
     },
   });
 
-  const subcategoryOptions = selectedParent
-    ? allSubcategories.filter((sub) => sub.parentId === selectedParent)
-    : [];
+  const subcategoryOptions = useMemo(() => {
+    if (!selectedParent) return [];
+    const parent = parentCategories.find(p => p.id === selectedParent);
+    return parent?.subcategories || [];
+  }, [selectedParent, parentCategories]);
 
   const selectedLocation = useMemo(() => {
     if (!selectedLocationId) return null;

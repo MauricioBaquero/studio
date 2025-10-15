@@ -127,18 +127,20 @@ export default function RecurringTasksPage() {
   }, [allTasks]);
 
 
-  const getCategoryById = (id: string) => categories?.find(c => c.id === id);
+  const findSubCategory = (subcategoryId: string) => {
+    if (!categories) return null;
+    for (const parent of categories) {
+        const sub = parent.subcategories?.find(s => s.id === subcategoryId);
+        if (sub) {
+            return { ...sub, parentName: parent.name, color: parent.color };
+        }
+    }
+    return null;
+  }
+  
   const getUserById = (id: string | null) => users?.find(u => u.uid === id);
   const getLocationById = (id: string | null) => locations?.find(l => l.id === id);
 
-
-  const getCategoryColor = (categoryId: string) => {
-    let category = getCategoryById(categoryId);
-    if (category?.parentId) {
-      category = getCategoryById(category.parentId);
-    }
-    return category?.color || 'gray';
-  };
 
   const handleTaskCheck = (task: RecurringTask) => {
     if (!firestore || !currentUser || !users) return;
@@ -172,9 +174,8 @@ export default function RecurringTasksPage() {
   const isLoading = isLoadingRecurringTasks || isLoadingCategories || isLoadingUsers || isLoadingLocations;
 
   const renderTaskRow = (task: RecurringTask, isCompleted: boolean) => {
-    const category = getCategoryById(task.categoryId);
+    const subCategoryInfo = findSubCategory(task.categoryId);
     const location = getLocationById(task.locationId);
-    const color = getCategoryColor(task.categoryId);
     const nextDueDate = getNextDueDate(task);
     const isTaskOverdue =
       isPast(nextDueDate) && !isSameDay(startOfDay(nextDueDate), startOfDay(new Date()));
@@ -194,8 +195,8 @@ export default function RecurringTasksPage() {
           {task.title}
         </TableCell>
         <TableCell>
-          {category ? (
-            <Badge color={color as any}>{category.name}</Badge>
+          {subCategoryInfo ? (
+            <Badge color={subCategoryInfo.color as any}>{subCategoryInfo.name}</Badge>
           ) : (
             '-'
           )}

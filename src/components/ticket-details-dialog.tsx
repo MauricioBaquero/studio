@@ -75,8 +75,17 @@ export function TicketDetailsDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const getUserById = (id: string | null) => users.find(u => u.uid === id);
-  const getCategoryById = (id: string) => categories.find(c => c.id === id);
 
+  const findSubCategory = (subcategoryId: string) => {
+    if (!categories) return null;
+    for (const parent of categories) {
+        const sub = parent.subcategories?.find(s => s.id === subcategoryId);
+        if (sub) {
+            return { ...sub, parentName: parent.name, color: parent.color };
+        }
+    }
+    return null;
+  }
 
   useEffect(() => {
     if (open) {
@@ -189,7 +198,8 @@ export function TicketDetailsDialog({
   }
   
   const assignedUser = getUserById(ticket.assignedToId);
-  const category = getCategoryById(ticket.categoryId);
+  const subCategoryInfo = findSubCategory(ticket.categoryId);
+
 
   const isAdmin = currentUser?.role === 'Admin';
   const isViewer = currentUser?.role === 'Viewer';
@@ -219,7 +229,7 @@ export function TicketDetailsDialog({
           <div className="grid grid-cols-2 gap-6">
              <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Category</p>
-                <p className="text-sm">{category?.name}</p>
+                <p className="text-sm">{subCategoryInfo?.name}</p>
             </div>
              <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Location</p>

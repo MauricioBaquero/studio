@@ -13,6 +13,7 @@ import {
   RecurringTask,
   Category,
   Location,
+  getCategoryColor,
 } from '@/lib/data';
 import {
   Card,
@@ -91,23 +92,21 @@ export default function ScheduledMaintenancePage() {
   const { data: locations, isLoading: isLoadingLocations } =
     useCollection<Location>(locationsQuery);
     
-  const getCategoryById = (id: string) => categories?.find(c => c.id === id);
+  const findSubCategory = (subcategoryId: string) => {
+    if (!categories) return null;
+    for (const parent of categories) {
+        const sub = parent.subcategories?.find(s => s.id === subcategoryId);
+        if (sub) {
+            return { ...sub, parentName: parent.name, color: parent.color };
+        }
+    }
+    return null;
+  }
   const getLocationById = (id: string) => locations?.find(l => l.id === id);
 
-  const getCategoryColor = (categoryId: string) => {
-    let category = getCategoryById(categoryId);
-    if (category?.parentId) {
-      category = getCategoryById(category.parentId);
-    }
-    return category?.color || 'gray';
-  }
 
   const parentCategories = useMemo(
-    () => categories?.filter(c => !c.parentId) || [],
-    [categories]
-  );
-  const allSubcategories = useMemo(
-    () => categories?.filter(c => !!c.parentId) || [],
+    () => categories || [],
     [categories]
   );
 
@@ -152,9 +151,6 @@ export default function ScheduledMaintenancePage() {
     return '';
   };
 
-  const getFullCategory = (categoryId: string) => {
-    return categories?.find(c => c.id === categoryId);
-  };
 
   const isLoading = isLoadingTasks || isLoadingCategories || isLoadingLocations;
 
@@ -189,15 +185,14 @@ export default function ScheduledMaintenancePage() {
               </TableHeader>
               <TableBody>
                 {tasks?.map(task => {
-                  const category = getFullCategory(task.categoryId);
+                  const subCategoryInfo = findSubCategory(task.categoryId);
                   const location = getLocationById(task.locationId);
-                  const color = getCategoryColor(task.categoryId);
                   return (
                     <TableRow key={task.id}>
                       <TableCell className="font-medium">{task.title}</TableCell>
                       <TableCell>
-                        {category ? (
-                          <Badge color={color as any}>{category.name}</Badge>
+                        {subCategoryInfo ? (
+                          <Badge color={subCategoryInfo.color as any}>{subCategoryInfo.name}</Badge>
                         ) : (
                           '-'
                         )}
@@ -243,7 +238,6 @@ export default function ScheduledMaintenancePage() {
         open={isFormOpen}
         onOpenChange={handleCloseForm}
         parentCategories={parentCategories}
-        allSubcategories={allSubcategories}
         locations={locations || []}
         editingTask={editingTask}
       />

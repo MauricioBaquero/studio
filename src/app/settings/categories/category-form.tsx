@@ -2,8 +2,9 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { v4 as uuidv4 } from 'uuid';
 import {
   Dialog,
   DialogContent,
@@ -39,12 +40,19 @@ import {
 } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { z } from 'zod';
+import { PlusCircle, Trash2 } from 'lucide-react';
+
+const subcategorySchema = z.object({
+    id: z.string(),
+    name: z.string().min(3, "Subcategory name must be at least 3 characters."),
+});
 
 const formSchema = z.object({
-  name: z.string().min(3, "Category name must be at least 3 characters."),
-  parentId: z.string().nullable(),
+  name: z.string().min(3, 'Category name must be at least 3 characters.'),
   color: z.string().optional(),
+  subcategories: z.array(subcategorySchema).min(1, "At least one subcategory is required."),
 });
+
 
 type CategoryFormValues = z.infer<typeof formSchema>;
 
@@ -52,14 +60,12 @@ interface CategoryFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   category: Category | null;
-  parentCategories: Category[];
 }
 
 export function CategoryForm({
   open,
   onOpenChange,
   category,
-  parentCategories,
 }: CategoryFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -69,23 +75,28 @@ export function CategoryForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      parentId: null,
       color: 'gray',
+      subcategories: [],
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "subcategories",
   });
 
   useEffect(() => {
     if (category) {
       form.reset({
         name: category.name,
-        parentId: category.parentId,
         color: category.color || 'gray',
+        subcategories: category.subcategories || [],
       });
     } else {
       form.reset({
         name: '',
-        parentId: null,
         color: 'gray',
+        subcategories: [{ id: uuidv4(), name: '' }],
       });
     }
   }, [category, form]);
@@ -108,11 +119,10 @@ export function CategoryForm({
     onOpenChange(false);
   };
 
-  const isSubcategory = form.watch('parentId') !== null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{isEditMode ? 'Edit' : 'Add New'} Category</DialogTitle>
           <DialogDescription>
@@ -122,86 +132,91 @@ export function CategoryForm({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Plumbing" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="parentId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Parent Category (optional)</FormLabel>
-                  <Select
-                    onValueChange={value => {
-                      field.onChange(value === 'none' ? null : value);
-                    }}
-                    value={field.value || 'none'}
-                  >
+             <div className="grid grid-cols-2 gap-4">
+                <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Category Name</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a parent category" />
-                      </SelectTrigger>
+                        <Input placeholder="e.g., Plumbing" {...field} />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">
-                        None (this is a parent category)
-                      </SelectItem>
-                      {parentCategories.map(cat => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {!isSubcategory && (
-              <FormField
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
                 control={form.control}
                 name="color"
                 render={({ field }) => (
-                  <FormItem>
+                    <FormItem>
                     <FormLabel>Color</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
+                        <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a color" />
+                            <SelectValue placeholder="Select a color" />
                         </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
+                        </FormControl>
+                        <SelectContent>
                         {CATEGORY_COLORS.map(color => (
-                          <SelectItem key={color} value={color}>
+                            <SelectItem key={color} value={color}>
                             <div className="flex items-center gap-2">
-                              <div
+                                <div
                                 className={cn(
-                                  'h-4 w-4 rounded-full',
-                                  `bg-${color}-500`
+                                    'h-4 w-4 rounded-full',
+                                    `bg-${color}-500`
                                 )}
-                              />
-                              <span className="capitalize">{color}</span>
+                                />
+                                <span className="capitalize">{color}</span>
                             </div>
-                          </SelectItem>
+                            </SelectItem>
                         ))}
-                      </SelectContent>
+                        </SelectContent>
                     </Select>
                     <FormMessage />
-                  </FormItem>
+                    </FormItem>
                 )}
-              />
-            )}
+                />
+            </div>
+            
+            <div className="space-y-4">
+                <FormLabel>Subcategories</FormLabel>
+                {fields.map((field, index) => (
+                    <div key={field.id} className="flex items-center gap-2">
+                         <FormField
+                            control={form.control}
+                            name={`subcategories.${index}.name`}
+                            render={({ field }) => (
+                                <FormItem className="flex-1">
+                                <FormControl>
+                                    <Input placeholder={`Subcategory ${index + 1}`} {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            onClick={() => remove(index)}
+                            disabled={fields.length <= 1}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+                ))}
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => append({ id: uuidv4(), name: '' })}
+                >
+                   <PlusCircle className="mr-2 h-4 w-4" /> Add Subcategory
+                </Button>
+                 {form.formState.errors.subcategories?.root && <p className="text-sm font-medium text-destructive">{form.formState.errors.subcategories.root.message}</p>}
+            </div>
+
 
             <DialogFooter>
               <Button

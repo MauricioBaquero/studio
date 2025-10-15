@@ -11,7 +11,7 @@ export const CATEGORY_COLORS = ["red", "orange", "yellow", "green", "blue", "pur
 
 export type UserRole = (typeof USER_ROLES)[number];
 export type TicketStatus = (typeof TICKET_STATUSES)[number];
-export type RecurringFrequency = (typeof RECURRİNG_FREQUENCIES)[number];
+export type RecurringFrequency = (typeof RECURRING_FREQUENCIES)[number];
 export type CategoryColor = (typeof CATEGORY_COLORS)[number];
 
 // Schemas and Types
@@ -23,11 +23,17 @@ export const userSchema = z.object({
 });
 export type User = z.infer<typeof userSchema>;
 
+export const subcategorySchema = z.object({
+    id: z.string(),
+    name: z.string(),
+});
+export type Subcategory = z.infer<typeof subcategorySchema>;
+
 export const categorySchema = z.object({
   id: z.string(),
   name: z.string(),
-  parentId: z.string().nullable(),
   color: z.enum(CATEGORY_COLORS).optional(),
+  subcategories: z.array(subcategorySchema),
 });
 export type Category = z.infer<typeof categorySchema>;
 
@@ -91,12 +97,8 @@ export const toDate = (date: Date | Timestamp): Date => {
 }
 
 export const getCategoryColor = (categoryId: string, categories: Category[]): CategoryColor | 'gray' => {
-    const getCategoryById = (id: string) => categories.find(c => c.id === id);
-    let category = getCategoryById(categoryId);
-    if (category?.parentId) {
-        category = getCategoryById(category.parentId);
-    }
-    return category?.color || 'gray';
+    const parentCategory = categories.find(parent => parent.subcategories.some(sub => sub.id === categoryId));
+    return parentCategory?.color || 'gray';
 }
 
 export const getNextDueDate = (task: RecurringTask): Date => {

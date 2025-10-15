@@ -7,6 +7,7 @@ import {
   User,
   Category,
   toDate,
+  getCategoryColor,
 } from '@/lib/data';
 import {
   Card,
@@ -56,20 +57,21 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
   }, []);
 
   const getUserById = (id: string | null) => users.find(u => u.uid === id);
-  const getCategoryById = (id: string) => categories.find(c => c.id === id);
-  const getCategoryColor = (categoryId: string) => {
-    let category = getCategoryById(categoryId);
-    if (category?.parentId) {
-      category = getCategoryById(category.parentId);
+
+  const findSubCategory = (subcategoryId: string) => {
+    if (!categories) return null;
+    for (const parent of categories) {
+        const sub = parent.subcategories?.find(s => s.id === subcategoryId);
+        if (sub) {
+            return { ...sub, parentName: parent.name, color: parent.color };
+        }
     }
-    return category?.color || 'gray';
+    return null;
   }
 
   const assignedUser = getUserById(ticket.assignedToId);
   const approver = getUserById(ticket.approvedBy || null);
-  const category = getCategoryById(ticket.categoryId);
-  const parentCategory = category?.parentId ? getCategoryById(category.parentId) : null;
-  const color = getCategoryColor(ticket.categoryId);
+  const subCategoryInfo = findSubCategory(ticket.categoryId);
 
   const isAdmin = currentUser?.role === 'Admin';
   const isViewer = currentUser?.role === 'Viewer';
@@ -139,8 +141,8 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
           <div className="flex items-center gap-2 text-muted-foreground">
             <Tag className="h-4 w-4" />
             <div className="flex flex-wrap gap-1">
-              {parentCategory && <Badge color={color as any}>{parentCategory.name}</Badge>}
-              {category && <Badge color={color as any}>{category.name}</Badge>}
+              {subCategoryInfo?.parentName && <Badge color={subCategoryInfo.color as any}>{subCategoryInfo.parentName}</Badge>}
+              {subCategoryInfo?.name && <Badge color={subCategoryInfo.color as any}>{subCategoryInfo.name}</Badge>}
             </div>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">

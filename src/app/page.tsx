@@ -47,7 +47,7 @@ export default function TaskBoardPage() {
   const { data: categories, isLoading: isLoadingCategories } = useCollection<Category>(categoriesQuery);
   const { data: locations, isLoading: isLoadingLocations } = useCollection<Location>(locationsQuery);
 
-  const parentCategories = useMemo(() => categories?.filter(c => !c.parentId) || [], [categories]);
+  const parentCategories = useMemo(() => categories || [], [categories]);
   
   const filteredTickets = useMemo(() => {
     if (!tickets || !currentUser) return [];
@@ -68,8 +68,9 @@ export default function TaskBoardPage() {
       }
 
       if (filters.category !== 'all') {
-        const subCat = categories?.find(s => s.id === ticket.categoryId && s.parentId === filters.category);
-        if (ticket.categoryId !== filters.category && !subCat) {
+        const parentCat = categories?.find(c => c.id === filters.category);
+        const subCat = parentCat?.subcategories.find(s => s.id === ticket.categoryId);
+        if (!subCat) {
           return false;
         }
       }

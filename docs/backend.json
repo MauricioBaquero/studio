@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -115,13 +116,17 @@
       "type": "object",
       "description": "Represents a recurring task schedule.",
       "properties": {
-        "taskName": {
+        "title": {
           "type": "string",
           "description": "The name of the recurring task."
         },
         "categoryId": {
           "type": "string",
           "description": "Reference to Category."
+        },
+        "locationId": {
+          "type": "string",
+          "description": "Reference to Location."
         },
         "frequency": {
           "type": "string",
@@ -133,26 +138,26 @@
           "description": "The frequency of the task."
         },
         "dayOfWeek": {
-          "type": "string",
+          "type": "number",
           "description": "The day of the week for weekly tasks."
         },
         "weekOfMonth": {
           "type": "number",
           "description": "The week of the month for monthly tasks."
         },
-        "actualCompletionDate": {
-          "type": "string",
-          "format": "date",
-          "description": "The last date the task was completed."
-        },
-        "completedBy": {
-          "type": "string",
-          "description": "Reference to the User who last completed the task."
+        "lastCompleted": {
+          "type": "array",
+          "description": "A log of all completion dates for this task.",
+          "items": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "required": [
-        "taskName",
+        "title",
         "categoryId",
+        "locationId",
         "frequency"
       ]
     },
@@ -179,7 +184,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Category",
       "type": "object",
-      "description": "Represents a task category, which can be a parent or sub-category.",
+      "description": "Represents a task category, which contains sub-categories.",
       "properties": {
         "id": {
           "type": "string",
@@ -189,19 +194,26 @@
           "type": "string",
           "description": "The name of the category."
         },
-        "parentId": {
-          "type": ["string", "null"],
-          "description": "The ID of the parent category. If null, this is a parent category."
-        },
         "color": {
           "type": "string",
-          "description": "The color associated with the category (for parent categories)."
+          "description": "The color associated with the category."
+        },
+        "subcategories": {
+            "type": "array",
+            "description": "A list of sub-categories.",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string" },
+                    "name": { "type": "string" }
+                },
+                "required": ["id", "name"]
+            }
         }
       },
       "required": [
         "id",
-        "name",
-        "parentId"
+        "name"
       ]
     },
     "Setting": {

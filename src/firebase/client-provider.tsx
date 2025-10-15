@@ -7,6 +7,7 @@ import { initializeFirebase } from '@/firebase';
 import { doc, getDoc, setDoc, writeBatch, collection, getDocs, query, where } from 'firebase/firestore';
 import type { Category } from '@/lib/data';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { v4 as uuidv4 } from 'uuid';
 
 interface FirebaseClientProviderProps {
   children: ReactNode;
@@ -54,19 +55,9 @@ const seedCategories = async (firestore: any) => {
         batch.set(parentDocRef, {
             id: parentId,
             name: catData.name,
-            parentId: null,
             color: catData.color,
+            subcategories: catData.subcategories.map(subName => ({ id: uuidv4(), name: subName }))
         });
-
-        for (const subName of catData.subcategories) {
-            const subId = doc(categoriesCollection).id;
-            const subDocRef = doc(categoriesCollection, subId);
-            batch.set(subDocRef, {
-                id: subId,
-                name: subName,
-                parentId: parentId,
-            });
-        }
     }
 
     try {
