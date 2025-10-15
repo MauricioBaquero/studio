@@ -1,3 +1,4 @@
+
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
@@ -36,9 +37,11 @@ export function initializeFirebase() {
 export function getSdks(firebaseApp: FirebaseApp) {
   const firestoreDb = getFirestore(firebaseApp);
   const storage = getStorage(firebaseApp);
+  const auth = getAuth(firebaseApp);
+
   return {
     firebaseApp,
-    auth: getAuth(firebaseApp),
+    auth,
     firestore: firestoreDb,
     storage: storage
   };
