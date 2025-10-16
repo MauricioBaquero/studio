@@ -34,6 +34,7 @@ import { Loader2, Upload, X, Trash2 } from 'lucide-react';
 import { useFirestore, useStorage, updateDocumentNonBlocking, useUser, deleteDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
+import { FirebaseError } from 'firebase/app';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -144,15 +145,33 @@ export function TicketDetailsDialog({
     }
 
 
-    try {
-      if (newPhotoDataUrl && storage) {
+    // Step 1: Handle photo upload if there's a new one.
+    if (newPhotoDataUrl && storage) {
+      try {
         const storageRef = ref(storage, `taskphotos/${ticket.id}/${Date.now()}`);
         const uploadResult = await uploadString(storageRef, newPhotoDataUrl, 'data_url');
         finalPhotoUrl = await getDownloadURL(uploadResult.ref);
-      } else if (completionPhoto === null && ticket.completionPhotoUrl) {
-        finalPhotoUrl = null;
+      } catch (error) {
+        console.error("Failed to upload photo:", error);
+        let description = "Could not upload photo. Please try again.";
+        if (error instanceof FirebaseError) {
+          description = error.message;
+        }
+        toast({
+          title: "Upload Failed",
+          description,
+          variant: "destructive",
+        });
+        setIsSaving(false);
+        return; // Stop the update process if upload fails
       }
-      
+    } else if (completionPhoto === null && ticket.completionPhotoUrl) {
+      // Handle photo removal
+      finalPhotoUrl = null;
+    }
+    
+    // Step 2: Update the Firestore document.
+    try {
       const dataForDb: Partial<Ticket> = {
           status: finalStatus,
           completionPhotoUrl: finalPhotoUrl,
@@ -174,10 +193,10 @@ export function TicketDetailsDialog({
       onOpenChange(false);
 
     } catch (error) {
-        console.error("Failed to update ticket:", error);
+        console.error("Failed to update ticket document:", error);
         toast({
             title: "Update Failed",
-            description: "Could not save your changes. Please try again.",
+            description: "Could not save ticket details. Please try again.",
             variant: "destructive",
         })
     } finally {
@@ -378,3 +397,5 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
+
+    
