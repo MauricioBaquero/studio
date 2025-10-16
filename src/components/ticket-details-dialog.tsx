@@ -125,7 +125,7 @@ export function TicketDetailsDialog({
     const reader = new FileReader();
     reader.onloadend = () => {
       const result = reader.result as string;
-      setNewPhotoDataUrl(result); // Store preview URL
+      setNewPhotoDataUrl(result);
     };
     reader.onerror = () => {
       toast({
@@ -142,7 +142,7 @@ export function TicketDetailsDialog({
 
     setIsSaving(true);
     try {
-      // If it's a newly added photo (preview), just clear the preview state
+      // If it's the newly added photo preview, just clear it
       if (newPhotoDataUrl && photoToRemove.url === newPhotoDataUrl) {
         setNewPhotoDataUrl(null);
         if (fileInputRef.current) {
@@ -151,20 +151,19 @@ export function TicketDetailsDialog({
         return;
       }
 
-      // If it's an existing photo, delete from storage and update state
+      // If it's an existing photo from storage, delete it now
       const photoRef = ref(storage, photoToRemove.url);
       await deleteObject(photoRef);
 
       setCurrentPhotos(prev => prev.filter(p => p.url !== photoToRemove.url));
       
-      toast({ title: "Photo Removed", description: "The photo has been removed and will be permanently deleted when you save." });
+      toast({ title: "Photo Removed", description: "The photo has been removed from storage." });
 
     } catch (error) {
         console.error("Error removing photo:", error);
         let description = "Could not remove the photo. Please try again.";
         if (error instanceof FirebaseError && error.code === 'storage/object-not-found') {
             description = "Photo not found in storage. It may have already been deleted.";
-            // If not found in storage, still try to remove it from state
             setCurrentPhotos(prev => prev.filter(p => p.url !== photoToRemove.url));
         }
         toast({ title: "Removal Failed", description, variant: "destructive" });
@@ -178,55 +177,55 @@ export function TicketDetailsDialog({
     setIsSaving(true);
 
     try {
-        let finalPhotos = [...currentPhotos];
+      let photosForDb = [...currentPhotos];
 
-        // Handle new photo upload
-        if (newPhotoDataUrl && storage) {
-            const mimeType = newPhotoDataUrl.match(/data:(.*);base64,/)?.[1];
-            const fileExtension = mimeType?.split('/')[1] || 'jpeg';
-            const photoId = uuidv4();
-            const fileName = `${photoId}.${fileExtension}`;
-            const storageRef = ref(storage, `taskphotos/${ticket.id}/${fileName}`);
-            
-            const metadata = { customMetadata: { 'createdAt': new Date().toISOString() } };
+      // Handle new photo upload if one is staged
+      if (newPhotoDataUrl && storage) {
+        const mimeType = newPhotoDataUrl.match(/data:(.*);base64,/)?.[1];
+        const fileExtension = mimeType?.split('/')[1] || 'jpeg';
+        const photoId = uuidv4();
+        const fileName = `${photoId}.${fileExtension}`;
+        const storageRef = ref(storage, `taskphotos/${ticket.id}/${fileName}`);
+        
+        const metadata = { customMetadata: { 'createdAt': new Date().toISOString() } };
 
-            const uploadResult = await uploadString(storageRef, newPhotoDataUrl, 'data_url', metadata);
-            const downloadURL = await getDownloadURL(uploadResult.ref);
+        const uploadResult = await uploadString(storageRef, newPhotoDataUrl, 'data_url', metadata);
+        const downloadURL = await getDownloadURL(uploadResult.ref);
 
-            const newPhoto: Photo = {
-              url: downloadURL,
-              createdAt: new Date(),
-            };
-            finalPhotos.push(newPhoto);
-        }
-
-        let finalStatus = newStatus || currentStatus;
-        if (assignedTo && ticket.status === 'Not Started' && assignedTo !== ticket.assignedToId) {
-            finalStatus = 'In Progress';
-        }
-
-        const dataForDb: Partial<Ticket> = {
-            status: finalStatus,
-            assignedToId: assignedTo,
-            photos: finalPhotos,
+        const newPhoto: Photo = {
+          url: downloadURL,
+          createdAt: new Date(),
         };
+        photosForDb.push(newPhoto);
+      }
 
-        if (finalStatus === 'Completed' && ticket.status !== 'Completed') {
-            dataForDb.approvedBy = currentUser.uid;
-            dataForDb.actualCompletionDate = new Date();
-        }
+      let finalStatus = newStatus || currentStatus;
+      if (assignedTo && ticket.status === 'Not Started' && assignedTo !== ticket.assignedToId) {
+        finalStatus = 'In Progress';
+      }
 
-        const ticketRef = doc(firestore, 'tasks', ticket.id);
-        await updateDoc(ticketRef, dataForDb);
+      const dataForDb: Partial<Ticket> = {
+        status: finalStatus,
+        assignedToId: assignedTo,
+        photos: photosForDb,
+      };
 
-        toast({ title: "Ticket Updated", description: "Your changes have been saved successfully." });
-        onOpenChange(false);
+      if (finalStatus === 'Completed' && ticket.status !== 'Completed') {
+        dataForDb.approvedBy = currentUser.uid;
+        dataForDb.actualCompletionDate = new Date();
+      }
+
+      const ticketRef = doc(firestore, 'tasks', ticket.id);
+      await updateDoc(ticketRef, dataForDb);
+
+      toast({ title: "Ticket Updated", description: "Your changes have been saved successfully." });
+      onOpenChange(false);
 
     } catch (error) {
-        console.error("Failed to update ticket:", error);
-        toast({ title: "Update Failed", description: "Could not save ticket details. Please try again.", variant: "destructive" });
+      console.error("Failed to update ticket:", error);
+      toast({ title: "Update Failed", description: "Could not save ticket details. Please try again.", variant: "destructive" });
     } finally {
-        setIsSaving(false);
+      setIsSaving(false);
     }
   };
 
@@ -258,7 +257,6 @@ export function TicketDetailsDialog({
   
   const assignedUser = getUserById(ticket.assignedToId);
   const subCategoryInfo = findSubCategory(ticket.categoryId);
-
 
   const isAdmin = currentUser?.role === 'Admin';
   const isViewer = currentUser?.role === 'Viewer';
@@ -439,6 +437,3 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
-    
-
-    
