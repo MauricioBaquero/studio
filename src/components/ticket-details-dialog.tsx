@@ -31,8 +31,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, X, Trash2 } from 'lucide-react';
-import { useFirestore, useStorage, updateDocumentNonBlocking, useUser, deleteDocumentNonBlocking } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useFirestore, useStorage, useUser } from '@/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 import { FirebaseError } from 'firebase/app';
 import {
@@ -55,6 +55,8 @@ interface TicketDetailsDialogProps {
   users: User[];
   categories: Category[];
 }
+
+const MAX_FILE_SIZE_MB = 5;
 
 export function TicketDetailsDialog({
   open,
@@ -100,18 +102,53 @@ export function TicketDetailsDialog({
   
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setNewPhotoDataUrl(result);
-        setCompletionPhoto(result); // Show preview immediately
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        toast({
+            title: "File Too Large",
+            description: `The selected file must be ${MAX_FILE_SIZE_MB}MB or smaller.`,
+            variant: "destructive",
+        });
+        return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+        toast({
+            title: "Invalid File Type",
+            description: "Please select an image file.",
+            variant: "destructive",
+        });
+        return;
+    }
+
+    try {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const result = reader.result as string;
+            setNewPhotoDataUrl(result);
+            setCompletionPhoto(result); // Show preview immediately
+        };
+        reader.onerror = () => {
+            toast({
+                title: "Error Reading File",
+                description: "Could not read the selected file. Please try again.",
+                variant: "destructive",
+            });
+        };
+        reader.readAsDataURL(file);
+    } catch (error) {
+        console.error("File reading error:", error);
+        toast({
+            title: "Error",
+            description: "An unexpected error occurred while processing the file.",
+            variant: "destructive",
+        });
     }
   };
 
   const removePhoto = async () => {
+    // If there's a new photo preview, just remove the preview
     if (newPhotoDataUrl) {
       setNewPhotoDataUrl(null);
       setCompletionPhoto(null);
@@ -121,72 +158,88 @@ export function TicketDetailsDialog({
       return;
     }
 
-    if (ticket.completionPhotoUrl && storage) {
-      try {
-        const photoRef = ref(storage, ticket.completionPhotoUrl);
-        await deleteObject(photoRef);
-        toast({ title: "Photo removed."});
-      } catch (error: any) {
-        console.error("Could not delete photo from storage, but removing from UI:", error);
-      }
+    // If it's an existing photo from storage, mark it for deletion on save
+    if (completionPhoto) {
+      setCompletionPhoto(null);
     }
-    setCompletionPhoto(null); 
   };
 
   const handleUpdate = async (newStatus?: TicketStatus) => {
     if (!firestore || !currentUser) return;
     setIsSaving(true);
-  
+
+    let finalPhotoUrl: string | null = ticket.completionPhotoUrl || null;
     let finalStatus = newStatus || currentStatus;
+
     if (assignedTo && ticket.status === 'Not Started' && assignedTo !== ticket.assignedToId) {
       finalStatus = 'In Progress';
     }
-  
-    let finalPhotoUrl: string | null = ticket.completionPhotoUrl || null;
-  
+
     try {
       // Step 1: Handle Photo Upload/Removal
       if (newPhotoDataUrl && storage) {
-        // A new photo was uploaded
-        const storageRef = ref(storage, `taskphotos/${ticket.id}/${Date.now()}`);
+        // A new photo was selected for upload
+        const mimeType = newPhotoDataUrl.match(/data:(.*);base64,/)?.[1];
+        const fileExtension = mimeType?.split('/')[1] || 'jpeg';
+        const fileName = `${ticket.id}_${Date.now()}.${fileExtension}`;
+        const storageRef = ref(storage, `taskphotos/${fileName}`);
+        
+        console.log(`Uploading new photo to: ${storageRef.fullPath}`);
         const uploadResult = await uploadString(storageRef, newPhotoDataUrl, 'data_url');
         finalPhotoUrl = await getDownloadURL(uploadResult.ref);
-      } else if (completionPhoto === null && ticket.completionPhotoUrl) {
-        // A photo was removed
-        if(storage) {
-            const photoRef = ref(storage, ticket.completionPhotoUrl);
-            await deleteObject(photoRef);
-        }
+        console.log("Upload successful, URL:", finalPhotoUrl);
+
+      } else if (completionPhoto === null && ticket.completionPhotoUrl && storage) {
+        // A photo was removed, delete from storage
+        console.log(`Attempting to delete photo: ${ticket.completionPhotoUrl}`);
+        // Extract the path from the URL
+        const url = new URL(ticket.completionPhotoUrl);
+        const path = decodeURIComponent(url.pathname.split('/o/')[1].split('?')[0]);
+        const photoRef = ref(storage, path);
+        
+        await deleteObject(photoRef);
+        console.log("Photo deleted from storage successfully.");
         finalPhotoUrl = null;
       }
-  
+
       // Step 2: Prepare data for Firestore
       const dataForDb: Partial<Ticket> = {
         status: finalStatus,
-        completionPhotoUrl: finalPhotoUrl,
         assignedToId: assignedTo,
+        completionPhotoUrl: finalPhotoUrl,
       };
-  
+
       if (finalStatus === 'Completed' && ticket.status !== 'Completed') {
         dataForDb.approvedBy = currentUser.uid;
+        dataForDb.actualCompletionDate = new Date();
       }
-  
+
       // Step 3: Update Firestore Document
       const ticketRef = doc(firestore, 'tasks', ticket.id);
-      updateDocumentNonBlocking(ticketRef, dataForDb);
-  
+      await updateDoc(ticketRef, dataForDb);
+
       toast({
         title: "Ticket Updated",
-        description: "Your changes have been saved.",
+        description: "Your changes have been saved successfully.",
       });
-  
+
       onOpenChange(false);
-  
+
     } catch (error) {
       console.error("Failed to update ticket:", error);
       let description = "Could not save ticket details. Please try again.";
       if (error instanceof FirebaseError) {
-        description = error.message;
+        switch (error.code) {
+          case 'storage/unauthorized':
+            description = "Permission denied. You do not have access to upload or delete this photo.";
+            break;
+          case 'storage/object-not-found':
+            description = "The photo to be deleted was not found in storage.";
+            break;
+          default:
+            description = `A Firebase error occurred: ${error.message}`;
+            break;
+        }
       }
       toast({
         title: "Update Failed",
@@ -198,15 +251,33 @@ export function TicketDetailsDialog({
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!firestore) return;
-    const ticketRef = doc(firestore, 'tasks', ticket.id);
-    deleteDocumentNonBlocking(ticketRef);
-    toast({
-        title: "Ticket Deleted",
-        description: `Ticket ${ticket.id} has been permanently deleted.`
-    });
-    onOpenChange(false);
+
+    try {
+        if (ticket.completionPhotoUrl && storage) {
+            const url = new URL(ticket.completionPhotoUrl);
+            const path = decodeURIComponent(url.pathname.split('/o/')[1].split('?')[0]);
+            const photoRef = ref(storage, path);
+            await deleteObject(photoRef);
+        }
+
+        const ticketRef = doc(firestore, 'tasks', ticket.id);
+        await deleteDoc(ticketRef);
+        
+        toast({
+            title: "Ticket Deleted",
+            description: `Ticket ${ticket.id} has been permanently deleted.`
+        });
+        onOpenChange(false);
+    } catch (error) {
+        console.error("Error deleting ticket or its photo:", error);
+        toast({
+            title: "Deletion Failed",
+            description: "Could not delete the ticket or its associated photo. Please check permissions and try again.",
+            variant: "destructive",
+        });
+    }
   }
   
   const assignedUser = getUserById(ticket.assignedToId);
@@ -391,7 +462,5 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
-
-    
 
     
