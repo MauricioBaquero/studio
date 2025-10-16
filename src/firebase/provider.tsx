@@ -3,7 +3,7 @@
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc, getDoc, setDoc } from 'firebase/firestore';
+import { Firestore, doc } from 'firebase/firestore';
 import { Auth, User as AuthUser, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseStorage } from 'firebase/storage';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
@@ -55,7 +55,7 @@ const FirebaseUserProvider = ({children}: {children: ReactNode}) => {
     const { auth, firestore, isUserLoading: isAuthLoading, user: authUser } = useFirebase();
 
     const userDocRef = useMemoFirebase(() => (firestore && authUser ? doc(firestore, 'users', authUser.uid) : null), [firestore, authUser]);
-    const { data: user, isLoading: isUserDocLoading } = useDoc<User>(userDocRef);
+    const { data: user, isLoading: isUserDocLoading, error: userDocError } = useDoc<User>(userDocRef);
 
     const fullUser = useMemo(() => {
         if (!authUser || !user) return null;
@@ -65,8 +65,8 @@ const FirebaseUserProvider = ({children}: {children: ReactNode}) => {
     const contextValue = useMemo(() => ({
         user: fullUser,
         isUserLoading: isAuthLoading || isUserDocLoading,
-        userError: null, // Simplified, can be enhanced
-    }), [fullUser, isAuthLoading, isUserDocLoading]);
+        userError: userDocError,
+    }), [fullUser, isAuthLoading, isUserDocLoading, userDocError]);
 
     return (
         <UserContext.Provider value={contextValue}>
@@ -107,9 +107,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     const unsubscribe = onAuthStateChanged(
       auth,
       async (firebaseUser) => {
-        // We no longer automatically create a user document.
-        // The user must be created in the backend (e.g., Firebase Console)
-        // for them to have a profile and corresponding role.
         setAuthState({ user: firebaseUser, isUserLoading: false, userError: null });
       },
       (error) => setAuthState({ user: null, isUserLoading: false, userError: error })

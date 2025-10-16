@@ -4,9 +4,7 @@
 import React, { useMemo, type ReactNode, useEffect } from 'react';
 import { FirebaseProvider } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase';
-import { doc, getDoc, setDoc, writeBatch, collection, getDocs, query, where } from 'firebase/firestore';
-import type { Category } from '@/lib/data';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc, setDoc, writeBatch, collection, getDocs, query } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
 
 interface FirebaseClientProviderProps {
@@ -99,9 +97,18 @@ export function FirebaseClientProvider({
 
   useEffect(() => {
     const seedData = async () => {
+      // We no longer check for user here, the provider will handle it
       if (!firebaseServices.firestore || !firebaseServices.auth) return;
-      await seedCategories(firebaseServices.firestore);
-      await seedSettings(firebaseServices.firestore);
+      // This seeding is basic, it might run before rules are ready on first load.
+      // A more robust solution might involve a dedicated admin setup page.
+      try {
+        await seedCategories(firebaseServices.firestore);
+        await seedSettings(firebaseServices.firestore);
+      } catch(e) {
+        // This may fail due to permissions on first run, which is okay.
+        // It will be re-attempted when a user logs in.
+        console.warn("Initial data seeding failed, will retry on user login.");
+      }
     };
 
     seedData();
