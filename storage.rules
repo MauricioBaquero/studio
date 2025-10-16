@@ -2,22 +2,24 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Rules for all files in the 'task photos' directory
+    
+    // The path segment with a space must be in single quotes.
     match /'task photos'/{allPaths=**} {
 
-      // Helper function to get the user's role from their Firestore document.
-      // This is a common pattern for role-based security in Storage Rules.
-      function getUserRole() {
-        return get(/databases/(default)/documents/users/$(request.auth.uid)).data.role;
+      // Allow read access (get, list) if the user is signed in and has a user profile.
+      // This covers Viewer, Staff, and Admin roles.
+      function isSignedInAndHasProfile() {
+        return request.auth != null && exists(/databases/(default)/documents/users/$(request.auth.uid));
       }
 
-      // Allow any authenticated user to read files.
-      // This covers Admin, Staff, and Viewer roles.
-      allow read: if request.auth != null;
+      // Allow write access (create, update, delete) if the user's role is 'Staff' or 'Admin'.
+      function isStaffOrAdmin() {
+        return get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['Admin', 'Staff'];
+      }
 
-      // Allow write (upload, update, delete) operations only for 'Admin' and 'Staff' roles.
-      // The user must be authenticated and their role must be either 'Admin' or 'Staff'.
-      allow write: if request.auth != null && (getUserRole() == 'Admin' || getUserRole() == 'Staff');
+      // Apply the rules
+      allow read: if isSignedInAndHasProfile();
+      allow write: if isStaffOrAdmin();
     }
   }
 }
