@@ -73,6 +73,7 @@ export function TicketDetailsDialog({
   const [isSaving, setIsSaving] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<TicketStatus>(ticket.status);
   const [assignedTo, setAssignedTo] = useState<string | null>(ticket.assignedToId);
+  const [currentPhotos, setCurrentPhotos] = useState<Photo[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -93,6 +94,7 @@ export function TicketDetailsDialog({
     if (open) {
       setCurrentStatus(ticket.status);
       setAssignedTo(ticket.assignedToId);
+      setCurrentPhotos(ticket.photos || []);
       setIsSaving(false);
     }
   }, [open, ticket]);
@@ -133,12 +135,9 @@ export function TicketDetailsDialog({
               createdAt: new Date(),
             };
 
-            const ticketRef = doc(firestore, 'tasks', ticket.id);
-            await updateDoc(ticketRef, {
-                photos: arrayUnion(newPhoto)
-            });
+            setCurrentPhotos(prev => [...prev, newPhoto]);
 
-            toast({ title: "Photo Uploaded", description: "The photo has been successfully added to the ticket." });
+            toast({ title: "Photo Ready", description: "The photo is ready to be saved with your other changes." });
         };
     } catch (error) {
         console.error("File upload error:", error);
@@ -151,22 +150,19 @@ export function TicketDetailsDialog({
     }
   };
 
-  const removePhoto = async (photo: Photo) => {
-    if (!firestore || !storage) return;
+  const removePhoto = async (photoToRemove: Photo) => {
+    if (!storage) return;
 
     setIsSaving(true);
     try {
       // Delete from storage
-      const photoRef = ref(storage, photo.url);
+      const photoRef = ref(storage, photoToRemove.url);
       await deleteObject(photoRef);
 
-      // Remove from firestore
-      const ticketRef = doc(firestore, 'tasks', ticket.id);
-      await updateDoc(ticketRef, {
-        photos: arrayRemove(photo)
-      });
+      // Remove from state
+      setCurrentPhotos(prev => prev.filter(p => p.url !== photoToRemove.url));
       
-      toast({ title: "Photo Removed", description: "The photo has been successfully removed." });
+      toast({ title: "Photo Removed", description: "The photo has been removed and will be saved." });
 
     } catch (error) {
         console.error("Error removing photo:", error);
@@ -174,18 +170,13 @@ export function TicketDetailsDialog({
         if (error instanceof FirebaseError) {
           if (error.code === 'storage/object-not-found') {
             description = "Photo not found in storage. It may have already been deleted.";
-            // If not found in storage, still try to remove it from Firestore array
-            try {
-              const ticketRef = doc(firestore, 'tasks', ticket.id);
-              await updateDoc(ticketRef, { photos: arrayRemove(photo) });
-            } catch (dbError) {
-               console.error("Error removing photo from Firestore after storage error:", dbError);
-            }
+            // If not found in storage, still try to remove it from state
+            setCurrentPhotos(prev => prev.filter(p => p.url !== photoToRemove.url));
           }
         }
         toast({ title: "Removal Failed", description, variant: "destructive" });
     } finally {
-      setIsSaving(isSaving);
+      setIsSaving(false);
     }
   };
 
@@ -202,6 +193,7 @@ export function TicketDetailsDialog({
       const dataForDb: Partial<Ticket> = {
         status: finalStatus,
         assignedToId: assignedTo,
+        photos: currentPhotos,
       };
 
       if (finalStatus === 'Completed' && ticket.status !== 'Completed') {
@@ -338,7 +330,7 @@ export function TicketDetailsDialog({
            <div className="space-y-4">
               <Label>Completion Photos</Label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {ticket.photos?.map((photo) => (
+                {currentPhotos.map((photo) => (
                   <div key={photo.url} className="relative">
                     <Image
                       src={photo.url}
@@ -432,3 +424,5 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
+
+    
