@@ -181,24 +181,26 @@ export function TicketDetailsDialog({
         // A new photo was selected for upload
         const mimeType = newPhotoDataUrl.match(/data:(.*);base64,/)?.[1];
         const fileExtension = mimeType?.split('/')[1] || 'jpeg';
-        const fileName = `${ticket.id}_${Date.now()}.${fileExtension}`;
-        const storageRef = ref(storage, `taskphotos/${fileName}`);
+        const photoId = Date.now();
+        const fileName = `${photoId}.${fileExtension}`;
+        const storageRef = ref(storage, `taskphotos/${ticket.id}/${fileName}`);
         
-        console.log(`Uploading new photo to: ${storageRef.fullPath}`);
-        const uploadResult = await uploadString(storageRef, newPhotoDataUrl, 'data_url');
+        const metadata = {
+            customMetadata: {
+                'createdAt': new Date().toISOString()
+            }
+        };
+        
+        const uploadResult = await uploadString(storageRef, newPhotoDataUrl, 'data_url', metadata);
         finalPhotoUrl = await getDownloadURL(uploadResult.ref);
-        console.log("Upload successful, URL:", finalPhotoUrl);
 
       } else if (completionPhoto === null && ticket.completionPhotoUrl && storage) {
         // A photo was removed, delete from storage
-        console.log(`Attempting to delete photo: ${ticket.completionPhotoUrl}`);
-        // Extract the path from the URL
         const url = new URL(ticket.completionPhotoUrl);
         const path = decodeURIComponent(url.pathname.split('/o/')[1].split('?')[0]);
         const photoRef = ref(storage, path);
         
         await deleteObject(photoRef);
-        console.log("Photo deleted from storage successfully.");
         finalPhotoUrl = null;
       }
 
@@ -465,5 +467,3 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
-
-    
