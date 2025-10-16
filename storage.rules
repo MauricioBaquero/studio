@@ -2,17 +2,22 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Rules for task photos
-    // Path segment with a space must be quoted
-    match /'task photos'/{taskId}/{fileName} {
-      // Allow reads if the user is authenticated.
+    // Rules for all files in the 'task photos' directory
+    match /'task photos'/{allPaths=**} {
+
+      // Helper function to get the user's role from their Firestore document.
+      // This is a common pattern for role-based security in Storage Rules.
+      function getUserRole() {
+        return get(/databases/(default)/documents/users/$(request.auth.uid)).data.role;
+      }
+
+      // Allow any authenticated user to read files.
+      // This covers Admin, Staff, and Viewer roles.
       allow read: if request.auth != null;
-      
-      // Allow writes (uploads) if the user is authenticated, the file is an image,
-      // and the file is less than 5MB.
-      allow write: if request.auth != null
-                   && request.resource.size < 5 * 1024 * 1024
-                   && request.resource.contentType.matches('image/.*');
+
+      // Allow write (upload, update, delete) operations only for 'Admin' and 'Staff' roles.
+      // The user must be authenticated and their role must be either 'Admin' or 'Staff'.
+      allow write: if request.auth != null && (getUserRole() == 'Admin' || getUserRole() == 'Staff');
     }
   }
 }
