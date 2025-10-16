@@ -136,71 +136,65 @@ export function TicketDetailsDialog({
   const handleUpdate = async (newStatus?: TicketStatus) => {
     if (!firestore || !currentUser) return;
     setIsSaving(true);
-    let finalPhotoUrl: string | null = ticket.completionPhotoUrl || null;
-
+  
     let finalStatus = newStatus || currentStatus;
-
     if (assignedTo && ticket.status === 'Not Started' && assignedTo !== ticket.assignedToId) {
-        finalStatus = 'In Progress';
+      finalStatus = 'In Progress';
     }
-
-
-    // Step 1: Handle photo upload if there's a new one.
-    if (newPhotoDataUrl && storage) {
-      try {
+  
+    let finalPhotoUrl: string | null = ticket.completionPhotoUrl || null;
+  
+    try {
+      // Step 1: Handle Photo Upload/Removal
+      if (newPhotoDataUrl && storage) {
+        // A new photo was uploaded
         const storageRef = ref(storage, `taskphotos/${ticket.id}/${Date.now()}`);
         const uploadResult = await uploadString(storageRef, newPhotoDataUrl, 'data_url');
         finalPhotoUrl = await getDownloadURL(uploadResult.ref);
-      } catch (error) {
-        console.error("Failed to upload photo:", error);
-        let description = "Could not upload photo. Please try again.";
-        if (error instanceof FirebaseError) {
-          description = error.message;
+      } else if (completionPhoto === null && ticket.completionPhotoUrl) {
+        // A photo was removed
+        if(storage) {
+            const photoRef = ref(storage, ticket.completionPhotoUrl);
+            await deleteObject(photoRef);
         }
-        toast({
-          title: "Upload Failed",
-          description,
-          variant: "destructive",
-        });
-        setIsSaving(false);
-        return; // Stop the update process if upload fails
+        finalPhotoUrl = null;
       }
-    } else if (completionPhoto === null && ticket.completionPhotoUrl) {
-      // Handle photo removal
-      finalPhotoUrl = null;
-    }
-    
-    // Step 2: Update the Firestore document.
-    try {
+  
+      // Step 2: Prepare data for Firestore
       const dataForDb: Partial<Ticket> = {
-          status: finalStatus,
-          completionPhotoUrl: finalPhotoUrl,
-          assignedToId: assignedTo
+        status: finalStatus,
+        completionPhotoUrl: finalPhotoUrl,
+        assignedToId: assignedTo,
       };
-
-      if (finalStatus === 'Completed') {
+  
+      if (finalStatus === 'Completed' && ticket.status !== 'Completed') {
         dataForDb.approvedBy = currentUser.uid;
       }
-      
+  
+      // Step 3: Update Firestore Document
       const ticketRef = doc(firestore, 'tasks', ticket.id);
       updateDocumentNonBlocking(ticketRef, dataForDb);
-
+  
       toast({
-          title: "Ticket Updated",
-          description: "Your changes have been saved."
+        title: "Ticket Updated",
+        description: "Your changes have been saved.",
       });
-
+  
       onOpenChange(false);
-
+  
     } catch (error) {
-        console.error("Failed to update ticket document:", error);
-        toast({
-            title: "Update Failed",
-            description: "Could not save ticket details. Please try again.",
-            variant: "destructive",
-        })
+      console.error("Failed to update ticket:", error);
+      let description = "Could not save ticket details. Please try again.";
+      if (error instanceof FirebaseError) {
+        description = error.message;
+      }
+      toast({
+        title: "Update Failed",
+        description,
+        variant: "destructive",
+      });
     } finally {
-        setIsSaving(false);
+      setIsSaving(false);
     }
   };
 
@@ -397,5 +391,7 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
+
+    
 
     
