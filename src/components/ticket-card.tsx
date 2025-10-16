@@ -18,7 +18,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Calendar, CheckCircle, MapPin, Tag } from 'lucide-react';
+import { Calendar, CheckCircle, MapPin, Tag, Camera } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -128,11 +128,16 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
           )}
         onClick={handleOpenDialog}
       >
-        {ticket.status === 'Completed' && (
-          <CheckCircle className="absolute top-2 right-2 h-5 w-5 text-green-500" />
-        )}
+        <div className="absolute top-2 right-2 flex items-center gap-2">
+            {ticket.photos && ticket.photos.length > 0 && (
+                <Camera className="h-4 w-4 text-muted-foreground" />
+            )}
+            {ticket.status === 'Completed' && (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+            )}
+        </div>
         <CardHeader>
-          <CardTitle className="text-base font-bold truncate">
+          <CardTitle className="text-base font-bold truncate pr-8">
             {ticket.title}
           </CardTitle>
           <CardDescription>ID: {ticket.id}</CardDescription>

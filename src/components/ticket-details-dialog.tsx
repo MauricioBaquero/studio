@@ -10,6 +10,7 @@ import {
   User,
   Category,
   toDate,
+  Photo,
 } from '@/lib/data';
 import {
   Dialog,
@@ -32,7 +33,7 @@ import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, X, Trash2 } from 'lucide-react';
 import { useFirestore, useStorage, useUser } from '@/firebase';
-import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 import { FirebaseError } from 'firebase/app';
 import {
@@ -46,7 +47,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { format } from 'date-fns';
+import { v4 as uuidv4 } from 'uuid';
 
 interface TicketDetailsDialogProps {
   open: boolean;
@@ -72,8 +73,6 @@ export function TicketDetailsDialog({
   const [isSaving, setIsSaving] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<TicketStatus>(ticket.status);
   const [assignedTo, setAssignedTo] = useState<string | null>(ticket.assignedToId);
-  const [completionPhoto, setCompletionPhoto] = useState<string | null>(ticket.completionPhotoUrl || null);
-  const [newPhotoDataUrl, setNewPhotoDataUrl] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -94,73 +93,99 @@ export function TicketDetailsDialog({
     if (open) {
       setCurrentStatus(ticket.status);
       setAssignedTo(ticket.assignedToId);
-      setCompletionPhoto(ticket.completionPhotoUrl || null);
-      setNewPhotoDataUrl(null);
       setIsSaving(false);
     }
   }, [open, ticket]);
   
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !firestore || !storage) return;
 
     if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-        toast({
-            title: "File Too Large",
-            description: `The selected file must be ${MAX_FILE_SIZE_MB}MB or smaller.`,
-            variant: "destructive",
-        });
+        toast({ title: "File Too Large", description: `The selected file must be ${MAX_FILE_SIZE_MB}MB or smaller.`, variant: "destructive" });
         return;
     }
-
     if (!file.type.startsWith('image/')) {
-        toast({
-            title: "Invalid File Type",
-            description: "Please select an image file.",
-            variant: "destructive",
-        });
+        toast({ title: "Invalid File Type", description: "Please select an image file.", variant: "destructive" });
         return;
     }
 
+    setIsSaving(true);
     try {
         const reader = new FileReader();
-        reader.onloadend = () => {
-            const result = reader.result as string;
-            setNewPhotoDataUrl(result);
-            setCompletionPhoto(result); // Show preview immediately
-        };
-        reader.onerror = () => {
-            toast({
-                title: "Error Reading File",
-                description: "Could not read the selected file. Please try again.",
-                variant: "destructive",
-            });
-        };
         reader.readAsDataURL(file);
+        reader.onloadend = async () => {
+            const result = reader.result as string;
+            
+            const mimeType = result.match(/data:(.*);base64,/)?.[1];
+            const fileExtension = mimeType?.split('/')[1] || 'jpeg';
+            const photoId = uuidv4();
+            const fileName = `${photoId}.${fileExtension}`;
+            const storageRef = ref(storage, `taskphotos/${ticket.id}/${fileName}`);
+            
+            const metadata = { customMetadata: { 'createdAt': new Date().toISOString() } };
+
+            const uploadResult = await uploadString(storageRef, result, 'data_url', metadata);
+            const downloadURL = await getDownloadURL(uploadResult.ref);
+
+            const newPhoto: Photo = {
+              url: downloadURL,
+              createdAt: new Date(),
+            };
+
+            const ticketRef = doc(firestore, 'tasks', ticket.id);
+            await updateDoc(ticketRef, {
+                photos: arrayUnion(newPhoto)
+            });
+
+            toast({ title: "Photo Uploaded", description: "The photo has been successfully added to the ticket." });
+        };
     } catch (error) {
-        console.error("File reading error:", error);
-        toast({
-            title: "Error",
-            description: "An unexpected error occurred while processing the file.",
-            variant: "destructive",
-        });
+        console.error("File upload error:", error);
+        toast({ title: "Upload Failed", description: "Could not upload the photo. Please try again.", variant: "destructive" });
+    } finally {
+        setIsSaving(false);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
     }
   };
 
-  const removePhoto = async () => {
-    // If there's a new photo preview, just remove the preview
-    if (newPhotoDataUrl) {
-      setNewPhotoDataUrl(null);
-      setCompletionPhoto(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-      return;
-    }
+  const removePhoto = async (photo: Photo) => {
+    if (!firestore || !storage) return;
 
-    // If it's an existing photo from storage, mark it for deletion on save
-    if (completionPhoto) {
-      setCompletionPhoto(null);
+    setIsSaving(true);
+    try {
+      // Delete from storage
+      const photoRef = ref(storage, photo.url);
+      await deleteObject(photoRef);
+
+      // Remove from firestore
+      const ticketRef = doc(firestore, 'tasks', ticket.id);
+      await updateDoc(ticketRef, {
+        photos: arrayRemove(photo)
+      });
+      
+      toast({ title: "Photo Removed", description: "The photo has been successfully removed." });
+
+    } catch (error) {
+        console.error("Error removing photo:", error);
+        let description = "Could not remove the photo. Please try again.";
+        if (error instanceof FirebaseError) {
+          if (error.code === 'storage/object-not-found') {
+            description = "Photo not found in storage. It may have already been deleted.";
+            // If not found in storage, still try to remove it from Firestore array
+            try {
+              const ticketRef = doc(firestore, 'tasks', ticket.id);
+              await updateDoc(ticketRef, { photos: arrayRemove(photo) });
+            } catch (dbError) {
+               console.error("Error removing photo from Firestore after storage error:", dbError);
+            }
+          }
+        }
+        toast({ title: "Removal Failed", description, variant: "destructive" });
+    } finally {
+      setIsSaving(isSaving);
     }
   };
 
@@ -168,47 +193,15 @@ export function TicketDetailsDialog({
     if (!firestore || !currentUser) return;
     setIsSaving(true);
 
-    let finalPhotoUrl: string | null = ticket.completionPhotoUrl || null;
-    let finalStatus = newStatus || currentStatus;
-
-    if (assignedTo && ticket.status === 'Not Started' && assignedTo !== ticket.assignedToId) {
-      finalStatus = 'In Progress';
-    }
-
     try {
-      // Step 1: Handle Photo Upload/Removal
-      if (newPhotoDataUrl && storage) {
-        // A new photo was selected for upload
-        const mimeType = newPhotoDataUrl.match(/data:(.*);base64,/)?.[1];
-        const fileExtension = mimeType?.split('/')[1] || 'jpeg';
-        const photoId = Date.now();
-        const fileName = `${photoId}.${fileExtension}`;
-        const storageRef = ref(storage, `taskphotos/${ticket.id}/${fileName}`);
-        
-        const metadata = {
-            customMetadata: {
-                'createdAt': new Date().toISOString()
-            }
-        };
-        
-        const uploadResult = await uploadString(storageRef, newPhotoDataUrl, 'data_url', metadata);
-        finalPhotoUrl = await getDownloadURL(uploadResult.ref);
-
-      } else if (completionPhoto === null && ticket.completionPhotoUrl && storage) {
-        // A photo was removed, delete from storage
-        const url = new URL(ticket.completionPhotoUrl);
-        const path = decodeURIComponent(url.pathname.split('/o/')[1].split('?')[0]);
-        const photoRef = ref(storage, path);
-        
-        await deleteObject(photoRef);
-        finalPhotoUrl = null;
+      let finalStatus = newStatus || currentStatus;
+      if (assignedTo && ticket.status === 'Not Started' && assignedTo !== ticket.assignedToId) {
+        finalStatus = 'In Progress';
       }
 
-      // Step 2: Prepare data for Firestore
       const dataForDb: Partial<Ticket> = {
         status: finalStatus,
         assignedToId: assignedTo,
-        completionPhotoUrl: finalPhotoUrl,
       };
 
       if (finalStatus === 'Completed' && ticket.status !== 'Completed') {
@@ -216,72 +209,43 @@ export function TicketDetailsDialog({
         dataForDb.actualCompletionDate = new Date();
       }
 
-      // Step 3: Update Firestore Document
       const ticketRef = doc(firestore, 'tasks', ticket.id);
       await updateDoc(ticketRef, dataForDb);
 
-      toast({
-        title: "Ticket Updated",
-        description: "Your changes have been saved successfully.",
-      });
-
+      toast({ title: "Ticket Updated", description: "Your changes have been saved successfully." });
       onOpenChange(false);
 
     } catch (error) {
       console.error("Failed to update ticket:", error);
-      let description = "Could not save ticket details. Please try again.";
-      if (error instanceof FirebaseError) {
-        switch (error.code) {
-          case 'storage/unauthorized':
-            description = "Permission denied. You do not have access to upload or delete this photo.";
-            break;
-          case 'storage/object-not-found':
-            description = "The photo to be deleted was not found in storage.";
-            break;
-          case 'storage/retry-limit-exceeded':
-            description = "Network timeout. Please check your connection and try again.";
-            break;
-          default:
-            description = `A Firebase error occurred: ${error.message}`;
-            break;
-        }
-      }
-      toast({
-        title: "Update Failed",
-        description,
-        variant: "destructive",
-      });
+      toast({ title: "Update Failed", description: "Could not save ticket details. Please try again.", variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!firestore) return;
+    if (!firestore || !storage) return;
 
     try {
-        if (ticket.completionPhotoUrl && storage) {
-            const url = new URL(ticket.completionPhotoUrl);
-            const path = decodeURIComponent(url.pathname.split('/o/')[1].split('?')[0]);
-            const photoRef = ref(storage, path);
-            await deleteObject(photoRef);
+        if (ticket.photos && ticket.photos.length > 0) {
+            for (const photo of ticket.photos) {
+                const photoRef = ref(storage, photo.url);
+                try {
+                    await deleteObject(photoRef);
+                } catch (error) {
+                    console.warn(`Could not delete photo ${photo.url} from storage, it may have already been removed.`);
+                }
+            }
         }
 
         const ticketRef = doc(firestore, 'tasks', ticket.id);
         await deleteDoc(ticketRef);
         
-        toast({
-            title: "Ticket Deleted",
-            description: `Ticket ${ticket.id} has been permanently deleted.`
-        });
+        toast({ title: "Ticket Deleted", description: `Ticket ${ticket.id} has been permanently deleted.` });
         onOpenChange(false);
     } catch (error) {
         console.error("Error deleting ticket or its photo:", error);
-        toast({
-            title: "Deletion Failed",
-            description: "Could not delete the ticket or its associated photo. Please check permissions and try again.",
-            variant: "destructive",
-        });
+        toast({ title: "Deletion Failed", description: "Could not delete the ticket or its associated photos.", variant: "destructive" });
     }
   }
   
@@ -371,49 +335,50 @@ export function TicketDetailsDialog({
                 </Select>
             </div>
           </div>
-           <div className="space-y-2">
-              <Label>Completion Photo</Label>
-              {completionPhoto ? (
-                <div className="relative">
-                  <Image
-                    src={completionPhoto}
-                    alt="Completion photo"
-                    width={600}
-                    height={400}
-                    className="rounded-md object-cover aspect-video"
-                  />
-                  {canInteractWithForm && (
-                     <Button
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 right-2 h-6 w-6"
-                        onClick={removePhoto}
-                        disabled={isSaving || isViewer}
-                    >
-                        <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <div>
-                  {canInteractWithForm && (
-                    <>
-                    <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isSaving || isViewer}>
-                        <Upload className="mr-2 h-4 w-4" />
-                        Upload Photo
-                    </Button>
-                    <Input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        className="hidden" 
-                        onChange={handleFileChange}
-                        accept="image/*"
-                        disabled={isSaving || isViewer}
+           <div className="space-y-4">
+              <Label>Completion Photos</Label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {ticket.photos?.map((photo) => (
+                  <div key={photo.url} className="relative">
+                    <Image
+                      src={photo.url}
+                      alt="Completion photo"
+                      width={200}
+                      height={150}
+                      className="rounded-md object-cover aspect-video"
                     />
-                    </>
-                  )}
-                </div>
-              )}
+                    {canInteractWithForm && (
+                      <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-1 right-1 h-6 w-6"
+                          onClick={() => removePhoto(photo)}
+                          disabled={isSaving || isViewer}
+                      >
+                          <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div>
+                {canInteractWithForm && (
+                  <>
+                  <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isSaving || isViewer}>
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload Photo
+                  </Button>
+                  <Input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      className="hidden" 
+                      onChange={handleFileChange}
+                      accept="image/*"
+                      disabled={isSaving || isViewer}
+                  />
+                  </>
+                )}
+              </div>
             </div>
 
         </div>
