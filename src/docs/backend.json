@@ -86,18 +86,16 @@
           "type": "string",
           "description": "The current status of the task."
         },
-        "comments": {
+        "photos": {
           "type": "array",
-          "description": "A list of comments on the task.",
+          "description": "A list of photos associated with the task.",
           "items": {
             "type": "object",
             "properties": {
-              "userId": { "type": "string" },
-              "userName": { "type": "string" },
-              "text": { "type": "string" },
+              "url": { "type": "string", "format": "uri" },
               "createdAt": { "type": "string", "format": "date-time" }
             },
-            "required": ["userId", "userName", "text", "createdAt"]
+            "required": ["url", "createdAt"]
           }
         }
       },
@@ -307,3 +305,4 @@
     ]
   }
 }
+
