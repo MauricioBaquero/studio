@@ -32,7 +32,7 @@ import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, X, Trash2 } from 'lucide-react';
 import { useFirestore, useStorage, useUser } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 import { FirebaseError } from 'firebase/app';
 import {
@@ -235,6 +235,9 @@ export function TicketDetailsDialog({
             break;
           case 'storage/object-not-found':
             description = "The photo to be deleted was not found in storage.";
+            break;
+          case 'storage/retry-limit-exceeded':
+            description = "Network timeout. Please check your connection and try again.";
             break;
           default:
             description = `A Firebase error occurred: ${error.message}`;
