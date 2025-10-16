@@ -5,3 +5,11 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+  
+# Pass secrets from Secret Manager to the app.
+# The `secret` field is the name of the secret in Secret Manager.
+# The `env` field is the name of the environment variable that will be set in the app.
+# https://firebase.google.com/docs/app-hosting/configure#manage-secrets
+secretEnv:
+- secret: firebase-storage-bucket
+  env: STORAGE_BUCKET
