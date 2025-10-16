@@ -14,7 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { format, isToday, isPast, startOfDay, isSameDay } from 'date-fns';
+import { format, isToday, isPast, startOfDay, isSameDay, differenceInDays } from 'date-fns';
 import {
   useCollection,
   useFirestore,
@@ -31,6 +31,7 @@ import {
 } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type CompletedTask = {
     id: string;
@@ -180,16 +181,37 @@ export default function RecurringTasksPage() {
     const isTaskOverdue =
       isPast(nextDueDate) && !isSameDay(startOfDay(nextDueDate), startOfDay(new Date()));
 
-    return (
-      <TableRow key={task.id} className={cn(isCompleted && "text-muted-foreground opacity-50")}>
-        <TableCell className="text-center">
-          <Checkbox
+    const daysUntilDue = differenceInDays(nextDueDate, new Date());
+    const isMonthlyEarly = task.frequency === 'Monthly' && daysUntilDue > 14;
+    const isCompletable = !isCompleted && !isMonthlyEarly;
+
+    const checkbox = (
+        <Checkbox
             id={`task-${task.id}`}
             aria-label={`Complete ${task.title}`}
             onCheckedChange={() => handleTaskCheck(task)}
             checked={isCompleted ? false : undefined}
-            disabled={isCompleted}
+            disabled={!isCompletable}
           />
+    );
+
+    return (
+      <TableRow key={task.id} className={cn(isCompleted && "text-muted-foreground opacity-50")}>
+        <TableCell className="text-center">
+            {isMonthlyEarly ? (
+                 <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <span>{checkbox}</span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Due in over 2 weeks. Cannot complete yet.</p>
+                        </TooltipContent>
+                    </Tooltip>
+                 </TooltipProvider>
+            ) : (
+                checkbox
+            )}
         </TableCell>
         <TableCell className="font-medium">
           {task.title}
