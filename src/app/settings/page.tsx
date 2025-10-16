@@ -4,8 +4,6 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-
 import {
   Card,
   CardContent,
@@ -25,13 +23,7 @@ import {
 } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-
-const settingsSchema = z.object({
-  completionDateRange: z.coerce.number().min(1, "Minimum date range must be at least 1 day.").max(30),
-});
-
-
-type SettingsFormValues = z.infer<typeof settingsSchema>;
+import { AppSettings, settingsSchema } from '@/lib/data';
 
 export default function GeneralSettingsPage() {
   const firestore = useFirestore();
@@ -41,13 +33,14 @@ export default function GeneralSettingsPage() {
     () => (firestore ? doc(firestore, 'settings', 'appSettings') : null),
     [firestore]
   );
-  const { data: settings, isLoading } = useDoc<SettingsFormValues>(settingsRef);
+  const { data: settings, isLoading } = useDoc<AppSettings>(settingsRef);
 
   const { register, handleSubmit, reset, formState, watch } =
-    useForm<SettingsFormValues>({
+    useForm<AppSettings>({
       resolver: zodResolver(settingsSchema),
       defaultValues: {
-        completionDateRange: 7, // Default value before data loads
+        completionDateRange: 7,
+        recurringTaskCompletionDays: 2,
       },
     });
 
@@ -57,7 +50,7 @@ export default function GeneralSettingsPage() {
     }
   }, [settings, reset]);
 
-  const onSubmit = (data: SettingsFormValues) => {
+  const onSubmit = (data: AppSettings) => {
     if (!settingsRef) return;
     updateDocumentNonBlocking(settingsRef, data);
     toast({
@@ -79,7 +72,7 @@ export default function GeneralSettingsPage() {
           {isLoading ? (
             <p>Loading settings...</p>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="completionDateRange">
                   Minimum Completion Date Range (Days)
@@ -97,6 +90,25 @@ export default function GeneralSettingsPage() {
                 {formState.errors.completionDateRange && (
                   <p className="text-sm text-destructive">
                     {formState.errors.completionDateRange.message}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="recurringTaskCompletionDays">
+                  Recurring Task Advance Completion (Days)
+                </Label>
+                <Input
+                  id="recurringTaskCompletionDays"
+                  type="number"
+                  className="max-w-xs"
+                  {...register('recurringTaskCompletionDays')}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Days in advance a weekly or monthly recurring task can be completed.
+                </p>
+                {formState.errors.recurringTaskCompletionDays && (
+                  <p className="text-sm text-destructive">
+                    {formState.errors.recurringTaskCompletionDays.message}
                   </p>
                 )}
               </div>

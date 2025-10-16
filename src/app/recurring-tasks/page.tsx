@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { RecurringTask, Category, User, getNextDueDate, toDate, Location } from '@/lib/data';
+import { RecurringTask, Category, User, getNextDueDate, toDate, Location, AppSettings } from '@/lib/data';
 import {
   Table,
   TableBody,
@@ -20,7 +20,8 @@ import {
   useFirestore,
   useMemoFirebase,
   useUser,
-  updateDocumentNonBlocking
+  updateDocumentNonBlocking,
+  useDoc
 } from '@/firebase';
 import {
   collection,
@@ -45,6 +46,12 @@ export default function RecurringTasksPage() {
   const { user: currentUser } = useUser();
   const [allTasks, setAllTasks] = useState<RecurringTask[]>([]);
   const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>([]);
+
+  const settingsRef = useMemoFirebase(
+    () => (firestore ? doc(firestore, 'settings', 'appSettings') : null),
+    [firestore]
+  );
+  const { data: settings } = useDoc<AppSettings>(settingsRef);
 
   const recurringTasksQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, 'recurringTasks')) : null),
@@ -182,8 +189,13 @@ export default function RecurringTasksPage() {
       isPast(nextDueDate) && !isSameDay(startOfDay(nextDueDate), startOfDay(new Date()));
 
     const daysUntilDue = differenceInDays(nextDueDate, new Date());
-    const isMonthlyEarly = task.frequency === 'Monthly' && daysUntilDue > 14;
-    const isCompletable = !isCompleted && !isMonthlyEarly;
+    const advanceCompletionDays = settings?.recurringTaskCompletionDays ?? 2;
+    
+    let isEarly = false;
+    if (task.frequency === 'Weekly' || task.frequency === 'Monthly') {
+        isEarly = daysUntilDue > advanceCompletionDays;
+    }
+    const isCompletable = !isCompleted && !isEarly;
 
     const checkbox = (
         <Checkbox
@@ -198,14 +210,14 @@ export default function RecurringTasksPage() {
     return (
       <TableRow key={task.id} className={cn(isCompleted && "text-muted-foreground opacity-50")}>
         <TableCell className="text-center">
-            {isMonthlyEarly ? (
+            {isEarly ? (
                  <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <span>{checkbox}</span>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Due in over 2 weeks. Cannot complete yet.</p>
+                            <p>Due in over {advanceCompletionDays} days. Cannot complete yet.</p>
                         </TooltipContent>
                     </Tooltip>
                  </TooltipProvider>

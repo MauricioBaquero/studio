@@ -81,7 +81,8 @@ const seedSettings = async (firestore: any) => {
 
     try {
         await setDoc(settingsDocRef, {
-            completionDateRange: 7 // Default value
+            completionDateRange: 7,
+            recurringTaskCompletionDays: 2
         });
         console.log('Settings document seeded successfully.');
     } catch (error) {
