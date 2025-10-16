@@ -146,7 +146,7 @@ export function TicketDetailsDialog({
 
     try {
       if (newPhotoDataUrl && storage) {
-        const storageRef = ref(storage, `task photos/${ticket.id}/${Date.now()}`);
+        const storageRef = ref(storage, `taskphotos/${ticket.id}/${Date.now()}`);
         const uploadResult = await uploadString(storageRef, newPhotoDataUrl, 'data_url');
         finalPhotoUrl = await getDownloadURL(uploadResult.ref);
       } else if (completionPhoto === null && ticket.completionPhotoUrl) {
@@ -328,51 +328,51 @@ export function TicketDetailsDialog({
             </div>
 
         </div>
-        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between pt-4 border-t gap-2">
-            <div className="w-full sm:w-auto">
+        <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-between pt-4 border-t">
+          <div className="w-full sm:w-auto">
             {isAdmin && (
-                <AlertDialog>
+              <AlertDialog>
                 <AlertDialogTrigger asChild>
-                    <Button variant="destructive" disabled={isSaving} className="w-full sm:w-auto">
+                  <Button variant="destructive" disabled={isSaving} className="w-full sm:w-auto">
                     <Trash2 className="mr-2 h-4 w-4" /> Delete Ticket
-                    </Button>
+                  </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
-                    <AlertDialogHeader>
+                  <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will permanently delete the ticket. This action cannot be undone.
+                      This will permanently delete the ticket. This action cannot be undone.
                     </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-                    </AlertDialogFooter>
+                  </AlertDialogFooter>
                 </AlertDialogContent>
-                </AlertDialog>
+              </AlertDialog>
             )}
-            </div>
-            <div className="flex flex-col-reverse sm:flex-row gap-2">
+          </div>
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
-                Cancel
+              Cancel
             </Button>
             {isAdmin && isPendingReview ? (
-                <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button onClick={() => handleUpdate('In Progress')} disabled={isSaving} variant="secondary">
-                    Reject
+                  Reject
                 </Button>
                 <Button onClick={() => handleUpdate('Completed')} disabled={isSaving}>
-                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Approve
+                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Approve
                 </Button>
-                </div>
+              </div>
             ) : (
-                 <Button onClick={() => handleUpdate()} disabled={isSaving || !canInteractWithForm}>
-                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isSaving ? "Saving..." : "Save Changes"}
-                </Button>
+              <Button onClick={() => handleUpdate()} disabled={isSaving || !canInteractWithForm}>
+                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSaving ? "Saving..." : "Save Changes"}
+              </Button>
             )}
-            </div>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
