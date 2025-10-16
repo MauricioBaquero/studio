@@ -36,7 +36,9 @@ export function initializeFirebase() {
 
 export function getSdks(firebaseApp: FirebaseApp) {
   const firestoreDb = getFirestore(firebaseApp);
-  const storage = getStorage(firebaseApp, process.env.STORAGE_BUCKET);
+  // The storage bucket is automatically picked up from the firebaseApp instance
+  // when initialized with the full config.
+  const storage = getStorage(firebaseApp);
   const auth = getAuth(firebaseApp);
 
   return {
@@ -77,3 +79,4 @@ export * from './non-blocking-updates';
 export * from './non-blocking-login';
 export * from './errors';
 export * from './error-emitter';
+
