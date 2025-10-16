@@ -36,7 +36,7 @@ export function initializeFirebase() {
 
 export function getSdks(firebaseApp: FirebaseApp) {
   const firestoreDb = getFirestore(firebaseApp);
-  const storage = getStorage(firebaseApp);
+  const storage = getStorage(firebaseApp, process.env.STORAGE_BUCKET);
   const auth = getAuth(firebaseApp);
 
   return {
