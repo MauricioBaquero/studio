@@ -211,15 +211,10 @@
         "completionDateRange": {
           "type": "number",
           "description": "The minimum number of days for task completion requests."
-        },
-        "recurringTaskCompletionDays": {
-          "type": "number",
-          "description": "The number of days in advance a recurring task can be completed."
         }
       },
       "required": [
-        "completionDateRange",
-        "recurringTaskCompletionDays"
+        "completionDateRange"
       ]
     }
   },
@@ -282,7 +277,7 @@
       },
       {
         "path": "/settings/appSettings",
-        "definition": {
+        "definition":. {
           "entityName": "Setting",
           "schema": {
             "$ref": "#/backend/entities/Setting"
