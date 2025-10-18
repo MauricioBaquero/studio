@@ -1,4 +1,5 @@
 
+
 {
   "entities": {
     "User": {
@@ -87,9 +88,14 @@
               "path": {
                 "type": "string",
                 "description": "Storage path of the photo."
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "The date the photo was uploaded."
               }
             },
-            "required": ["url", "path"]
+            "required": ["url", "path", "createdAt"]
           }
         }
       },

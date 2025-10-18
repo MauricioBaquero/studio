@@ -1,4 +1,5 @@
 
+
 import { addDays, addWeeks, addMonths, setDay, setDate, nextDay, startOfDay, isAfter, isSameDay, toDate as fnsToDate } from "date-fns";
 import type { Timestamp } from 'firebase/firestore';
 import { z } from "zod";
@@ -51,6 +52,7 @@ const timestampSchema = z.custom<Timestamp | Date>((data) => data instanceof Dat
 export const photoSchema = z.object({
   url: z.string(),
   path: z.string(),
+  createdAt: timestampSchema,
 });
 export type Photo = z.infer<typeof photoSchema>;
 

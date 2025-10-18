@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -77,7 +78,7 @@ export function TicketDetailsDialog({
   const [newPhotoFiles, setNewPhotoFiles] = useState<File[]>([]);
   const [newPhotoPreviews, setNewPhotoPreviews] = useState<string[]>([]);
 
-  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<Photo | null>(null);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
 
   const getUserById = (id: string | null) => users.find(u => u.uid === id);
@@ -123,7 +124,7 @@ export function TicketDetailsDialog({
         await uploadBytes(storageRef, file);
         const downloadURL = await getDownloadURL(storageRef);
         
-        return { url: downloadURL, path: storagePath };
+        return { url: downloadURL, path: storagePath, createdAt: new Date() };
       });
 
       const uploadedPhotos = await Promise.all(newPhotoUploads);
@@ -216,8 +217,8 @@ export function TicketDetailsDialog({
     setNewPhotoPreviews(previews => previews.filter((_, i) => i !== index));
   }
   
-  const handlePhotoClick = (url: string) => {
-    setSelectedImageUrl(url);
+  const handlePhotoClick = (photo: Photo) => {
+    setSelectedImage(photo);
     setIsImageViewerOpen(true);
   };
   
@@ -248,7 +249,7 @@ export function TicketDetailsDialog({
                 </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-2">
               <Label>Completion Photo</Label>
               <div className="flex items-center gap-4">
                   <Button
@@ -266,7 +267,7 @@ export function TicketDetailsDialog({
               </div>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                   {currentPhotos.map((photo, index) => (
-                      <div key={index} className="relative group aspect-square cursor-pointer" onClick={() => handlePhotoClick(photo.url)}>
+                      <div key={index} className="relative group aspect-square cursor-pointer" onClick={() => handlePhotoClick(photo)}>
                           <Image src={photo.url} alt={`Ticket photo ${index + 1}`} fill className="object-cover rounded-md border" />
                           <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => handleDeletePhoto(photo, e)}>
                               <X className="h-4 w-4" />
@@ -402,7 +403,7 @@ export function TicketDetailsDialog({
         </DialogContent>
       </Dialog>
       <ImageViewerDialog
-        imageUrl={selectedImageUrl}
+        photo={selectedImage}
         open={isImageViewerOpen}
         onOpenChange={setIsImageViewerOpen}
       />
