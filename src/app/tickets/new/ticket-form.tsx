@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -31,8 +31,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, setDocumentNonBlocking } from "@/firebase";
-import { doc, serverTimestamp } from "firebase/firestore";
+import { useFirestore, setDocumentNonBlocking, useStorage } from "@/firebase";
+import { doc, serverTimestamp, arrayUnion } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { v4 as uuidv4 } from 'uuid';
+import Image from "next/image";
+import { Upload, X } from "lucide-react";
+
 
 interface TicketFormProps {
   parentCategories: Category[];
@@ -57,9 +62,13 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
   const { toast } = useToast();
   const router = useRouter();
   const firestore = useFirestore();
+  const storage = useStorage();
   const [selectedParent, setSelectedParent] = useState<string | null>(null);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newPhotoFiles, setNewPhotoFiles] = useState<File[]>([]);
+  const [newPhotoPreviews, setNewPhotoPreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -98,12 +107,26 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
   const getAbbreviation = (name: string) => {
     return name.substring(0, 3).toUpperCase();
   };
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+     if (e.target.files) {
+        const files = Array.from(e.target.files);
+        setNewPhotoFiles(prev => [...prev, ...files]);
+        const previews = files.map(file => URL.createObjectURL(file));
+        setNewPhotoPreviews(prev => [...prev, ...previews]);
+    }
+  }
+
+  const removeNewPhotoPreview = (index: number) => {
+    setNewPhotoFiles(files => files.filter((_, i) => i !== index));
+    setNewPhotoPreviews(previews => previews.filter((_, i) => i !== index));
+  }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore) {
+    if (!firestore || !storage) {
         toast({
             title: "Error",
-            description: "Database connection not found.",
+            description: "Database or storage connection not found.",
             variant: "destructive"
         });
         return;
@@ -138,21 +161,39 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
         }
         return description;
     }
-
-    const ticketData = {
-        id: ticketId,
-        title: generateTitle(values.description),
-        description: values.description,
-        categoryId: values.subcategoryId, // We save the subcategory ID
-        location: fullLocation,
-        locationId: values.locationId,
-        requestedCompletionDate: values.requestedCompletionDate,
-        status: "Not Started",
-        assignedToId: null,
-        createdAt: serverTimestamp(),
-    };
+    
+    let uploadedPhotos = [];
 
     try {
+        // Upload new photos
+        const newPhotoUploads = newPhotoFiles.map(async file => {
+            const photoId = uuidv4();
+            const fileExtension = file.name.split('.').pop();
+            const storagePath = `taskphotos/createnewticket/${ticketId}/${photoId}.${fileExtension}`;
+            const storageRef = ref(storage, storagePath);
+
+            await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(storageRef);
+            
+            return { url: downloadURL, path: storagePath, createdAt: new Date() };
+        });
+
+        uploadedPhotos = await Promise.all(newPhotoUploads);
+
+        const ticketData = {
+            id: ticketId,
+            title: generateTitle(values.description),
+            description: values.description,
+            categoryId: values.subcategoryId, // We save the subcategory ID
+            location: fullLocation,
+            locationId: values.locationId,
+            requestedCompletionDate: values.requestedCompletionDate,
+            status: "Not Started",
+            assignedToId: null,
+            createdAt: serverTimestamp(),
+            photos: uploadedPhotos,
+        };
+
         const ticketRef = doc(firestore, "tasks", ticketId);
         setDocumentNonBlocking(ticketRef, ticketData, { merge: false });
         
@@ -259,6 +300,46 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
                 )}
                 />
             </div>
+            <div className="md:col-span-2 space-y-4">
+              <Label>Photo (optional)</Label>
+              <div className="flex items-center gap-4">
+                  <Button
+                      type="button"
+                      variant="outline"
+                      className="border-2 border-dashed hover:border-solid hover:bg-accent"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isSubmitting}
+                  >
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload Photo
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                      You can add photos to your ticket.
+                  </p>
+              </div>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                  {newPhotoPreviews.map((url, index) => (
+                      <div key={index}>
+                        <div className="relative group aspect-square">
+                            <Image src={url} alt={`New photo preview ${index + 1}`} fill className="object-cover rounded-md border" />
+                            <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeNewPhotoPreview(index)}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                      </div>
+                  ))}
+              </div>
+              <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  multiple
+                  accept="image/jpeg, image/png, image/jpg"
+                  onChange={handleFileChange}
+                  disabled={isSubmitting}
+              />
+            </div>
+
              <FormField
               control={form.control}
               name="locationId"
