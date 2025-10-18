@@ -18,7 +18,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Calendar, CheckCircle, MapPin, Tag } from 'lucide-react';
+import { Calendar, CheckCircle, MapPin, Tag, Camera } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -167,22 +167,30 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
             ) : (
                 <span className="text-sm text-muted-foreground italic">Unassigned</span>
             )}
-             {ticket.status === 'Completed' && approver && (
-              <div className="text-xs text-muted-foreground">
-                Approved by {approver.name}
-              </div>
-            )}
-            {ticket.status === 'Not Started' && !ticket.assignedToId && canClaimTask && (
-                <Button variant="success" size="sm" onClick={handleClaimTask}>
-                   {claimSaying}
-                </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {ticket.photos && ticket.photos.length > 0 && (
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Camera className="h-4 w-4" />
+                  <span className="text-xs">{ticket.photos.length}</span>
+                </div>
+              )}
+              {ticket.status === 'Completed' && approver && (
+                <div className="text-xs text-muted-foreground">
+                  Approved by {approver.name}
+                </div>
+              )}
+              {ticket.status === 'Not Started' && !ticket.assignedToId && canClaimTask && (
+                  <Button variant="success" size="sm" onClick={handleClaimTask}>
+                    {claimSaying}
+                  </Button>
+              )}
 
-            {ticket.status === 'In Progress' && canMarkForReview && (
-                <Button variant="success" size="sm" onClick={handleReadyForReview}>
-                   Ready for Review
-                </Button>
-            )}
+              {ticket.status === 'In Progress' && canMarkForReview && (
+                  <Button variant="success" size="sm" onClick={handleReadyForReview}>
+                    Ready for Review
+                  </Button>
+              )}
+            </div>
         </CardFooter>
       </Card>
       {canInteract && (

@@ -47,10 +47,6 @@
           "type": "string",
           "description": "Reference to Category."
         },
-        "subCategoryId": {
-          "type": "string",
-          "description": "Reference to a sub-category within Category."
-        },
         "description": {
           "type": "string",
           "description": "Detailed explanation of the task."
@@ -58,10 +54,6 @@
         "locationId": {
           "type": "string",
           "description": "Reference to Location."
-        },
-        "additionalDetails": {
-          "type": "string",
-          "description": "Any extra details about the location or task."
         },
         "requestedCompletionDate": {
           "type": "string",
@@ -78,13 +70,27 @@
           "format": "date",
           "description": "The date the task was actually completed."
         },
-        "assignedTo": {
-          "type": "string",
-          "description": "Reference to the User to whom the task is assigned."
-        },
         "status": {
           "type": "string",
           "description": "The current status of the task."
+        },
+        "photos": {
+          "type": "array",
+          "description": "A list of photos associated with the task.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "Public URL of the photo."
+              },
+              "path": {
+                "type": "string",
+                "description": "Storage path of the photo."
+              }
+            },
+            "required": ["url", "path"]
+          }
         }
       },
       "required": [
@@ -277,7 +283,7 @@
       },
       {
         "path": "/settings/appSettings",
-        "definition":. {
+        "definition": {
           "entityName": "Setting",
           "schema": {
             "$ref": "#/backend/entities/Setting"

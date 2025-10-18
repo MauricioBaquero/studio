@@ -48,6 +48,12 @@ const timestampSchema = z.custom<Timestamp | Date>((data) => data instanceof Dat
   message: "Invalid date or timestamp",
 });
 
+export const photoSchema = z.object({
+  url: z.string(),
+  path: z.string(),
+});
+export type Photo = z.infer<typeof photoSchema>;
+
 export const ticketSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -61,6 +67,7 @@ export const ticketSchema = z.object({
   createdAt: timestampSchema,
   approvedBy: z.string().nullable().optional(),
   actualCompletionDate: timestampSchema.optional().nullable(),
+  photos: z.array(photoSchema).optional(),
 });
 export type Ticket = z.infer<typeof ticketSchema>;
 

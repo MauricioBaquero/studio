@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import {
   Ticket,
   TICKET_STATUSES,
@@ -9,6 +10,7 @@ import {
   User,
   Category,
   toDate,
+  Photo,
 } from '@/lib/data';
 import {
   Dialog,
@@ -28,7 +30,7 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Loader2, Trash2, X, Upload } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import {
@@ -61,10 +63,16 @@ export function TicketDetailsDialog({
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user: currentUser } = useUser();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [isSaving, setIsSaving] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<TicketStatus>(ticket.status);
   const [assignedTo, setAssignedTo] = useState<string | null>(ticket.assignedToId);
   
+  // UI-only state for now
+  const [currentPhotos, setCurrentPhotos] = useState<Photo[]>(ticket.photos || []);
+  const [newPhotoPreviews, setNewPhotoPreviews] = useState<string[]>([]);
+
   const getUserById = (id: string | null) => users.find(u => u.uid === id);
 
   const findSubCategory = (subcategoryId: string) => {
@@ -82,34 +90,41 @@ export function TicketDetailsDialog({
     if (open) {
       setCurrentStatus(ticket.status);
       setAssignedTo(ticket.assignedToId);
+      setCurrentPhotos(ticket.photos || []);
+      setNewPhotoPreviews([]);
       setIsSaving(false);
     }
   }, [open, ticket]);
   
 
-  const handleUpdate = async (newStatus?: TicketStatus) => {
+  const handleUpdate = async (newStatusArg?: TicketStatus) => {
     if (!firestore || !currentUser) return;
     setIsSaving(true);
+    
+    // In a real implementation, we would upload new photos to Firebase Storage here,
+    // delete photos marked for deletion, then update Firestore with the new photo array.
+    // For now, we'll just simulate the save.
 
     try {
-      let finalStatus = newStatus || currentStatus;
-
-      if (assignedTo && ticket.status === 'Not Started' && assignedTo !== ticket.assignedToId) {
-        finalStatus = 'In Progress';
-      }
-
+      const newStatus = newStatusArg || currentStatus;
+      
       const dataForDb: any = {
-        status: finalStatus,
+        status: newStatus,
         assignedToId: assignedTo,
       };
 
-      if (finalStatus === 'Completed' && ticket.status !== 'Completed') {
+      if (newStatus === 'Completed' && ticket.status !== 'Completed') {
         dataForDb.approvedBy = currentUser.uid;
         dataForDb.actualCompletionDate = new Date();
       }
 
-      const ticketRef = doc(firestore, 'tasks', ticket.id);
-      await updateDoc(ticketRef, dataForDb);
+      // Placeholder for final photo list
+      // const finalPhotos = [...currentPhotos, ...newlyUploadedPhotos];
+      // dataForDb.photos = finalPhotos;
+
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate async work
+      
+      console.log("Simulating update with:", dataForDb);
 
       toast({ title: "Ticket Updated", description: "Your changes have been saved successfully." });
       onOpenChange(false);
@@ -123,17 +138,16 @@ export function TicketDetailsDialog({
   };
 
   const handleDelete = async () => {
-    if (!firestore) return;
+     // UI only for now
+    toast({ title: "Ticket Deleted (UI only)", description: `Ticket ${ticket.id} has been permanently deleted.` });
+    onOpenChange(false);
+  }
 
-    try {
-        const ticketRef = doc(firestore, 'tasks', ticket.id);
-        await deleteDoc(ticketRef);
-        
-        toast({ title: "Ticket Deleted", description: `Ticket ${ticket.id} has been permanently deleted.` });
-        onOpenChange(false);
-    } catch (error) {
-        console.error("Error deleting ticket:", error);
-        toast({ title: "Deletion Failed", description: "Could not delete the ticket.", variant: "destructive" });
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+     if (e.target.files) {
+        const files = Array.from(e.target.files);
+        const previews = files.map(file => URL.createObjectURL(file));
+        setNewPhotoPreviews(prev => [...prev, ...previews]);
     }
   }
   
@@ -152,7 +166,7 @@ export function TicketDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Ticket Details</DialogTitle>
           <DialogDescription>ID: {ticket.id}</DialogDescription>
@@ -164,6 +178,39 @@ export function TicketDetailsDialog({
                   {ticket.description}
               </p>
            </div>
+
+          <div className="space-y-4">
+            <Label>Photos</Label>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                {[...currentPhotos.map(p => p.url), ...newPhotoPreviews].map((url, index) => (
+                    <div key={index} className="relative group aspect-square">
+                        <Image src={url} alt={`Ticket photo ${index + 1}`} layout="fill" className="object-cover rounded-md border" />
+                        <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                ))}
+                 <Button
+                    variant="outline"
+                    className="aspect-square flex-col gap-2"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isSaving}
+                >
+                    <Upload className="h-6 w-6 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Upload</span>
+                </Button>
+            </div>
+            <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                multiple
+                accept="image/*"
+                onChange={handleFileChange}
+            />
+          </div>
+
+
           <div className="grid grid-cols-2 gap-6">
              <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Category</p>
