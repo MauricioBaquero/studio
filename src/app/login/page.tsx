@@ -6,6 +6,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
+import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -42,6 +44,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { theme } = useTheme();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -100,7 +103,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex items-center justify-center min-h-screen bg-background bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]">
+    <div className={cn(
+        "relative flex items-center justify-center min-h-screen bg-background",
+        theme === 'light' && "bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]"
+    )}>
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
