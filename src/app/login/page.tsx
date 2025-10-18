@@ -112,11 +112,10 @@ export default function LoginPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="johndoe@fortlauderdale.gov"
+                        placeholder="Email"
                         {...field}
                         disabled={isSubmitting}
                       />
@@ -130,11 +129,10 @@ export default function LoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
-                        placeholder="••••••••"
+                        placeholder="Password"
                         {...field}
                         disabled={isSubmitting}
                       />
