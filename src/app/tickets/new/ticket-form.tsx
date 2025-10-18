@@ -37,9 +37,8 @@ import { doc, serverTimestamp } from "firebase/firestore";
 interface TicketFormProps {
   parentCategories: Category[];
   locations: Location[];
+  minimumNoticeDays: number;
 }
-
-const MINIMUM_NOTICE_DAYS = 7;
 
 const formSchema = z.object({
   categoryId: z.string().min(1, "Category is required."),
@@ -54,7 +53,7 @@ const formSchema = z.object({
 });
 
 
-export function TicketForm({ parentCategories, locations }: TicketFormProps) {
+export function TicketForm({ parentCategories, locations, minimumNoticeDays }: TicketFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const firestore = useFirestore();
@@ -342,11 +341,11 @@ export function TicketForm({ parentCategories, locations }: TicketFormProps) {
                     <DatePicker 
                         value={field.value}
                         onSelect={field.onChange}
-                        fromDate={addDays(new Date(), MINIMUM_NOTICE_DAYS)}
+                        fromDate={addDays(new Date(), minimumNoticeDays)}
                     />
                   </FormControl>
                   <FormDescription>
-                    A minimum of {MINIMUM_NOTICE_DAYS} days notice is required for new tickets.
+                    A minimum of {minimumNoticeDays} days notice is required for new tickets.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

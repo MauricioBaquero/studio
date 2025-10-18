@@ -2,13 +2,19 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
-import type { Category, Location } from '@/lib/data';
+import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, doc } from 'firebase/firestore';
+import type { Category, Location, AppSettings } from '@/lib/data';
 import { TicketForm } from './ticket-form';
 
 export default function NewTicketPage() {
   const firestore = useFirestore();
+
+  const settingsRef = useMemoFirebase(
+    () => (firestore ? doc(firestore, 'settings', 'appSettings') : null),
+    [firestore]
+  );
+  const { data: settings, isLoading: isLoadingSettings } = useDoc<AppSettings>(settingsRef);
 
   const categoriesQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, 'categories')) : null),
@@ -29,7 +35,8 @@ export default function NewTicketPage() {
     [categories]
   );
 
-  const isLoading = isLoadingCategories || isLoadingLocations;
+  const isLoading = isLoadingCategories || isLoadingLocations || isLoadingSettings;
+  const minimumNoticeDays = settings?.completionDateRange ?? 7;
 
   return (
     <div>
@@ -45,6 +52,7 @@ export default function NewTicketPage() {
         <TicketForm
           parentCategories={parentCategories}
           locations={locations || []}
+          minimumNoticeDays={minimumNoticeDays}
         />
       )}
     </div>
