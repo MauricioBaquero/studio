@@ -132,7 +132,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
       >
         <div className="absolute top-2 right-2 flex items-center gap-2">
             {isOverdue && (
-              <Badge variant="destructive" className="flex items-center gap-1">
+              <Badge className="flex items-center gap-1 bg-red-600 text-white hover:bg-red-700">
                 <AlertTriangle className="h-3 w-3" />
                 Overdue
               </Badge>
