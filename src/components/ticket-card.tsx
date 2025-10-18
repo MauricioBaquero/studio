@@ -172,7 +172,12 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
                     <Avatar className="h-6 w-6">
                         <AvatarFallback>{assignedUser?.name.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <span className="text-sm text-muted-foreground">{assignedUser?.name}</span>
+                    <div className="text-sm text-muted-foreground">
+                      <span>{assignedUser?.name}</span>
+                      {ticket.status === 'Completed' && ticket.submitToReviewDate && (
+                        <div className="text-xs">Completed: {format(toDate(ticket.submitToReviewDate), 'MM/dd/yyyy')}</div>
+                      )}
+                    </div>
                  </div>
             ) : (
                 <span className="text-sm text-muted-foreground italic">Unassigned</span>
@@ -186,9 +191,6 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
               )}
               {ticket.status === 'Completed' && (
                 <div className="text-xs text-muted-foreground text-right">
-                  {ticket.submitToReviewDate && (
-                    <div>Completed: {format(toDate(ticket.submitToReviewDate), 'MM/dd/yyyy')}</div>
-                  )}
                   {approver && (
                     <div>Approved by {approver.name}</div>
                   )}
@@ -223,3 +225,4 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
     </>
   );
 }
+
