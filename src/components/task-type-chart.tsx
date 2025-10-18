@@ -28,7 +28,6 @@ const colorMap: { [key: string]: string } = {
     purple: 'hsl(var(--chart-4))',
     yellow: 'hsl(var(--chart-5))',
     red: 'hsl(var(--destructive))',
-    gray: 'hsl(var(--muted-foreground))',
     pink: 'hsl(var(--chart-1))',
     teal: 'hsl(var(--chart-2))',
     indigo: 'hsl(var(--chart-4))',
@@ -53,7 +52,7 @@ export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
       const subCategoryInfo = findSubCategory(ticket.categoryId);
       
       if (subCategoryInfo) {
-        const color = subCategoryInfo?.color || 'gray';
+        const color = subCategoryInfo?.color || 'blue';
 
         if (!acc[subCategoryInfo.name]) {
           acc[subCategoryInfo.name] = { value: 0, color: color };
@@ -66,7 +65,7 @@ export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
   );
 
   const chartData = Object.entries(tasksByCategory)
-    .map(([name, { value, color }]) => ({ name, value, color: colorMap[color] || colorMap.gray }))
+    .map(([name, { value, color }]) => ({ name, value, color: colorMap[color] || colorMap.blue }))
     .sort((a, b) => b.value - a.value);
 
   return (

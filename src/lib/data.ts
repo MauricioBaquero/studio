@@ -7,7 +7,7 @@ import { z } from "zod";
 export const USER_ROLES = ["Admin", "Staff", "Viewer"] as const;
 export const TICKET_STATUSES = ["Not Started", "In Progress", "Pending Review", "Completed"] as const;
 export const RECURRING_FREQUENCIES = ["Daily", "Weekly", "Monthly"] as const;
-export const CATEGORY_COLORS = ["red", "orange", "yellow", "green", "blue", "purple", "gray", "pink", "teal", "indigo", "cyan"] as const;
+export const CATEGORY_COLORS = ["red", "orange", "yellow", "green", "blue", "purple", "pink", "teal", "indigo", "cyan"] as const;
 
 export type UserRole = (typeof USER_ROLES)[number];
 export type TicketStatus = (typeof TICKET_STATUSES)[number];
@@ -107,10 +107,10 @@ export const getCategoryColor = (
 ): CategoryColor => {
   for (const parent of categories) {
     if (parent.subcategories.some(sub => sub.id === subcategoryId)) {
-      return parent.color || 'gray';
+      return parent.color || 'blue';
     }
   }
-  return 'gray';
+  return 'blue';
 };
 
 export const getNextDueDate = (task: RecurringTask): Date => {

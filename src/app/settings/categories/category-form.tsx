@@ -75,7 +75,7 @@ export function CategoryForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      color: 'gray',
+      color: 'blue',
       subcategories: [],
     },
   });
@@ -89,13 +89,13 @@ export function CategoryForm({
     if (category) {
       form.reset({
         name: category.name,
-        color: category.color || 'gray',
+        color: category.color || 'blue',
         subcategories: category.subcategories || [],
       });
     } else {
       form.reset({
         name: '',
-        color: 'gray',
+        color: 'blue',
         subcategories: [{ id: uuidv4(), name: '' }],
       });
     }
