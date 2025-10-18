@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -98,7 +99,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="flex items-center justify-center min-h-screen bg-background bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
