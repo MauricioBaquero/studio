@@ -183,8 +183,11 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
                 </div>
               )}
               {ticket.status === 'Completed' && approver && (
-                <div className="text-xs text-muted-foreground">
-                  Approved by {approver.name}
+                <div className="text-xs text-muted-foreground text-right">
+                  <div>Approved by {approver.name}</div>
+                  {ticket.actualCompletionDate && (
+                    <div>{format(toDate(ticket.actualCompletionDate), 'MM/dd/yyyy')}</div>
+                  )}
                 </div>
               )}
               {ticket.status === 'Not Started' && !ticket.assignedToId && canClaimTask && (
