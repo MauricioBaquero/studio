@@ -32,7 +32,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Trash2, X, Upload } from 'lucide-react';
-import { useFirestore, useUser, useStorage } from '@/firebase';
+import { useFirestore, useUser, useStorage, deleteDocumentNonBlocking } from '@/firebase';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import {
@@ -46,6 +46,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { ImageViewerDialog } from './image-viewer-dialog';
 
 interface TicketDetailsDialogProps {
   open: boolean;
@@ -75,6 +76,9 @@ export function TicketDetailsDialog({
   const [currentPhotos, setCurrentPhotos] = useState<Photo[]>([]);
   const [newPhotoFiles, setNewPhotoFiles] = useState<File[]>([]);
   const [newPhotoPreviews, setNewPhotoPreviews] = useState<string[]>([]);
+
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
 
   const getUserById = (id: string | null) => users.find(u => u.uid === id);
 
@@ -188,7 +192,8 @@ export function TicketDetailsDialog({
         const deletePromises = ticket.photos.map(p => deleteObject(ref(storage, p.path)));
         await Promise.all(deletePromises);
       }
-      await deleteDoc(doc(firestore, 'tasks', ticket.id));
+      const ticketRef = doc(firestore, 'tasks', ticket.id);
+      deleteDocumentNonBlocking(ticketRef);
       toast({ title: "Ticket Deleted", description: `Ticket ${ticket.id} has been permanently deleted.` });
       onOpenChange(false);
     } catch(error) {
@@ -211,6 +216,11 @@ export function TicketDetailsDialog({
     setNewPhotoPreviews(previews => previews.filter((_, i) => i !== index));
   }
   
+  const handlePhotoClick = (url: string) => {
+    setSelectedImageUrl(url);
+    setIsImageViewerOpen(true);
+  };
+  
   const assignedUser = getUserById(ticket.assignedToId);
   const subCategoryInfo = findSubCategory(ticket.categoryId);
 
@@ -223,172 +233,179 @@ export function TicketDetailsDialog({
 
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Ticket Details</DialogTitle>
-          <DialogDescription>ID: {ticket.id}</DialogDescription>
-        </DialogHeader>
-        <div className="flex-1 overflow-y-auto p-1 grid gap-6 py-4">
-           <div className="space-y-2">
-              <Label>Description</Label>
-              <p className="text-sm text-muted-foreground p-4 border rounded-md bg-muted/50">
-                  {ticket.description}
-              </p>
-           </div>
-
-          <div className="space-y-4">
-            <Label>Completion Photo</Label>
-            <div className="flex items-center gap-4">
-                <Button
-                    variant="outline"
-                    className="border-2 border-dashed hover:border-solid hover:bg-accent"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isSaving}
-                >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Photo
-                </Button>
-                 <p className="text-xs text-muted-foreground">
-                    Restriction size to 5MB and files .jpg, .jpeg and .png allowed
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Ticket Details</DialogTitle>
+            <DialogDescription>ID: {ticket.id}</DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto p-1 grid gap-6 py-4">
+            <div className="space-y-2">
+                <Label>Description</Label>
+                <p className="text-sm text-muted-foreground p-4 border rounded-md bg-muted/50">
+                    {ticket.description}
                 </p>
             </div>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                {currentPhotos.map((photo, index) => (
-                    <div key={index} className="relative group aspect-square">
-                        <Image src={photo.url} alt={`Ticket photo ${index + 1}`} fill className="object-cover rounded-md border" />
-                        <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => handleDeletePhoto(photo, e)}>
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </div>
-                ))}
-                 {newPhotoPreviews.map((url, index) => (
-                    <div key={index} className="relative group aspect-square">
-                        <Image src={url} alt={`New photo preview ${index + 1}`} fill className="object-cover rounded-md border" />
-                        <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeNewPhotoPreview(index)}>
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </div>
-                ))}
-            </div>
-            <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                multiple
-                accept="image/jpeg, image/png, image/jpg"
-                onChange={handleFileChange}
-                disabled={isSaving}
-            />
-          </div>
 
-
-          <div className="grid grid-cols-2 gap-6">
-             <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Category</p>
-                <p className="text-sm">{subCategoryInfo?.name}</p>
-            </div>
-             <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Location</p>
-                <p className="text-sm">{ticket.location}</p>
-            </div>
-             <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Assigned To</p>
-                 {isAdmin ? (
-                  <Select 
-                      value={assignedTo || 'unassigned'} 
-                      onValueChange={(value) => setAssignedTo(value === 'unassigned' ? null : value)}
+            <div className="space-y-4">
+              <Label>Completion Photo</Label>
+              <div className="flex items-center gap-4">
+                  <Button
+                      variant="outline"
+                      className="border-2 border-dashed hover:border-solid hover:bg-accent"
+                      onClick={() => fileInputRef.current?.click()}
                       disabled={isSaving}
                   >
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload Photo
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                      Restriction size to 5MB and files .jpg, .jpeg and .png allowed
+                  </p>
+              </div>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                  {currentPhotos.map((photo, index) => (
+                      <div key={index} className="relative group aspect-square cursor-pointer" onClick={() => handlePhotoClick(photo.url)}>
+                          <Image src={photo.url} alt={`Ticket photo ${index + 1}`} fill className="object-cover rounded-md border" />
+                          <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => handleDeletePhoto(photo, e)}>
+                              <X className="h-4 w-4" />
+                          </Button>
+                      </div>
+                  ))}
+                  {newPhotoPreviews.map((url, index) => (
+                      <div key={index} className="relative group aspect-square">
+                          <Image src={url} alt={`New photo preview ${index + 1}`} fill className="object-cover rounded-md border" />
+                          <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeNewPhotoPreview(index)}>
+                              <X className="h-4 w-4" />
+                          </Button>
+                      </div>
+                  ))}
+              </div>
+              <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  multiple
+                  accept="image/jpeg, image/png, image/jpg"
+                  onChange={handleFileChange}
+                  disabled={isSaving}
+              />
+            </div>
+
+
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">Category</p>
+                  <p className="text-sm">{subCategoryInfo?.name}</p>
+              </div>
+              <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">Location</p>
+                  <p className="text-sm">{ticket.location}</p>
+              </div>
+              <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">Assigned To</p>
+                  {isAdmin ? (
+                    <Select 
+                        value={assignedTo || 'unassigned'} 
+                        onValueChange={(value) => setAssignedTo(value === 'unassigned' ? null : value)}
+                        disabled={isSaving}
+                    >
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Assign user" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="unassigned">Unassigned</SelectItem>
+                            {assignableUsers.map(user => (
+                                <SelectItem key={user.uid} value={user.uid}>
+                                    {user.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                  ) : (
+                      <p className="text-sm">{assignedUser?.name || 'Unassigned'}</p>
+                  )}
+              </div>
+              <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">Status</p>
+                  <Select 
+                      value={currentStatus} 
+                      onValueChange={(value) => setCurrentStatus(value as TicketStatus)}
+                      disabled={isSaving || !isAdmin }
+                  >
                       <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Assign user" />
+                          <SelectValue placeholder="Set status" />
                       </SelectTrigger>
                       <SelectContent>
-                          <SelectItem value="unassigned">Unassigned</SelectItem>
-                          {assignableUsers.map(user => (
-                              <SelectItem key={user.uid} value={user.uid}>
-                                  {user.name}
+                          {TICKET_STATUSES.map(status => (
+                              <SelectItem 
+                                  key={status} 
+                                  value={status}
+                                  disabled={!isAdmin}
+                              >
+                                  {status}
                               </SelectItem>
                           ))}
                       </SelectContent>
                   </Select>
-                 ) : (
-                    <p className="text-sm">{assignedUser?.name || 'Unassigned'}</p>
-                 )}
-            </div>
-             <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Status</p>
-                 <Select 
-                    value={currentStatus} 
-                    onValueChange={(value) => setCurrentStatus(value as TicketStatus)}
-                    disabled={isSaving || !isAdmin }
-                >
-                    <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Set status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {TICKET_STATUSES.map(status => (
-                            <SelectItem 
-                                key={status} 
-                                value={status}
-                                disabled={!isAdmin}
-                            >
-                                {status}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-          </div>
-        </div>
-        <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-between pt-4 border-t">
-          <div className="w-full sm:w-auto">
-            {isAdmin && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" disabled={isSaving} className="w-full sm:w-auto">
-                    <Trash2 className="mr-2 h-4 w-4" /> Delete Ticket
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete the ticket and all associated photos. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-          </div>
-          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
-              Cancel
-            </Button>
-            {isAdmin && isPendingReview ? (
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button onClick={() => handleUpdate('In Progress')} disabled={isSaving} variant="secondary">
-                   {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Reject
-                </Button>
-                <Button onClick={() => handleUpdate('Completed')} disabled={isSaving}>
-                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Approve
-                </Button>
               </div>
-            ) : (
-              <Button onClick={() => handleUpdate()} disabled={isSaving || !canInteractWithForm}>
-                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSaving ? "Saving..." : "Save Changes"}
-              </Button>
-            )}
+            </div>
           </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-between pt-4 border-t">
+            <div className="w-full sm:w-auto">
+              {isAdmin && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={isSaving} className="w-full sm:w-auto">
+                      <Trash2 className="mr-2 h-4 w-4" /> Delete Ticket
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete the ticket and all associated photos. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
+                Cancel
+              </Button>
+              {isAdmin && isPendingReview ? (
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button onClick={() => handleUpdate('In Progress')} disabled={isSaving} variant="secondary">
+                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Reject
+                  </Button>
+                  <Button onClick={() => handleUpdate('Completed')} disabled={isSaving}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Approve
+                  </Button>
+                </div>
+              ) : (
+                <Button onClick={() => handleUpdate()} disabled={isSaving || !canInteractWithForm}>
+                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </Button>
+              )}
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <ImageViewerDialog
+        imageUrl={selectedImageUrl}
+        open={isImageViewerOpen}
+        onOpenChange={setIsImageViewerOpen}
+      />
+    </>
   );
 }
