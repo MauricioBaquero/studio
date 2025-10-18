@@ -325,10 +325,10 @@ export function TicketDetailsDialog({
                                 variant="outline"
                                 role="combobox"
                                 aria-expanded={multiSelectOpen}
-                                className="w-full justify-between"
+                                className="w-full justify-start h-auto"
                                 disabled={isSaving}
                             >
-                                <div className="flex gap-1 flex-wrap">
+                                <div className="flex gap-1 flex-wrap py-1">
                                     {assignedToIds.length > 0 ? (
                                         assignedUsers.map(user => (
                                             <Badge
@@ -340,7 +340,7 @@ export function TicketDetailsDialog({
                                             </Badge>
                                         ))
                                     ) : (
-                                        "Assign users..."
+                                        <span className="text-muted-foreground font-normal">Assign users...</span>
                                     )}
                                 </div>
                             </Button>
