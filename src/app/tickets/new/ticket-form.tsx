@@ -315,7 +315,7 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
                       Upload Photo
                   </Button>
                   <p className="text-xs text-muted-foreground">
-                      You can add photos to your ticket.
+                      Restriction size to 5MB and files .jpg, .jpeg and .png allowed
                   </p>
               </div>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
