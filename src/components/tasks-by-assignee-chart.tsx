@@ -28,13 +28,16 @@ export function TasksByAssigneeChart({
   tickets,
   users,
 }: TasksByAssigneeChartProps) {
-  const tasksByAssignee = users.map(user => ({
-    name: user.name.split(' ')[0], // Use first name for brevity
-    value: tickets.filter(ticket => ticket.assignedToId === user.uid).length,
-    fill: primaryColor,
-  }));
+    const tasksByAssignee = users.map(user => ({
+        name: user.name.split(' ')[0], // Use first name for brevity
+        value: tickets.filter(ticket => (ticket.assignedToIds || []).includes(user.uid)).length,
+        fill: primaryColor,
+    }));
 
-  const unassignedTasks = tickets.filter(ticket => !ticket.assignedToId).length;
+  const unassignedTasks = tickets.filter(
+    ticket => !ticket.assignedToIds || ticket.assignedToIds.length === 0
+  ).length;
+
   let unassignedData = null;
   if (unassignedTasks > 0) {
     unassignedData = { name: 'Unassigned', value: unassignedTasks, fill: grayColor };

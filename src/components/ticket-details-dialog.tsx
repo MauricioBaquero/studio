@@ -328,17 +328,9 @@ export function TicketDetailsDialog({
                                 className="w-full justify-start h-auto"
                                 disabled={isSaving}
                             >
-                                <div className="flex gap-1 flex-wrap py-1">
+                                <div className="py-1">
                                     {assignedToIds.length > 0 ? (
-                                        assignedUsers.map(user => (
-                                            <Badge
-                                                variant="secondary"
-                                                key={user.uid}
-                                                className="mr-1 mb-1"
-                                            >
-                                                {user.name}
-                                            </Badge>
-                                        ))
+                                        <span className="truncate">{assignedUsers.map(user => user.name).join(', ')}</span>
                                     ) : (
                                         <span className="text-muted-foreground font-normal">Assign users...</span>
                                     )}
