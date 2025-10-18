@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,7 +10,7 @@ import { X } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
 
 export type FilterValues = {
-  assignee: 'all' | 'me';
+  assignee: 'all' | 'me' | 'unassigned';
   location: string;
   category: string;
   dateRange: { from: Date | undefined; to: Date | undefined };
@@ -26,7 +27,7 @@ export function TicketFilters({
   locations,
   onFilterChange,
 }: TicketFiltersProps) {
-  const [assignee, setAssignee] = useState<'all' | 'me'>('all');
+  const [assignee, setAssignee] = useState<'all' | 'me' | 'unassigned'>('all');
   const [location, setLocation] = useState('all');
   const [category, setCategory] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
@@ -53,13 +54,14 @@ export function TicketFilters({
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-lg bg-card p-4 border shadow-sm">
       <h3 className="text-lg font-semibold mr-4">Filters</h3>
-      <Select value={assignee} onValueChange={(value) => setAssignee(value as 'all' | 'me')}>
+      <Select value={assignee} onValueChange={(value) => setAssignee(value as 'all' | 'me' | 'unassigned')}>
         <SelectTrigger className="w-full sm:w-[180px]">
           <SelectValue placeholder="Filter by assignee" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Assignees</SelectItem>
           <SelectItem value="me">My Tasks</SelectItem>
+          <SelectItem value="unassigned">Unassigned</SelectItem>
         </SelectContent>
       </Select>
 

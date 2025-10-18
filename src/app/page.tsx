@@ -61,6 +61,10 @@ export default function TaskBoardPage() {
         if (ticket.assignedToId !== currentUser.uid) {
           return false;
         }
+      } else if (filters.assignee === 'unassigned') {
+        if (ticket.assignedToId) {
+            return false;
+        }
       }
 
       if (filters.location !== 'all' && !ticket.location.startsWith(filters.location)) {
