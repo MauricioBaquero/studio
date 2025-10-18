@@ -171,7 +171,11 @@ export function TicketDetailsDialog({
         const fileName = `${photoId}.${fileExtension}`;
         const storageRef = ref(storage, `taskphotos/${ticket.id}/${fileName}`);
         
-        await uploadString(storageRef, dataUrl, 'data_url');
+        await uploadString(storageRef, dataUrl, 'data_url', {
+          customMetadata: {
+            createdAt: new Date().toISOString(),
+          }
+        });
         const downloadURL = await getDownloadURL(storageRef);
 
         return { url: downloadURL, createdAt: new Date() };
@@ -445,4 +449,5 @@ export function TicketDetailsDialog({
   );
 }
 
+    
     

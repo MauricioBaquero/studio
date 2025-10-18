@@ -200,3 +200,6 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
     </>
   );
 }
+
+
+    
