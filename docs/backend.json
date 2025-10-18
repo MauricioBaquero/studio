@@ -47,10 +47,6 @@
           "type": "string",
           "description": "Reference to Category."
         },
-        "subCategoryId": {
-          "type": "string",
-          "description": "Reference to a sub-category within Category."
-        },
         "description": {
           "type": "string",
           "description": "Detailed explanation of the task."
@@ -58,10 +54,6 @@
         "locationId": {
           "type": "string",
           "description": "Reference to Location."
-        },
-        "additionalDetails": {
-          "type": "string",
-          "description": "Any extra details about the location or task."
         },
         "requestedCompletionDate": {
           "type": "string",
@@ -85,20 +77,6 @@
         "status": {
           "type": "string",
           "description": "The current status of the task."
-        },
-        "comments": {
-          "type": "array",
-          "description": "A list of comments on the task.",
-          "items": {
-            "type": "object",
-            "properties": {
-              "userId": { "type": "string" },
-              "userName": { "type": "string" },
-              "text": { "type": "string" },
-              "createdAt": { "type": "string", "format": "date-time" }
-            },
-            "required": ["userId", "userName", "text", "createdAt"]
-          }
         }
       },
       "required": [
