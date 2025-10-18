@@ -64,12 +64,12 @@
         "submitToReviewDate": {
           "type": "string",
           "format": "date",
-          "description": "The date the task was submitted for review."
+          "description": "The date the task was submitted for review (staff completion date)."
         },
         "actualCompletionDate": {
           "type": "string",
           "format": "date",
-          "description": "The date the task was actually completed."
+          "description": "The date the task was approved and officially completed."
         },
         "status": {
           "type": "string",
@@ -97,6 +97,10 @@
             },
             "required": ["url", "path", "createdAt"]
           }
+        },
+        "approvedBy": {
+          "type": "string",
+          "description": "The UID of the user who approved the task completion."
         }
       },
       "required": [
@@ -300,3 +304,4 @@
     ]
   }
 }
+
