@@ -3,6 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import { v4 as uuidv4 } from 'uuid';
 import {
   Ticket,
   TICKET_STATUSES,
@@ -31,8 +32,9 @@ import {
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Trash2, X, Upload } from 'lucide-react';
-import { useFirestore, useUser } from '@/firebase';
-import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { useFirestore, useUser, useStorage } from '@/firebase';
+import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,6 +64,7 @@ export function TicketDetailsDialog({
 }: TicketDetailsDialogProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const storage = useStorage();
   const { user: currentUser } = useUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -69,8 +72,8 @@ export function TicketDetailsDialog({
   const [currentStatus, setCurrentStatus] = useState<TicketStatus>(ticket.status);
   const [assignedTo, setAssignedTo] = useState<string | null>(ticket.assignedToId);
   
-  // UI-only state for now
-  const [currentPhotos, setCurrentPhotos] = useState<Photo[]>(ticket.photos || []);
+  const [currentPhotos, setCurrentPhotos] = useState<Photo[]>([]);
+  const [newPhotoFiles, setNewPhotoFiles] = useState<File[]>([]);
   const [newPhotoPreviews, setNewPhotoPreviews] = useState<string[]>([]);
 
   const getUserById = (id: string | null) => users.find(u => u.uid === id);
@@ -91,40 +94,53 @@ export function TicketDetailsDialog({
       setCurrentStatus(ticket.status);
       setAssignedTo(ticket.assignedToId);
       setCurrentPhotos(ticket.photos || []);
+      setNewPhotoFiles([]);
       setNewPhotoPreviews([]);
       setIsSaving(false);
     }
   }, [open, ticket]);
   
 
-  const handleUpdate = async (newStatusArg?: TicketStatus) => {
-    if (!firestore || !currentUser) return;
+  const handleUpdate = async (newStatus?: TicketStatus) => {
+    if (!firestore || !currentUser || !storage) return;
     setIsSaving(true);
     
-    // In a real implementation, we would upload new photos to Firebase Storage here,
-    // delete photos marked for deletion, then update Firestore with the new photo array.
-    // For now, we'll just simulate the save.
-
     try {
-      const newStatus = newStatusArg || currentStatus;
-      
+      const finalStatus = newStatus || currentStatus;
+      const ticketRef = doc(firestore, 'tasks', ticket.id);
+
+      // 1. Upload new photos
+      const newPhotoUploads = newPhotoFiles.map(async file => {
+        const photoId = uuidv4();
+        const fileExtension = file.name.split('.').pop();
+        const storagePath = `taskphotos/completed/${ticket.id}/${photoId}.${fileExtension}`;
+        const storageRef = ref(storage, storagePath);
+
+        await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(storageRef);
+        
+        return { url: downloadURL, path: storagePath };
+      });
+
+      const uploadedPhotos = await Promise.all(newPhotoUploads);
+
+      // 2. Prepare data for Firestore update
       const dataForDb: any = {
-        status: newStatus,
+        status: finalStatus,
         assignedToId: assignedTo,
       };
 
-      if (newStatus === 'Completed' && ticket.status !== 'Completed') {
+      if (uploadedPhotos.length > 0) {
+        dataForDb.photos = arrayUnion(...uploadedPhotos);
+      }
+      
+      if (finalStatus === 'Completed' && ticket.status !== 'Completed') {
         dataForDb.approvedBy = currentUser.uid;
         dataForDb.actualCompletionDate = new Date();
       }
 
-      // Placeholder for final photo list
-      // const finalPhotos = [...currentPhotos, ...newlyUploadedPhotos];
-      // dataForDb.photos = finalPhotos;
-
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate async work
-      
-      console.log("Simulating update with:", dataForDb);
+      // 3. Update Firestore
+      await updateDoc(ticketRef, dataForDb);
 
       toast({ title: "Ticket Updated", description: "Your changes have been saved successfully." });
       onOpenChange(false);
@@ -137,29 +153,71 @@ export function TicketDetailsDialog({
     }
   };
 
+  const handleDeletePhoto = async (photo: Photo, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!firestore || !storage) return;
+    
+    toast({ title: "Deleting Photo...", description: "Please wait." });
+    
+    try {
+        // Delete from Storage
+        const photoRef = ref(storage, photo.path);
+        await deleteObject(photoRef);
+        
+        // Remove from Firestore
+        const ticketRef = doc(firestore, 'tasks', ticket.id);
+        await updateDoc(ticketRef, {
+            photos: arrayRemove(photo)
+        });
+
+        // Update local state
+        setCurrentPhotos(currentPhotos.filter(p => p.path !== photo.path));
+        
+        toast({ title: "Photo Deleted", description: "The photo has been removed." });
+    } catch (error) {
+        console.error("Failed to delete photo:", error);
+        toast({ title: "Deletion Failed", description: "Could not delete photo.", variant: "destructive" });
+    }
+  };
+
   const handleDelete = async () => {
-     // UI only for now
-    toast({ title: "Ticket Deleted (UI only)", description: `Ticket ${ticket.id} has been permanently deleted.` });
-    onOpenChange(false);
+    if (!firestore) return;
+    try {
+      if (ticket.photos && ticket.photos.length > 0) {
+        // Delete all photos from storage first
+        const deletePromises = ticket.photos.map(p => deleteObject(ref(storage, p.path)));
+        await Promise.all(deletePromises);
+      }
+      await deleteDoc(doc(firestore, 'tasks', ticket.id));
+      toast({ title: "Ticket Deleted", description: `Ticket ${ticket.id} has been permanently deleted.` });
+      onOpenChange(false);
+    } catch(error) {
+      console.error("Failed to delete ticket:", error);
+      toast({ title: "Deletion Failed", description: "Could not delete the ticket.", variant: "destructive" });
+    }
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
      if (e.target.files) {
         const files = Array.from(e.target.files);
+        setNewPhotoFiles(prev => [...prev, ...files]);
         const previews = files.map(file => URL.createObjectURL(file));
         setNewPhotoPreviews(prev => [...prev, ...previews]);
     }
+  }
+
+  const removeNewPhotoPreview = (index: number) => {
+    setNewPhotoFiles(files => files.filter((_, i) => i !== index));
+    setNewPhotoPreviews(previews => previews.filter((_, i) => i !== index));
   }
   
   const assignedUser = getUserById(ticket.assignedToId);
   const subCategoryInfo = findSubCategory(ticket.categoryId);
 
   const isAdmin = currentUser?.role === 'Admin';
-  const isViewer = currentUser?.role === 'Viewer';
-  const isStaff = currentUser?.role === 'Staff';
   const isPendingReview = ticket.status === 'Pending Review';
+  const isStaff = currentUser?.role === 'Staff';
   const isAssignedToCurrentUser = ticket.assignedToId === currentUser?.uid;
-  
   const canInteractWithForm = isAdmin || (isStaff && (isAssignedToCurrentUser || !ticket.assignedToId));
   const assignableUsers = users.filter(u => u.role === 'Admin' || u.role === 'Staff');
 
@@ -196,10 +254,18 @@ export function TicketDetailsDialog({
                 </p>
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                {[...currentPhotos.map(p => p.url), ...newPhotoPreviews].map((url, index) => (
+                {currentPhotos.map((photo, index) => (
                     <div key={index} className="relative group aspect-square">
-                        <Image src={url} alt={`Ticket photo ${index + 1}`} layout="fill" className="object-cover rounded-md border" />
-                        <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Image src={photo.url} alt={`Ticket photo ${index + 1}`} fill className="object-cover rounded-md border" />
+                        <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => handleDeletePhoto(photo, e)}>
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                ))}
+                 {newPhotoPreviews.map((url, index) => (
+                    <div key={index} className="relative group aspect-square">
+                        <Image src={url} alt={`New photo preview ${index + 1}`} fill className="object-cover rounded-md border" />
+                        <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeNewPhotoPreview(index)}>
                             <X className="h-4 w-4" />
                         </Button>
                     </div>
@@ -210,8 +276,9 @@ export function TicketDetailsDialog({
                 ref={fileInputRef}
                 className="hidden"
                 multiple
-                accept="image/jpeg, image/png"
+                accept="image/jpeg, image/png, image/jpg"
                 onChange={handleFileChange}
+                disabled={isSaving}
             />
           </div>
 
@@ -287,7 +354,7 @@ export function TicketDetailsDialog({
                   <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will permanently delete the ticket. This action cannot be undone.
+                      This will permanently delete the ticket and all associated photos. This action cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -305,6 +372,7 @@ export function TicketDetailsDialog({
             {isAdmin && isPendingReview ? (
               <div className="flex flex-col sm:flex-row gap-2">
                 <Button onClick={() => handleUpdate('In Progress')} disabled={isSaving} variant="secondary">
+                   {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Reject
                 </Button>
                 <Button onClick={() => handleUpdate('Completed')} disabled={isSaving}>
