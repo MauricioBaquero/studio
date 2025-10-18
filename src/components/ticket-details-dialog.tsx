@@ -181,18 +181,20 @@ export function TicketDetailsDialog({
 
           <div className="space-y-4">
             <Label>Completion Photo</Label>
-            <Button
-                variant="outline"
-                className="w-full border-2 border-dashed hover:border-solid hover:bg-accent"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isSaving}
-            >
-                <Upload className="mr-2 h-4 w-4" />
-                Upload Photo
-            </Button>
-             <p className="text-xs text-muted-foreground text-center">
-                Restriction size to 5mb and files JPG and PNG allowed
-            </p>
+            <div className="flex items-center gap-4">
+                <Button
+                    variant="outline"
+                    className="border-2 border-dashed hover:border-solid hover:bg-accent"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isSaving}
+                >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Photo
+                </Button>
+                 <p className="text-xs text-muted-foreground">
+                    Restriction size to 5mb and files JPG and PNG allowed
+                </p>
+            </div>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                 {[...currentPhotos.map(p => p.url), ...newPhotoPreviews].map((url, index) => (
                     <div key={index} className="relative group aspect-square">
@@ -322,3 +324,5 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
+
+    
