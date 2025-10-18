@@ -93,11 +93,6 @@ export const toDate = (date: Date | Timestamp): Date => {
     return date.toDate();
 }
 
-export const getCategoryColor = (categoryId: string, categories: Category[]): CategoryColor | 'gray' => {
-    const parentCategory = categories.find(parent => parent.subcategories.some(sub => sub.id === categoryId));
-    return parentCategory?.color || 'gray';
-}
-
 export const getNextDueDate = (task: RecurringTask): Date => {
   const today = startOfDay(new Date());
 

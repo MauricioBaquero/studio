@@ -70,10 +70,6 @@
           "format": "date",
           "description": "The date the task was actually completed."
         },
-        "assignedTo": {
-          "type": "string",
-          "description": "Reference to the User to whom the task is assigned."
-        },
         "status": {
           "type": "string",
           "description": "The current status of the task."
