@@ -22,12 +22,12 @@ export function ThemeToggle() {
       onClick={toggleTheme}
       className={cn(
         "relative",
-        "dark:bg-foreground dark:text-background dark:hover:bg-muted-foreground",
-        "bg-background text-foreground hover:bg-muted"
+        "dark:bg-background dark:text-foreground dark:hover:bg-muted",
+        "bg-foreground text-background hover:bg-muted-foreground"
       )}
     >
-      <Sun className="absolute h-[1.2rem] w-[1.2rem] scale-0 transition-all dark:scale-100" />
-      <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-100 transition-all dark:scale-0" />
+      <Sun className="absolute h-[1.2rem] w-[1.2rem] scale-0 dark:scale-100" />
+      <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-100 dark:scale-0" />
       <span className="sr-only">Toggle theme</span>
     </Button>
   )
