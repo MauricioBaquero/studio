@@ -32,7 +32,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, X, Trash2 } from 'lucide-react';
-import { useFirestore, useStorage, useUser } from '@/firebase';
+import { useFirestore, useStorage, useUser, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 import { FirebaseError } from 'firebase/app';
@@ -181,6 +181,7 @@ export function TicketDetailsDialog({
 
       // Step 2: Delete marked photos from storage in parallel
       const deletePromises = photosToDelete.map(async (photo) => {
+        // Important: Use photo.path for deletion, not photo.url
         const photoRef = ref(storage, photo.path);
         await deleteObject(photoRef);
       });
@@ -192,11 +193,13 @@ export function TicketDetailsDialog({
 
       // Step 4: Prepare other data and update Firestore
       let finalStatus = newStatus || currentStatus;
+
+      // Logic to automatically move to "In Progress" when assigned
       if (assignedTo && ticket.status === 'Not Started' && assignedTo !== ticket.assignedToId) {
         finalStatus = 'In Progress';
       }
 
-      const dataForDb: Partial<Ticket> = {
+      const dataForDb: any = { // Use `any` to build the object dynamically
         status: finalStatus,
         assignedToId: assignedTo,
         photos: finalPhotos,
@@ -242,7 +245,7 @@ export function TicketDetailsDialog({
                 try {
                     await deleteObject(photoRef);
                 } catch (error) {
-                    console.warn(`Could not delete photo ${photo.url} from storage, it may have already been removed.`);
+                    console.warn(`Could not delete photo ${photo.path} from storage, it may have already been removed.`);
                 }
             }
         }
