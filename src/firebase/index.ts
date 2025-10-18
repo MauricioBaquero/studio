@@ -5,7 +5,6 @@ import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore'
-import { getStorage } from 'firebase/storage';
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
@@ -36,16 +35,12 @@ export function initializeFirebase() {
 
 export function getSdks(firebaseApp: FirebaseApp) {
   const firestoreDb = getFirestore(firebaseApp);
-  // The storage bucket is automatically picked up from the firebaseApp instance
-  // when initialized with the full config.
-  const storage = getStorage(firebaseApp);
   const auth = getAuth(firebaseApp);
 
   return {
     firebaseApp,
     auth,
     firestore: firestoreDb,
-    storage: storage
   };
 }
 
@@ -79,4 +74,3 @@ export * from './non-blocking-updates';
 export * from './non-blocking-login';
 export * from './errors';
 export * from './error-emitter';
-

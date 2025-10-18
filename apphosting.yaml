@@ -10,6 +10,4 @@ runConfig:
 # The `secret` field is the name of the secret in Secret Manager.
 # The `env` field is the name of the environment variable that will be set in the app.
 # https://firebase.google.com/docs/app-hosting/configure#manage-secrets
-secretEnv:
-- secret: firebase-storage-bucket
-  env: STORAGE_BUCKET
+secretEnv: []
