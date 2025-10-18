@@ -48,6 +48,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ImageViewerDialog } from './image-viewer-dialog';
+import { format } from 'date-fns';
 
 interface TicketDetailsDialogProps {
   open: boolean;
@@ -267,19 +268,24 @@ export function TicketDetailsDialog({
               </div>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                   {currentPhotos.map((photo, index) => (
-                      <div key={index} className="relative group aspect-square cursor-pointer" onClick={() => handlePhotoClick(photo)}>
-                          <Image src={photo.url} alt={`Ticket photo ${index + 1}`} fill className="object-cover rounded-md border" />
-                          <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => handleDeletePhoto(photo, e)}>
-                              <X className="h-4 w-4" />
-                          </Button>
+                      <div key={index} onClick={() => handlePhotoClick(photo)} className="cursor-pointer">
+                          <div className="relative group aspect-square">
+                              <Image src={photo.url} alt={`Ticket photo ${index + 1}`} fill className="object-cover rounded-md border" />
+                              <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => handleDeletePhoto(photo, e)}>
+                                  <X className="h-4 w-4" />
+                              </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground text-center mt-1">{format(toDate(photo.createdAt), 'MM/dd/yyyy')}</p>
                       </div>
                   ))}
                   {newPhotoPreviews.map((url, index) => (
-                      <div key={index} className="relative group aspect-square">
-                          <Image src={url} alt={`New photo preview ${index + 1}`} fill className="object-cover rounded-md border" />
-                          <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeNewPhotoPreview(index)}>
-                              <X className="h-4 w-4" />
-                          </Button>
+                      <div key={index}>
+                        <div className="relative group aspect-square">
+                            <Image src={url} alt={`New photo preview ${index + 1}`} fill className="object-cover rounded-md border" />
+                            <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeNewPhotoPreview(index)}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
                       </div>
                   ))}
               </div>
