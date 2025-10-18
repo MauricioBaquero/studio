@@ -22,8 +22,10 @@ export function ThemeToggle() {
       onClick={toggleTheme}
       className={cn(
         "relative",
-        "dark:bg-background dark:text-foreground dark:hover:bg-muted",
-        "bg-foreground text-background hover:bg-muted-foreground"
+        // When in light mode, show a dark button to switch to dark mode
+        "dark:bg-foreground dark:text-background dark:hover:bg-muted-foreground", 
+        // When in dark mode, show a light button to switch to light mode
+        "bg-background text-foreground hover:bg-muted"
       )}
     >
       <Sun className="absolute h-[1.2rem] w-[1.2rem] scale-0 dark:scale-100" />
