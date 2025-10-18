@@ -448,6 +448,3 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
-
-    
-    
