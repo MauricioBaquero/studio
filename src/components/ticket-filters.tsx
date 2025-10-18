@@ -2,8 +2,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Category, Location, User } from '@/lib/data';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Category, Location } from '@/lib/data';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
@@ -19,14 +19,12 @@ export type FilterValues = {
 interface TicketFiltersProps {
   parentCategories: Category[];
   locations: Location[];
-  users: User[];
   onFilterChange: (filters: FilterValues) => void;
 }
 
 export function TicketFilters({
   parentCategories,
   locations,
-  users,
   onFilterChange,
 }: TicketFiltersProps) {
   const [assignee, setAssignee] = useState('all');
@@ -62,14 +60,8 @@ export function TicketFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Assignees</SelectItem>
-          <SelectItem value="me-unassigned">My Tasks &amp; Unassigned</SelectItem>
+          <SelectItem value="me-unassigned">My Task</SelectItem>
           <SelectItem value="null">Unassigned</SelectItem>
-          <SelectGroup>
-            <SelectLabel>Users</SelectLabel>
-            {users.map(user => (
-              <SelectItem key={user.uid} value={user.uid}>{user.name}</SelectItem>
-            ))}
-          </SelectGroup>
         </SelectContent>
       </Select>
 

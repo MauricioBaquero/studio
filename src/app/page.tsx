@@ -111,7 +111,6 @@ export default function TaskBoardPage() {
       <TicketFilters
         parentCategories={parentCategories}
         locations={locations || []}
-        users={assignableUsers}
         onFilterChange={setFilters}
       />
       
