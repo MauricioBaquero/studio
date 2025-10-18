@@ -1,8 +1,10 @@
 
+import { useState } from 'react';
 import { Ticket, User, Category } from "@/lib/data";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import TicketCard from "@/components/ticket-card";
 import { cn } from "@/lib/utils";
+import { Button } from '@/components/ui/button';
 
 interface TicketBoardColumnProps {
   status: string;
@@ -24,6 +26,50 @@ const statusEmojis: { [key: string]: string } = {
   "Pending Review": "👀",
   "Completed": "🏁",
 };
+
+const INITIAL_VISIBLE_COUNT = 3;
+
+export function CollapsibleTicketBoardColumn({
+  status,
+  tickets,
+  users,
+  categories,
+}: TicketBoardColumnProps) {
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
+
+  const handleLoadMore = () => {
+    setVisibleCount(prevCount => prevCount + 5);
+  };
+
+  const visibleTickets = tickets.slice(0, visibleCount);
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="p-4 space-y-4">
+        {tickets.length > 0 ? (
+          visibleTickets.map((ticket) => (
+            <TicketCard
+              key={ticket.id}
+              ticket={ticket}
+              users={users}
+              categories={categories}
+            />
+          ))
+        ) : (
+          <div className="flex items-center justify-center h-24 text-sm text-muted-foreground">
+            No tickets
+          </div>
+        )}
+        {tickets.length > visibleCount && (
+          <Button onClick={handleLoadMore} variant="outline" className="w-full">
+            Load More
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 
 export default function TicketBoardColumn({
   status,
