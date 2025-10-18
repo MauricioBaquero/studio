@@ -37,6 +37,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import Image from "next/image";
 import { Upload, X } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 
 interface TicketFormProps {
