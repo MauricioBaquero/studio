@@ -1,5 +1,4 @@
 
-
 import { addDays, addWeeks, addMonths, setDay, setDate, nextDay, startOfDay, isAfter, isSameDay, toDate as fnsToDate } from "date-fns";
 import type { Timestamp } from 'firebase/firestore';
 import { z } from "zod";
@@ -92,6 +91,18 @@ export const toDate = (date: Date | Timestamp): Date => {
     }
     return date.toDate();
 }
+
+export const getCategoryColor = (
+  categories: Category[],
+  subcategoryId: string
+): CategoryColor => {
+  for (const parent of categories) {
+    if (parent.subcategories.some(sub => sub.id === subcategoryId)) {
+      return parent.color || 'gray';
+    }
+  }
+  return 'gray';
+};
 
 export const getNextDueDate = (task: RecurringTask): Date => {
   const today = startOfDay(new Date());
