@@ -61,7 +61,6 @@ export function TicketFilters({
         <SelectContent>
           <SelectItem value="all">All Assignees</SelectItem>
           <SelectItem value="me-unassigned">My Task</SelectItem>
-          <SelectItem value="null">Unassigned</SelectItem>
         </SelectContent>
       </Select>
 
