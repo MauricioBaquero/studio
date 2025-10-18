@@ -131,6 +131,12 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
         onClick={handleOpenDialog}
       >
         <div className="absolute top-2 right-2 flex items-center gap-2">
+            {isOverdue && (
+              <Badge variant="destructive" className="flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                Overdue
+              </Badge>
+            )}
             {ticket.status === 'Completed' && (
                 <CheckCircle className="h-5 w-5 text-green-500" />
             )}
@@ -156,12 +162,6 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
           <div className="flex items-center gap-2 text-muted-foreground">
             <Calendar className="h-4 w-4" />
             <span>Due: {format(requestedCompletionDate, 'MM/dd/yyyy')}</span>
-             {isOverdue && (
-              <Badge variant="destructive" className="flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                Overdue
-              </Badge>
-            )}
           </div>
         </CardContent>
         <CardFooter className="flex items-center justify-between">
