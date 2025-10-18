@@ -18,8 +18,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Calendar, CheckCircle, MapPin, Tag, Camera } from 'lucide-react';
-import { format } from 'date-fns';
+import { Calendar, CheckCircle, MapPin, Tag, Camera, AlertTriangle } from 'lucide-react';
+import { format, isPast, startOfDay } from 'date-fns';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -115,6 +115,8 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
   }
 
   const requestedCompletionDate = toDate(ticket.requestedCompletionDate);
+  const isOverdue = isPast(startOfDay(requestedCompletionDate)) && ticket.status !== 'Completed';
+
 
   const canClaimTask = !isViewer && (isAdmin || (isStaff && !ticket.assignedToId));
   const canMarkForReview = (isStaff || isAdmin) && isAssignedToCurrentUser;
@@ -154,6 +156,12 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
           <div className="flex items-center gap-2 text-muted-foreground">
             <Calendar className="h-4 w-4" />
             <span>Due: {format(requestedCompletionDate, 'MM/dd/yyyy')}</span>
+             {isOverdue && (
+              <Badge variant="destructive" className="flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                Overdue
+              </Badge>
+            )}
           </div>
         </CardContent>
         <CardFooter className="flex items-center justify-between">
