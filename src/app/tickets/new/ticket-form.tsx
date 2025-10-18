@@ -117,8 +117,8 @@ export function TicketForm({ parentCategories, locations }: TicketFormProps) {
     const subCategory = parentCategory?.subcategories.find(s => s.id === values.subcategoryId);
     const catAbbr = parentCategory ? getAbbreviation(parentCategory.name) : 'GEN';
     const subCatAbbr = subCategory ? getAbbreviation(subCategory.name) : 'GEN';
-    const timestampId = Date.now().toString().slice(-5); // Use last 5 digits of timestamp for uniqueness
-    const ticketId = `T-${catAbbr}-${subCatAbbr}-${timestampId}`;
+    const randomId = Math.floor(10000 + Math.random() * 90000).toString();
+    const ticketId = `T-${catAbbr}-${subCatAbbr}-${randomId}`;
     
     const locationName = locations.find(l => l.id === values.locationId)?.name;
 
@@ -366,5 +366,3 @@ export function TicketForm({ parentCategories, locations }: TicketFormProps) {
     </Form>
   );
 }
-
-    
