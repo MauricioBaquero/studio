@@ -22,14 +22,14 @@ export function ThemeToggle() {
       onClick={toggleTheme}
       className={cn(
         "relative",
-        // Light mode: show dark button to switch to dark
+        // When in dark mode, show the light theme button style
         "dark:bg-background dark:text-foreground dark:hover:bg-muted",
-        // Dark mode: show light button to switch to light
+        // When in light mode, show the dark theme button style
         "bg-foreground text-background hover:bg-muted-foreground"
       )}
     >
-      <Sun className="h-[1.2rem] w-[1.2rem] scale-100 transition-all dark:scale-0" />
-      <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-0 transition-all dark:scale-100" />
+      <Sun className="h-[1.2rem] w-[1.2rem] scale-0 transition-all dark:scale-100" />
+      <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-100 transition-all dark:scale-0" />
       <span className="sr-only">Toggle theme</span>
     </Button>
   )
