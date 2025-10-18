@@ -181,6 +181,18 @@ export function TicketDetailsDialog({
 
           <div className="space-y-4">
             <Label>Completion Photo</Label>
+            <Button
+                variant="outline"
+                className="w-full border-2 border-dashed hover:border-solid hover:bg-accent"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isSaving}
+            >
+                <Upload className="mr-2 h-4 w-4" />
+                Upload Photo
+            </Button>
+             <p className="text-xs text-muted-foreground text-center">
+                Restriction size to 5mb and files JPG and PNG allowed
+            </p>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                 {[...currentPhotos.map(p => p.url), ...newPhotoPreviews].map((url, index) => (
                     <div key={index} className="relative group aspect-square">
@@ -190,22 +202,13 @@ export function TicketDetailsDialog({
                         </Button>
                     </div>
                 ))}
-                 <Button
-                    variant="outline"
-                    className="aspect-square flex-col gap-2 border-2 border-dashed hover:border-solid hover:bg-accent"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isSaving}
-                >
-                    <Upload className="h-6 w-6 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Upload Photo</span>
-                </Button>
             </div>
             <input
                 type="file"
                 ref={fileInputRef}
                 className="hidden"
                 multiple
-                accept="image/*"
+                accept="image/jpeg, image/png"
                 onChange={handleFileChange}
             />
           </div>
