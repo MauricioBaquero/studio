@@ -57,13 +57,13 @@ export default function TaskBoardPage() {
         ? ticket.requestedCompletionDate.toDate() 
         : ticket.requestedCompletionDate;
 
-      if (filters.assignee === 'me') {
-        if (ticket.assignedToId !== currentUser.uid) {
+      if (filters.assignee === 'me-unassigned') {
+        if (ticket.assignedToId !== null && ticket.assignedToId !== currentUser.uid) {
           return false;
         }
-      } else if (filters.assignee === 'unassigned') {
-        if (ticket.assignedToId) {
-            return false;
+      } else if (filters.assignee !== 'all') {
+        if (ticket.assignedToId !== filters.assignee) {
+          return false;
         }
       }
 
@@ -91,6 +91,11 @@ export default function TaskBoardPage() {
 
   const isLoading = isLoadingTickets || isLoadingUsers || isLoadingCategories || isLoadingLocations;
 
+  const assignableUsers = useMemo(() => {
+    if (!users) return [];
+    return users.filter(u => u.role === 'Admin' || u.role === 'Staff');
+  }, [users]);
+
   return (
     <div className="flex flex-col h-full gap-6">
       <div className="flex items-center justify-between">
@@ -106,6 +111,7 @@ export default function TaskBoardPage() {
       <TicketFilters
         parentCategories={parentCategories}
         locations={locations || []}
+        users={assignableUsers}
         onFilterChange={setFilters}
       />
       

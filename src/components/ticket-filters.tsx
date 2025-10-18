@@ -2,15 +2,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Category, Location } from '@/lib/data';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Category, Location, User } from '@/lib/data';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
 
 export type FilterValues = {
-  assignee: 'all' | 'me' | 'unassigned';
+  assignee: string;
   location: string;
   category: string;
   dateRange: { from: Date | undefined; to: Date | undefined };
@@ -19,15 +19,17 @@ export type FilterValues = {
 interface TicketFiltersProps {
   parentCategories: Category[];
   locations: Location[];
+  users: User[];
   onFilterChange: (filters: FilterValues) => void;
 }
 
 export function TicketFilters({
   parentCategories,
   locations,
+  users,
   onFilterChange,
 }: TicketFiltersProps) {
-  const [assignee, setAssignee] = useState<'all' | 'me' | 'unassigned'>('all');
+  const [assignee, setAssignee] = useState('all');
   const [location, setLocation] = useState('all');
   const [category, setCategory] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
@@ -54,14 +56,20 @@ export function TicketFilters({
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-lg bg-card p-4 border shadow-sm">
       <h3 className="text-lg font-semibold mr-4">Filters</h3>
-      <Select value={assignee} onValueChange={(value) => setAssignee(value as 'all' | 'me' | 'unassigned')}>
+      <Select value={assignee} onValueChange={setAssignee}>
         <SelectTrigger className="w-full sm:w-[180px]">
           <SelectValue placeholder="Filter by assignee" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Assignees</SelectItem>
-          <SelectItem value="me">My Tasks</SelectItem>
-          <SelectItem value="unassigned">Unassigned</SelectItem>
+          <SelectItem value="me-unassigned">My Tasks &amp; Unassigned</SelectItem>
+          <SelectItem value="null">Unassigned</SelectItem>
+          <SelectGroup>
+            <SelectLabel>Users</SelectLabel>
+            {users.map(user => (
+              <SelectItem key={user.uid} value={user.uid}>{user.name}</SelectItem>
+            ))}
+          </SelectGroup>
         </SelectContent>
       </Select>
 
