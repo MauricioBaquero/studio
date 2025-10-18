@@ -95,7 +95,10 @@ export function TicketForm({ parentCategories, locations }: TicketFormProps) {
     }
     return floors;
   }, [selectedLocation]);
-
+  
+  const getAbbreviation = (name: string) => {
+    return name.substring(0, 3).toUpperCase();
+  };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!firestore) {
@@ -108,6 +111,15 @@ export function TicketForm({ parentCategories, locations }: TicketFormProps) {
     }
 
     setIsSubmitting(true);
+    
+    // Generate new Ticket ID
+    const parentCategory = parentCategories.find(p => p.id === values.categoryId);
+    const subCategory = parentCategory?.subcategories.find(s => s.id === values.subcategoryId);
+    const catAbbr = parentCategory ? getAbbreviation(parentCategory.name) : 'GEN';
+    const subCatAbbr = subCategory ? getAbbreviation(subCategory.name) : 'GEN';
+    const timestampId = Date.now().toString().slice(-5); // Use last 5 digits of timestamp for uniqueness
+    const ticketId = `T-${catAbbr}-${subCatAbbr}-${timestampId}`;
+    
     const locationName = locations.find(l => l.id === values.locationId)?.name;
 
     let floorDisplay = "";
@@ -119,8 +131,6 @@ export function TicketForm({ parentCategories, locations }: TicketFormProps) {
     }
     
     const fullLocation = [locationName, floorDisplay, values.additionalDetails].filter(Boolean).join(', ');
-
-    const ticketId = 'T' + Date.now();
 
     const generateTitle = (description: string) => {
         const words = description.split(' ');
@@ -356,3 +366,5 @@ export function TicketForm({ parentCategories, locations }: TicketFormProps) {
     </Form>
   );
 }
+
+    
