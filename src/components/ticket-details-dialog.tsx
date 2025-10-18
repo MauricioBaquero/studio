@@ -251,7 +251,7 @@ export function TicketDetailsDialog({
             </div>
 
             <div className="space-y-2">
-              <Label>Completion Photo</Label>
+              <Label>Photo(s)</Label>
               <div className="flex items-center gap-4">
                   <Button
                       variant="outline"
