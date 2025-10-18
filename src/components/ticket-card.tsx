@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -97,6 +98,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
     const ticketRef = doc(firestore, 'tasks', ticket.id);
     const updatedTicketData = {
       status: 'Pending Review' as const,
+      submitToReviewDate: new Date(),
     };
     updateDocumentNonBlocking(ticketRef, updatedTicketData);
     toast({
@@ -182,9 +184,14 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
                   <span className="text-xs">{ticket.photos.length}</span>
                 </div>
               )}
-              {ticket.status === 'Completed' && approver && (
+              {ticket.status === 'Completed' && (
                 <div className="text-xs text-muted-foreground text-right">
-                  <div>Approved by {approver.name}</div>
+                  {ticket.submitToReviewDate && (
+                    <div>Completed: {format(toDate(ticket.submitToReviewDate), 'MM/dd/yyyy')}</div>
+                  )}
+                  {approver && (
+                    <div>Approved by {approver.name}</div>
+                  )}
                   {ticket.actualCompletionDate && (
                     <div>{format(toDate(ticket.actualCompletionDate), 'MM/dd/yyyy')}</div>
                   )}

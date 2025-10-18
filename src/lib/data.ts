@@ -68,6 +68,7 @@ export const ticketSchema = z.object({
   requestedCompletionDate: timestampSchema,
   createdAt: timestampSchema,
   approvedBy: z.string().nullable().optional(),
+  submitToReviewDate: timestampSchema.optional().nullable(),
   actualCompletionDate: timestampSchema.optional().nullable(),
   photos: z.array(photoSchema).optional(),
 });
