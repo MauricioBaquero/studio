@@ -168,24 +168,20 @@ export function TicketDetailsDialog({
         const mimeType = dataUrl.match(/data:(.*);base64,/)?.[1];
         const fileExtension = mimeType?.split('/')[1] || 'jpeg';
         const photoId = uuidv4();
-        const fileName = `${photoId}.${fileExtension}`;
-        const storageRef = ref(storage, `taskphotos/${ticket.id}/${fileName}`);
+        const fullPath = `taskphotos/${ticket.id}/${photoId}.${fileExtension}`;
+        const storageRef = ref(storage, fullPath);
         
-        await uploadString(storageRef, dataUrl, 'data_url', {
-          customMetadata: {
-            createdAt: new Date().toISOString(),
-          }
-        });
+        await uploadString(storageRef, dataUrl, 'data_url');
         const downloadURL = await getDownloadURL(storageRef);
 
-        return { url: downloadURL, createdAt: new Date() };
+        return { url: downloadURL, path: fullPath, createdAt: new Date() } as Photo;
       });
 
       const newUploadedPhotos = await Promise.all(uploadPromises);
 
       // Step 2: Delete marked photos from storage in parallel
       const deletePromises = photosToDelete.map(async (photo) => {
-        const photoRef = ref(storage, photo.url);
+        const photoRef = ref(storage, photo.path);
         await deleteObject(photoRef);
       });
       
@@ -242,7 +238,7 @@ export function TicketDetailsDialog({
     try {
         if (ticket.photos && ticket.photos.length > 0) {
             for (const photo of ticket.photos) {
-                const photoRef = ref(storage, photo.url);
+                const photoRef = ref(storage, photo.path);
                 try {
                     await deleteObject(photoRef);
                 } catch (error) {

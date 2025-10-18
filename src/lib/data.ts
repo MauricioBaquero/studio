@@ -51,6 +51,7 @@ const timestampSchema = z.custom<Timestamp | Date>((data) => data instanceof Dat
 
 export const photoSchema = z.object({
   url: z.string().url(),
+  path: z.string(),
   createdAt: timestampSchema,
 });
 export type Photo = z.infer<typeof photoSchema>;
