@@ -73,9 +73,12 @@ export function TicketDetailsDialog({
   const [isSaving, setIsSaving] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<TicketStatus>(ticket.status);
   const [assignedTo, setAssignedTo] = useState<string | null>(ticket.assignedToId);
-  const [currentPhotos, setCurrentPhotos] = useState<Photo[]>([]);
-  const [newPhotoDataUrl, setNewPhotoDataUrl] = useState<string | null>(null);
   
+  // State for photos
+  const [currentPhotos, setCurrentPhotos] = useState<Photo[]>([]);
+  const [newPhotoPreviews, setNewPhotoPreviews] = useState<string[]>([]);
+  const [photosToDelete, setPhotosToDelete] = useState<Photo[]>([]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const getUserById = (id: string | null) => users.find(u => u.uid === id);
@@ -93,112 +96,101 @@ export function TicketDetailsDialog({
 
   useEffect(() => {
     if (open) {
+      // Reset state when dialog opens
       setCurrentStatus(ticket.status);
       setAssignedTo(ticket.assignedToId);
       setCurrentPhotos(ticket.photos || []);
-      setNewPhotoDataUrl(null);
+      setNewPhotoPreviews([]);
+      setPhotosToDelete([]);
       setIsSaving(false);
     }
   }, [open, ticket]);
   
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = event.target.files;
+    if (!files) return;
 
-    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-        toast({
-            title: "File Too Large",
-            description: `The selected file must be ${MAX_FILE_SIZE_MB}MB or smaller.`,
-            variant: "destructive",
-        });
-        return;
-    }
-    if (!file.type.startsWith('image/')) {
-        toast({
-            title: "Invalid File Type",
-            description: "Please select an image file.",
-            variant: "destructive",
-        });
-        return;
+    const validFiles: File[] = [];
+    for (const file of Array.from(files)) {
+        if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+            toast({
+                title: "File Too Large",
+                description: `${file.name} is larger than ${MAX_FILE_SIZE_MB}MB.`,
+                variant: "destructive",
+            });
+            continue;
+        }
+
+        if (!file.type.startsWith('image/')) {
+            toast({
+                title: "Invalid File Type",
+                description: `${file.name} is not an image file.`,
+                variant: "destructive",
+            });
+            continue;
+        }
+        validFiles.push(file);
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      setNewPhotoDataUrl(result);
-    };
-    reader.onerror = () => {
-      toast({
-        title: 'Error Reading File',
-        description: 'Could not read the selected file. Please try again.',
-        variant: 'destructive',
-      });
-    };
-    reader.readAsDataURL(file);
+    validFiles.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setNewPhotoPreviews(prev => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // Reset file input
+    if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+    }
   };
 
-  const removePhoto = async (photoToRemove: Photo) => {
-    if (!storage) return;
-
-    setIsSaving(true);
-    try {
-      // If it's the newly added photo preview, just clear it
-      if (newPhotoDataUrl && photoToRemove.url === newPhotoDataUrl) {
-        setNewPhotoDataUrl(null);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-        }
-        return;
+  const removePhoto = (photoUrl: string, isNew: boolean) => {
+    if (isNew) {
+      setNewPhotoPreviews(previews => previews.filter(p => p !== photoUrl));
+    } else {
+      const photoToRemove = currentPhotos.find(p => p.url === photoUrl);
+      if (photoToRemove) {
+        setPhotosToDelete(prev => [...prev, photoToRemove]);
+        setCurrentPhotos(current => current.filter(p => p.url !== photoUrl));
       }
-
-      // If it's an existing photo from storage, delete it now
-      const photoRef = ref(storage, photoToRemove.url);
-      await deleteObject(photoRef);
-
-      setCurrentPhotos(prev => prev.filter(p => p.url !== photoToRemove.url));
-      
-      toast({ title: "Photo Removed", description: "The photo has been removed from storage." });
-
-    } catch (error) {
-        console.error("Error removing photo:", error);
-        let description = "Could not remove the photo. Please try again.";
-        if (error instanceof FirebaseError && error.code === 'storage/object-not-found') {
-            description = "Photo not found in storage. It may have already been deleted.";
-            setCurrentPhotos(prev => prev.filter(p => p.url !== photoToRemove.url));
-        }
-        toast({ title: "Removal Failed", description, variant: "destructive" });
-    } finally {
-      setIsSaving(false);
     }
   };
 
   const handleUpdate = async (newStatus?: TicketStatus) => {
-    if (!firestore || !currentUser) return;
+    if (!firestore || !currentUser || !storage) return;
     setIsSaving(true);
 
     try {
-      let photosForDb = [...currentPhotos];
-
-      // Handle new photo upload if one is staged
-      if (newPhotoDataUrl && storage) {
-        const mimeType = newPhotoDataUrl.match(/data:(.*);base64,/)?.[1];
+      // Step 1: Upload new photos in parallel
+      const uploadPromises = newPhotoPreviews.map(async (dataUrl) => {
+        const mimeType = dataUrl.match(/data:(.*);base64,/)?.[1];
         const fileExtension = mimeType?.split('/')[1] || 'jpeg';
         const photoId = uuidv4();
         const fileName = `${photoId}.${fileExtension}`;
         const storageRef = ref(storage, `taskphotos/${ticket.id}/${fileName}`);
         
-        const metadata = { customMetadata: { 'createdAt': new Date().toISOString() } };
+        await uploadString(storageRef, dataUrl, 'data_url');
+        const downloadURL = await getDownloadURL(storageRef);
 
-        const uploadResult = await uploadString(storageRef, newPhotoDataUrl, 'data_url', metadata);
-        const downloadURL = await getDownloadURL(uploadResult.ref);
+        return { url: downloadURL, createdAt: new Date() };
+      });
 
-        const newPhoto: Photo = {
-          url: downloadURL,
-          createdAt: new Date(),
-        };
-        photosForDb.push(newPhoto);
-      }
+      const newUploadedPhotos = await Promise.all(uploadPromises);
 
+      // Step 2: Delete marked photos from storage in parallel
+      const deletePromises = photosToDelete.map(async (photo) => {
+        const photoRef = ref(storage, photo.url);
+        await deleteObject(photoRef);
+      });
+      
+      await Promise.all(deletePromises);
+
+      // Step 3: Combine photo arrays for Firestore update
+      const finalPhotos = [...currentPhotos, ...newUploadedPhotos];
+
+      // Step 4: Prepare other data and update Firestore
       let finalStatus = newStatus || currentStatus;
       if (assignedTo && ticket.status === 'Not Started' && assignedTo !== ticket.assignedToId) {
         finalStatus = 'In Progress';
@@ -207,7 +199,7 @@ export function TicketDetailsDialog({
       const dataForDb: Partial<Ticket> = {
         status: finalStatus,
         assignedToId: assignedTo,
-        photos: photosForDb,
+        photos: finalPhotos,
       };
 
       if (finalStatus === 'Completed' && ticket.status !== 'Completed') {
@@ -223,7 +215,18 @@ export function TicketDetailsDialog({
 
     } catch (error) {
       console.error("Failed to update ticket:", error);
-      toast({ title: "Update Failed", description: "Could not save ticket details. Please try again.", variant: "destructive" });
+      let description = "Could not save ticket details. Please try again.";
+      if (error instanceof FirebaseError) {
+        switch (error.code) {
+          case 'storage/unauthorized':
+            description = "Permission denied. You do not have access to upload or delete photos.";
+            break;
+          case 'storage/retry-limit-exceeded':
+            description = "Network timeout. Please check your connection and try again.";
+            break;
+        }
+      }
+      toast({ title: "Update Failed", description, variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
@@ -267,7 +270,10 @@ export function TicketDetailsDialog({
   const canInteractWithForm = isAdmin || (isStaff && (isAssignedToCurrentUser || !ticket.assignedToId));
   const assignableUsers = users.filter(u => u.role === 'Admin' || u.role === 'Staff');
 
-  const photosToDisplay = newPhotoDataUrl ? [...currentPhotos, { url: newPhotoDataUrl, createdAt: new Date() }] : currentPhotos;
+  const photosToDisplay = [
+    ...currentPhotos.map(p => ({ url: p.url, isNew: false })), 
+    ...newPhotoPreviews.map(p => ({ url: p, isNew: true }))
+  ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -357,7 +363,7 @@ export function TicketDetailsDialog({
                           variant="destructive"
                           size="icon"
                           className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => removePhoto(photo)}
+                          onClick={() => removePhoto(photo.url, photo.isNew)}
                           disabled={isSaving || isViewer}
                       >
                           <X className="h-4 w-4" />
@@ -371,7 +377,7 @@ export function TicketDetailsDialog({
                   <>
                   <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isSaving || isViewer}>
                       <Upload className="mr-2 h-4 w-4" />
-                      Upload Photo
+                      Upload Photos
                   </Button>
                   <Input 
                       type="file" 
@@ -379,6 +385,7 @@ export function TicketDetailsDialog({
                       className="hidden" 
                       onChange={handleFileChange}
                       accept="image/*"
+                      multiple
                       disabled={isSaving || isViewer}
                   />
                   </>
@@ -437,3 +444,5 @@ export function TicketDetailsDialog({
     </Dialog>
   );
 }
+
+    
