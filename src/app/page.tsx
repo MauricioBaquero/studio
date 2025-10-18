@@ -58,12 +58,14 @@ export default function TaskBoardPage() {
         : ticket.requestedCompletionDate;
 
       if (filters.assignee === 'me-unassigned') {
-        if (ticket.assignedToId !== null && ticket.assignedToId !== currentUser.uid) {
+        const isAssignedToMe = (ticket.assignedToIds || []).includes(currentUser.uid);
+        const isUnassigned = !ticket.assignedToIds || ticket.assignedToIds.length === 0;
+        if (!isAssignedToMe && !isUnassigned) {
           return false;
         }
       } else if (filters.assignee !== 'all') {
-        if (ticket.assignedToId !== filters.assignee) {
-          return false;
+         if (!ticket.assignedToIds || !ticket.assignedToIds.includes(filters.assignee)) {
+            return false;
         }
       }
 
@@ -111,6 +113,7 @@ export default function TaskBoardPage() {
       <TicketFilters
         parentCategories={parentCategories}
         locations={locations || []}
+        users={assignableUsers}
         onFilterChange={setFilters}
       />
       

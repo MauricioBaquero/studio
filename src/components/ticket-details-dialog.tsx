@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Trash2, X, Upload } from 'lucide-react';
+import { Loader2, Trash2, X, Upload, Check } from 'lucide-react';
 import { useFirestore, useUser, useStorage, deleteDocumentNonBlocking } from '@/firebase';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -49,6 +49,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ImageViewerDialog } from './image-viewer-dialog';
 import { format } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
+import { cn } from '@/lib/utils';
+import { Badge } from './ui/badge';
+
 
 interface TicketDetailsDialogProps {
   open: boolean;
@@ -73,7 +78,7 @@ export function TicketDetailsDialog({
 
   const [isSaving, setIsSaving] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<TicketStatus>(ticket.status);
-  const [assignedTo, setAssignedTo] = useState<string | null>(ticket.assignedToId);
+  const [assignedToIds, setAssignedToIds] = useState<string[]>([]);
   
   const [currentPhotos, setCurrentPhotos] = useState<Photo[]>([]);
   const [newPhotoFiles, setNewPhotoFiles] = useState<File[]>([]);
@@ -81,6 +86,7 @@ export function TicketDetailsDialog({
 
   const [selectedImage, setSelectedImage] = useState<Photo | null>(null);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
+  const [multiSelectOpen, setMultiSelectOpen] = useState(false);
 
   const getUserById = (id: string | null) => users.find(u => u.uid === id);
 
@@ -98,7 +104,7 @@ export function TicketDetailsDialog({
   useEffect(() => {
     if (open) {
       setCurrentStatus(ticket.status);
-      setAssignedTo(ticket.assignedToId);
+      setAssignedToIds(ticket.assignedToIds || []);
       setCurrentPhotos(ticket.photos || []);
       setNewPhotoFiles([]);
       setNewPhotoPreviews([]);
@@ -133,7 +139,7 @@ export function TicketDetailsDialog({
       // 2. Prepare data for Firestore update
       const dataForDb: any = {
         status: finalStatus,
-        assignedToId: assignedTo,
+        assignedToIds: assignedToIds,
       };
 
       if (uploadedPhotos.length > 0) {
@@ -223,14 +229,14 @@ export function TicketDetailsDialog({
     setIsImageViewerOpen(true);
   };
   
-  const assignedUser = getUserById(ticket.assignedToId);
+  const assignedUsers = assignedToIds.map(id => getUserById(id)).filter(Boolean) as User[];
   const subCategoryInfo = findSubCategory(ticket.categoryId);
 
   const isAdmin = currentUser?.role === 'Admin';
   const isPendingReview = ticket.status === 'Pending Review';
   const isStaff = currentUser?.role === 'Staff';
-  const isAssignedToCurrentUser = ticket.assignedToId === currentUser?.uid;
-  const canInteractWithForm = isAdmin || (isStaff && (isAssignedToCurrentUser || !ticket.assignedToId));
+  const isAssignedToCurrentUser = currentUser && (ticket.assignedToIds || []).includes(currentUser.uid);
+  const canInteractWithForm = isAdmin || (isStaff && (isAssignedToCurrentUser || !ticket.assignedToIds || ticket.assignedToIds.length === 0));
   const assignableUsers = users.filter(u => u.role === 'Admin' || u.role === 'Staff');
 
 
@@ -313,25 +319,64 @@ export function TicketDetailsDialog({
               <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">Assigned To</p>
                   {isAdmin ? (
-                    <Select 
-                        value={assignedTo || 'unassigned'} 
-                        onValueChange={(value) => setAssignedTo(value === 'unassigned' ? null : value)}
-                        disabled={isSaving}
-                    >
-                        <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Assign user" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="unassigned">Unassigned</SelectItem>
-                            {assignableUsers.map(user => (
-                                <SelectItem key={user.uid} value={user.uid}>
-                                    {user.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <Popover open={multiSelectOpen} onOpenChange={setMultiSelectOpen}>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={multiSelectOpen}
+                                className="w-full justify-between"
+                                disabled={isSaving}
+                            >
+                                <div className="flex gap-1 flex-wrap">
+                                    {assignedToIds.length > 0 ? (
+                                        assignedUsers.map(user => (
+                                            <Badge
+                                                variant="secondary"
+                                                key={user.uid}
+                                                className="mr-1 mb-1"
+                                            >
+                                                {user.name}
+                                            </Badge>
+                                        ))
+                                    ) : (
+                                        "Assign users..."
+                                    )}
+                                </div>
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                            <Command>
+                                <CommandInput placeholder="Search users..." />
+                                <CommandList>
+                                    <CommandEmpty>No users found.</CommandEmpty>
+                                    <CommandGroup>
+                                        {assignableUsers.map(user => (
+                                            <CommandItem
+                                                key={user.uid}
+                                                onSelect={() => {
+                                                    const newSelection = assignedToIds.includes(user.uid)
+                                                        ? assignedToIds.filter(id => id !== user.uid)
+                                                        : [...assignedToIds, user.uid];
+                                                    setAssignedToIds(newSelection);
+                                                }}
+                                            >
+                                                <Check
+                                                    className={cn(
+                                                        "mr-2 h-4 w-4",
+                                                        assignedToIds.includes(user.uid) ? "opacity-100" : "opacity-0"
+                                                    )}
+                                                />
+                                                {user.name}
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
                   ) : (
-                      <p className="text-sm">{assignedUser?.name || 'Unassigned'}</p>
+                      <p className="text-sm">{assignedUsers.length > 0 ? assignedUsers.map(u => u.name).join(', ') : 'Unassigned'}</p>
                   )}
               </div>
               <div className="space-y-2">

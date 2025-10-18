@@ -190,7 +190,7 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
             locationId: values.locationId,
             requestedCompletionDate: values.requestedCompletionDate,
             status: "Not Started",
-            assignedToId: null,
+            assignedToIds: [],
             createdAt: serverTimestamp(),
             photos: uploadedPhotos,
         };

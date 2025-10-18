@@ -64,7 +64,7 @@ export const ticketSchema = z.object({
   location: z.string(),
   locationId: z.string(),
   categoryId: z.string(),
-  assignedToId: z.string().nullable(),
+  assignedToIds: z.array(z.string()).optional(),
   requestedCompletionDate: timestampSchema,
   createdAt: timestampSchema,
   approvedBy: z.string().nullable().optional(),
