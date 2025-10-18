@@ -182,6 +182,7 @@ export function TicketDetailsDialog({
       // Step 2: Delete marked photos from storage in parallel
       const deletePromises = photosToDelete.map(async (photo) => {
         // Important: Use photo.path for deletion, not photo.url
+        if (!photo.path) return; // safety check
         const photoRef = ref(storage, photo.path);
         await deleteObject(photoRef);
       });
@@ -241,11 +242,13 @@ export function TicketDetailsDialog({
     try {
         if (ticket.photos && ticket.photos.length > 0) {
             for (const photo of ticket.photos) {
-                const photoRef = ref(storage, photo.path);
-                try {
-                    await deleteObject(photoRef);
-                } catch (error) {
-                    console.warn(`Could not delete photo ${photo.path} from storage, it may have already been removed.`);
+                if (photo.path) { // only try to delete if path exists
+                    const photoRef = ref(storage, photo.path);
+                    try {
+                        await deleteObject(photoRef);
+                    } catch (error) {
+                        console.warn(`Could not delete photo ${photo.path} from storage, it may have already been removed.`);
+                    }
                 }
             }
         }
