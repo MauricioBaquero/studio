@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -48,6 +49,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { UserForm } from './user-form';
 import { AddUserForm } from './add-user-form';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Separator } from '@/components/ui/separator';
 
 const roleColors: Record<UserRole, BadgeProps['color']> = {
   Admin: 'purple',
@@ -60,6 +63,7 @@ export default function UsersPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const { user: currentUser } = useUser();
+  const isMobile = useIsMobile();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -113,6 +117,12 @@ export default function UsersPage() {
     return teams?.find(t => t.id === teamId)?.name || teamId;
   }
 
+  const sortedUsers = useMemo(() => {
+    if (!users) return [];
+    return [...users].sort((a, b) => a.name.localeCompare(b.name));
+  }, [users]);
+
+
   if (isLoading) {
     return (
       <Card>
@@ -147,67 +157,126 @@ export default function UsersPage() {
             )}
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Team</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users?.map(user => (
-                <TableRow key={user.uid}>
-                  <TableCell>
-                    <div className="flex items-center gap-4">
-                      <Avatar>
-                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{user.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {user.email}
-                        </p>
-                      </div>
-                    </div>
-                  </TableCell>
-                   <TableCell>
-                    {user.role === 'Admin' || user.role === 'Coordinator' ? (
-                      <span className="text-muted-foreground italic">Access to all teams</span>
-                    ) : (
-                      getTeamName(user.teamId)
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge color={roleColors[user.role] || 'gray'}>
-                      {user.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleOpenForm(user)}>
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => confirmDelete(user.uid)}
-                        >
-                          Remove User
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+            {isMobile ? (
+                 <div className="space-y-4">
+                    {sortedUsers.map(user => (
+                        <Card key={user.uid} className="p-4">
+                           <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-4">
+                                <Avatar>
+                                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="font-medium">{user.name}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                    {user.email}
+                                    </p>
+                                </div>
+                                </div>
+                                <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="-mt-2 -mr-2">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleOpenForm(user)}>
+                                    Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                    className="text-destructive"
+                                    onClick={() => confirmDelete(user.uid)}
+                                    >
+                                    Remove User
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                                </DropdownMenu>
+                           </div>
+                           <Separator className="my-3" />
+                           <div className="flex items-center justify-between text-sm">
+                                <div className="space-y-1">
+                                    <p className="text-muted-foreground">Team</p>
+                                    <p className="font-medium truncate">
+                                        {user.role === 'Admin' || user.role === 'Coordinator' ? (
+                                        <span className="italic">Access to all teams</span>
+                                        ) : (
+                                        getTeamName(user.teamId)
+                                        )}
+                                    </p>
+                                </div>
+                                 <div className="space-y-1 text-right">
+                                    <p className="text-muted-foreground">Role</p>
+                                     <Badge color={roleColors[user.role] || 'gray'}>
+                                        {user.role}
+                                    </Badge>
+                                </div>
+                           </div>
+                        </Card>
+                    ))}
+                 </div>
+            ) : (
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Team</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {sortedUsers?.map(user => (
+                        <TableRow key={user.uid}>
+                        <TableCell>
+                            <div className="flex items-center gap-4">
+                            <Avatar>
+                                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <p className="font-medium">{user.name}</p>
+                                <p className="text-sm text-muted-foreground">
+                                {user.email}
+                                </p>
+                            </div>
+                            </div>
+                        </TableCell>
+                        <TableCell>
+                            {user.role === 'Admin' || user.role === 'Coordinator' ? (
+                            <span className="text-muted-foreground italic">Access to all teams</span>
+                            ) : (
+                            getTeamName(user.teamId)
+                            )}
+                        </TableCell>
+                        <TableCell>
+                            <Badge color={roleColors[user.role] || 'gray'}>
+                            {user.role}
+                            </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                            <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleOpenForm(user)}>
+                                Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() => confirmDelete(user.uid)}
+                                >
+                                Remove User
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                            </DropdownMenu>
+                        </TableCell>
+                        </TableRow>
+                    ))}
+                    </TableBody>
+                </Table>
+            )}
         </CardContent>
       </Card>
       {editingUser && teams && (
