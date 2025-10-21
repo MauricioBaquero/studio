@@ -9,11 +9,11 @@ import { useEffect, useMemo } from "react";
 
 const ALL_TABS = [
   { value: "general", label: "General", href: "/settings", roles: ['Admin', 'Coordinator'] },
-  { value: "users", label: "Users", href: "/settings/users", roles: ['Admin'] },
-  { value: "teams", label: "Teams", href: "/settings/teams", roles: ['Admin'] },
   { value: "categories", label: "Categories", href: "/settings/categories", roles: ['Admin', 'Coordinator'] },
-  { value: "locations", label: "Locations", href: "/settings/locations", roles: ['Admin', 'Coordinator'] },
   { value: "scheduled-maintenance", label: "Scheduled Maintenance", href: "/settings/scheduled-maintenance", roles: ['Admin', 'Coordinator'] },
+  { value: "locations", label: "Locations", href: "/settings/locations", roles: ['Admin', 'Coordinator'] },
+  { value: "teams", label: "Teams", href: "/settings/teams", roles: ['Admin'] },
+  { value: "users", label: "Users", href: "/settings/users", roles: ['Admin'] },
 ];
 
 export default function SettingsLayout({
