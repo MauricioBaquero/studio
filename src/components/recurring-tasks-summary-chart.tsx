@@ -3,7 +3,7 @@
 
 import { RecurringTask, getNextDueDate, toDate } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { isToday, isPast, startOfDay, isSameDay } from 'date-fns';
+import { isToday, isPast, startOfDay } from 'date-fns';
 import { ListChecks, Timer, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -21,16 +21,14 @@ export function RecurringTasksSummaryChart({ recurringTasks }: RecurringTasksSum
   recurringTasks.forEach(task => {
     const nextDueDate = startOfDay(getNextDueDate(task));
     
-    const lastCompletion = task.lastCompleted && task.lastCompleted.length > 0
-        ? toDate(task.lastCompleted[task.lastCompleted.length - 1])
-        : null;
+    const isCompletedToday = (task.lastCompleted || []).some(d => isToday(toDate(d)));
 
-    if (lastCompletion && isToday(lastCompletion)) {
-        completedTodayCount++;
+    if (isCompletedToday) {
+      completedTodayCount++;
     } else if (isToday(nextDueDate)) {
-        dueTodayCount++;
+      dueTodayCount++;
     } else if (isPast(nextDueDate)) {
-        overdueCount++;
+      overdueCount++;
     }
   });
 
