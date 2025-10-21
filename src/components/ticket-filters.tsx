@@ -9,6 +9,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
+import { useUser } from '@/firebase';
 
 export type FilterValues = {
   assignee: string;
@@ -30,6 +31,7 @@ export function TicketFilters({
   users,
   onFilterChange,
 }: TicketFiltersProps) {
+  const { user: currentUser } = useUser();
   const [assignee, setAssignee] = useState('all');
   const [location, setLocation] = useState('all');
   const [category, setCategory] = useState('all');
@@ -53,6 +55,7 @@ export function TicketFilters({
 
   const hasActiveFilters = assignee !== 'all' || location !== 'all' || category !== 'all' || dateRange?.from || dateRange?.to;
 
+  const filteredUsers = users.filter(user => user.uid !== currentUser?.uid);
 
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-lg bg-card p-4 border shadow-sm">
@@ -64,7 +67,7 @@ export function TicketFilters({
         <SelectContent>
           <SelectItem value="all">All Assignees</SelectItem>
           <SelectItem value="me-unassigned">My Task</SelectItem>
-          {users.map(user => (
+          {filteredUsers.map(user => (
             <SelectItem key={user.uid} value={user.uid}>
               {user.name}
             </SelectItem>
