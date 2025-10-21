@@ -39,7 +39,7 @@ import { z } from 'zod';
 const formSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters."),
   role: z.enum(USER_ROLES),
-  teamId: z.string().min(1, "Team is required."),
+  teamId: z.string(), // No longer required here as it's conditional
 });
 
 type UserFormValues = z.infer<typeof formSchema>;
@@ -68,6 +68,8 @@ export function UserForm({
       teamId: '',
     },
   });
+  
+  const watchedRole = form.watch('role');
 
   useEffect(() => {
     if (user) {
@@ -86,7 +88,15 @@ export function UserForm({
     // If the role is admin, give them access to all teams.
     const teamIds = data.role === 'Admin' ? teams.map(t => t.id) : [data.teamId];
     
-    updateDocumentNonBlocking(userRef, { ...data, teamIds });
+    // Make sure teamId is set if not admin
+    const finalData = {
+        name: data.name,
+        role: data.role,
+        teamId: data.role === 'Admin' ? (user.teamId || teams[0]?.id) : data.teamId,
+        teamIds: teamIds
+    };
+    
+    updateDocumentNonBlocking(userRef, finalData);
 
     toast({
       title: 'Success!',
@@ -120,53 +130,55 @@ export function UserForm({
               )}
             />
             <FormField
-              control={form.control}
-              name="teamId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Team</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a team" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {teams.map(team => (
-                        <SelectItem key={team.id} value={team.id}>
-                          {team.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        {USER_ROLES.map(role => (
+                            <SelectItem key={role} value={role}>
+                            {role}
+                            </SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
             />
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Role</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {USER_ROLES.map(role => (
-                        <SelectItem key={role} value={role}>
-                          {role}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {watchedRole !== 'Admin' && (
+                <FormField
+                control={form.control}
+                name="teamId"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Team</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a team" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        {teams.map(team => (
+                            <SelectItem key={team.id} value={team.id}>
+                            {team.name}
+                            </SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            )}
             <DialogFooter>
               <Button
                 type="button"
