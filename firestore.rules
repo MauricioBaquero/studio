@@ -1,99 +1,178 @@
-/**
- * @fileoverview Firestore Security Rules.
- *
- * Core Philosophy:
- * This ruleset is in prototyping mode. All read and write operations are allowed for all authenticated users.
- * Authorization will be handled in the application code.
- *
- * Data Structure:
- * - /users/{userId}: Stores user profiles.
- * - /tasks/{taskId}: Stores all tasks for the facility.
- * - /recurringTasks/{recurringTaskId}: Stores all recurring tasks.
- * - /locations/{locationId}: Stores all facility locations.
- * - /categories/{categoryId}: Stores all task categories and sub-categories.
- * - /settings/appSettings: Stores system-wide settings in a single document.
- *
- * Key Security Decisions:
- * - Access is completely open to authenticated users.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows any authenticated user to read and write user profiles.
+     * @description Checks if the user is signed in.
+     * @path N/A
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the user's ID matches the requested ID.
+     * @path N/A
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the user is an existing owner.
+     * @path N/A
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && getSelf().data != null;
+    }
+
+    /**
+     * @description Gets the user document.
+     */
+    function getUser() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    /**
+     * @description Checks if the user is a member of the team.
+     * @path N/A
+     */
+    function isTeamMember(teamId) {
+        return isSignedIn() && getUser().data.teamIds is list && getUser().data.teamIds.hasAny([teamId]);
+    }
+
+    /**
+     * @description Checks if the user has a specific role within their assigned team.
+     * @path N/A
+     */
+    function hasRole(roles) {
+        let user = getUser();
+        return isSignedIn() && user.data.teamIds is list && user.data.teamIds.size() > 0 && roles.hasAny(user.data.teamIds);
+    }
+
+    /**
+     * @description Teams Collection Rules
+     * @path /teams/{teamId}
+     * @allow (get) Any signed-in user can retrieve team data to populate the application.
+     * @allow (create) No one can create teams through client rules.
+     * @deny (update) No one can update teams through client rules.
+     * @deny (delete) No one can delete teams through client rules.
+     * @principle Restricts create, update, and delete operations on teams.
+     */
+    match /teams/{teamId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn(); // any signed in user can list teams.
+
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Users Collection Rules
      * @path /users/{userId}
-     * @allow (get, list, create, update, delete) - Any authenticated user.
-     * @deny (none) - This rule is completely open for authenticated users.
-     * @principle Open access for prototyping.
+     * @allow (create) A user can create their own profile if the UID matches.
+     * @allow (get) A user can read their own profile.
+     * @deny (update) A user can only update their own profile.
+     * @deny (delete) No one can delete a user profile through client rules.
+     * @principle Enforces user-ownership for profile management.
      */
     match /users/{userId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
+      allow get: if isOwner(userId);
+      allow list: if false; // Disallow user listing for privacy.
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId); // Allows a user to update their own profile.
+      allow delete: if false;
+
+      function getSelf() {
+        return get(/databases/$(database)/documents/users/$(userId));
+      }
     }
 
     /**
-     * @description Allows any authenticated user to read and write tasks.
-     * @path /tasks/{taskId}
-     * @allow (get, list, create, update, delete) - Any authenticated user.
-     * @deny (none) - This rule is completely open for authenticated users.
-     * @principle Open access for prototyping.
-     */
-    match /tasks/{taskId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
-    }
-
-    /**
-     * @description Allows any authenticated user to read and write recurring tasks.
-     * @path /recurringTasks/{recurringTaskId}
-     * @allow (get, list, create, update, delete) - Any authenticated user.
-     * @deny (none) - This rule is completely open for authenticated users.
-     * @principle Open access for prototyping.
-     */
-    match /recurringTasks/{recurringTaskId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
-    }
-
-    /**
-     * @description Allows any authenticated user to read and write locations.
+     * @description Locations Collection Rules
      * @path /locations/{locationId}
-     * @allow (get, list, create, update, delete) - Any authenticated user.
-     * @deny (none) - This rule is completely open for authenticated users.
-     * @principle Open access for prototyping.
+     * @allow (get) Any signed-in user can read location data.
+     * @deny (create) No one can create locations through client rules.
+     * @deny (update) No one can update locations through client rules.
+     * @deny (delete) No one can delete locations through client rules.
+     * @principle Restricts create, update, and delete operations on locations.
      */
-    match /locations/{locationId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
+     match /locations/{locationId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Allows any authenticated user to read and write categories.
-     * @path /categories/{categoryId}
-     * @allow (get, list, create, update, delete) - Any authenticated user.
-     * @deny (none) - This rule is completely open for authenticated users.
-     * @principle Open access for prototyping.
+     * @description Tasks Collection Rules
+     * @path /teams/{teamId}/tasks/{taskId}
+     * @allow (get) A team member can get tasks.
+     * @allow (create) A team member can create tasks.
+     * @allow (update) A team member can update tasks.
+     * @allow (delete) A team member can delete tasks.
+     * @principle Enforces that a user is a team member to access tasks.
      */
-    match /categories/{categoryId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
+    match /teams/{teamId}/tasks/{taskId} {
+      allow get: if isTeamMember(teamId);
+      allow list: if isTeamMember(teamId);
+      allow create: if isTeamMember(teamId);
+      allow update: if isTeamMember(teamId);
+      allow delete: if isTeamMember(teamId);
     }
 
     /**
-     * @description Allows any authenticated user to read and write app settings.
-     * @path /settings/appSettings
-     * @allow (get, list, create, update, delete) - Any authenticated user.
-     * @deny (none) - This rule is completely open for authenticated users.
-     * @principle Open access for prototyping.
+     * @description Recurring Tasks Collection Rules
+     * @path /teams/{teamId}/recurringTasks/{recurringTaskId}
+     * @allow (get) A team member can get recurring tasks.
+     * @allow (create) A team member can create recurring tasks.
+     * @allow (update) A team member can update recurring tasks.
+     * @allow (delete) A team member can delete recurring tasks.
+     * @principle Enforces that a user is a team member to access recurring tasks.
      */
-    match /settings/appSettings {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
+    match /teams/{teamId}/recurringTasks/{recurringTaskId} {
+      allow get: if isTeamMember(teamId);
+      allow list: if isTeamMember(teamId);
+      allow create: if isTeamMember(teamId);
+      allow update: if isTeamMember(teamId);
+      allow delete: if isTeamMember(teamId);
     }
-  }
 
-  function isSignedIn() {
-    return request.auth != null;
+    /**
+     * @description Categories Collection Rules
+     * @path /teams/{teamId}/categories/{categoryId}
+     * @allow (get) A team member can get categories.
+     * @allow (create) A team member can create categories.
+     * @allow (update) A team member can update categories.
+     * @allow (delete) A team member can delete categories.
+     * @principle Enforces that a user is a team member to access categories.
+     */
+    match /teams/{teamId}/categories/{categoryId} {
+      allow get: if isTeamMember(teamId);
+      allow list: if isTeamMember(teamId);
+      allow create: if isTeamMember(teamId);
+      allow update: if isTeamMember(teamId);
+      allow delete: if isTeamMember(teamId);
+    }
+
+    /**
+     * @description Settings Document Rules
+     * @path /teams/{teamId}/settings/appSettings
+     * @allow (get) A team member can get settings.
+     * @allow (create) A team member can create settings.
+     * @allow (update) A team member can update settings.
+     * @allow (delete) A team member can delete settings.
+     * @principle Enforces that a user is a team member to access settings.
+     */
+    match /teams/{teamId}/settings/appSettings {
+      allow get: if isTeamMember(teamId);
+      allow list: if false; // There is only one settings document, no need to list.
+      allow create: if isTeamMember(teamId);
+      allow update: if isTeamMember(teamId);
+      allow delete: if false; // Settings should not be deleted through client rules.
+    }
   }
 }
