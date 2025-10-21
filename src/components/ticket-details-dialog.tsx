@@ -341,15 +341,19 @@ export function TicketDetailsDialog({
                                 disabled={isSaving}
                             >
                                 <div className="flex flex-wrap gap-1 py-1">
-                                    {assignedToIds.length > 0 ? (
-                                        assignedUsers.map(user => (
-                                            <Badge key={user.uid} variant="secondary" className="font-normal">
-                                                {user.name}
-                                            </Badge>
-                                        ))
-                                    ) : (
-                                        <span className="text-muted-foreground font-normal">Assign users...</span>
-                                    )}
+                                  {assignedUsers.slice(0, 2).map(user => (
+                                    <Badge key={user.uid} variant="secondary" className="font-normal">
+                                      {user.name}
+                                    </Badge>
+                                  ))}
+                                  {assignedUsers.length > 2 && (
+                                    <Badge variant="secondary" className="font-normal">
+                                      +{assignedUsers.length - 2} more
+                                    </Badge>
+                                  )}
+                                  {assignedUsers.length === 0 && (
+                                    <span className="text-muted-foreground font-normal">Assign users...</span>
+                                  )}
                                 </div>
                             </Button>
                         </PopoverTrigger>
