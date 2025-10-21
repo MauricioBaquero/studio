@@ -105,6 +105,7 @@ export default function GeneralSettingsPage() {
                 <Input
                   id="completionDateRange"
                   type="number"
+                  min="1"
                   className="max-w-xs"
                   {...register('completionDateRange')}
                 />
@@ -125,6 +126,7 @@ export default function GeneralSettingsPage() {
                 <Input
                   id="recurringTaskCompletionDays"
                   type="number"
+                  min="0"
                   className="max-w-xs"
                   {...register('recurringTaskCompletionDays')}
                 />

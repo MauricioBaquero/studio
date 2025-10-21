@@ -99,8 +99,8 @@ export const recurringTaskSchema = z.object({
 export type RecurringTask = z.infer<typeof recurringTaskSchema>;
 
 export const settingsSchema = z.object({
-    completionDateRange: z.coerce.number().min(1).max(30),
-    recurringTaskCompletionDays: z.coerce.number().min(0).max(14),
+    completionDateRange: z.coerce.number().min(1, "Value must be 1 or greater.").max(30),
+    recurringTaskCompletionDays: z.coerce.number().min(0, "Value must be 0 or greater.").max(14),
 });
 export type AppSettings = z.infer<typeof settingsSchema>;
 
