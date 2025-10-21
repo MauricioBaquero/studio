@@ -35,9 +35,11 @@ import {
   setDocumentNonBlocking,
   useFirebase
 } from '@/firebase';
-import { doc, collection } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { z } from 'zod';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, deleteAuth, getAuth } from 'firebase/auth';
+import { initializeApp, deleteApp } from 'firebase/app';
+import { firebaseConfig } from '@/firebase/config';
 
 const formSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters."),
@@ -65,7 +67,7 @@ export function AddUserForm({
   teams,
 }: AddUserFormProps) {
   const { toast } = useToast();
-  const { firestore, auth } = useFirebase();
+  const { firestore } = useFirebase();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<AddUserFormValues>({
@@ -82,12 +84,16 @@ export function AddUserForm({
   const watchedRole = form.watch('role');
 
   const onSubmit = async (data: AddUserFormValues) => {
-    if (!firestore || !auth) return;
+    if (!firestore) return;
 
     setIsSubmitting(true);
+    const tempAppName = `temp-user-creation-${Date.now()}`;
+    const tempApp = initializeApp(firebaseConfig, tempAppName);
+    const tempAuth = getAuth(tempApp);
+
     try {
-        // 1. Create user in Firebase Auth
-        const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+        // 1. Create user in Firebase Auth using the temporary instance
+        const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
         const authUser = userCredential.user;
 
         // 2. Create user document in Firestore
@@ -118,6 +124,8 @@ export function AddUserForm({
             description: error.message || 'An unknown error occurred.',
         });
     } finally {
+        // 3. Clean up the temporary Firebase app instance
+        await deleteApp(tempApp);
         setIsSubmitting(false);
     }
   };
