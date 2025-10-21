@@ -75,21 +75,21 @@ export default function ScheduledMaintenancePage() {
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
 
   const tasksQuery = useMemoFirebase(
-    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/recurringTasks`)) : null),
+    () => (firestore && teamId && teamId !== 'allTeams' ? query(collection(firestore, `teams/${teamId}/recurringTasks`)) : null),
     [firestore, teamId]
   );
   const { data: tasks, isLoading: isLoadingTasks } =
     useCollection<RecurringTask>(tasksQuery);
 
   const categoriesQuery = useMemoFirebase(
-    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/categories`)) : null),
+    () => (firestore && teamId && teamId !== 'allTeams' ? query(collection(firestore, `teams/${teamId}/categories`)) : null),
     [firestore, teamId]
   );
   const { data: categories, isLoading: isLoadingCategories } =
     useCollection<Category>(categoriesQuery);
 
   const locationsQuery = useMemoFirebase(
-    () => (firestore && teamId ? query(collection(firestore, 'locations'), where('teamId', '==', teamId)) : null),
+    () => (firestore && teamId ? query(collection(firestore, 'locations'), teamId === 'allTeams' ? undefined : where('teamId', '==', teamId)) : null),
     [firestore, teamId]
   );
   const { data: locations, isLoading: isLoadingLocations } =
@@ -129,7 +129,7 @@ export default function ScheduledMaintenancePage() {
   };
 
   const handleDelete = () => {
-    if (!firestore || !deletingTaskId || !teamId) return;
+    if (!firestore || !deletingTaskId || !teamId || teamId === 'allTeams') return;
     const taskRef = doc(firestore, `teams/${teamId}/recurringTasks`, deletingTaskId);
     deleteDocumentNonBlocking(taskRef);
     toast({
@@ -262,5 +262,3 @@ export default function ScheduledMaintenancePage() {
     </>
   );
 }
-
-    

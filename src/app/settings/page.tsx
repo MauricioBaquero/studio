@@ -34,7 +34,7 @@ export default function GeneralSettingsPage() {
   const { toast } = useToast();
 
   const settingsRef = useMemoFirebase(
-    () => (firestore && teamId ? doc(firestore, `teams/${teamId}/settings`, 'appSettings') : null),
+    () => (firestore && teamId && teamId !== 'allTeams' ? doc(firestore, `teams/${teamId}/settings`, 'appSettings') : null),
     [firestore, teamId]
   );
   const { data: settings, isLoading } = useDoc<AppSettings>(settingsRef);
@@ -128,5 +128,3 @@ export default function GeneralSettingsPage() {
     </Card>
   );
 }
-
-    

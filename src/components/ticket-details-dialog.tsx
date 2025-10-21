@@ -114,7 +114,7 @@ export function TicketDetailsDialog({
   
 
   const handleUpdate = async (newStatus?: TicketStatus) => {
-    if (!firestore || !currentUser || !storage || !teamId) return;
+    if (!firestore || !currentUser || !storage || !teamId || teamId === 'allTeams') return;
     setIsSaving(true);
     
     try {
@@ -167,7 +167,7 @@ export function TicketDetailsDialog({
 
   const handleDeletePhoto = async (photo: Photo, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!firestore || !storage || !teamId) return;
+    if (!firestore || !storage || !teamId || teamId === 'allTeams') return;
     
     toast({ title: "Deleting Photo...", description: "Please wait." });
     
@@ -193,7 +193,7 @@ export function TicketDetailsDialog({
   };
 
   const handleDelete = async () => {
-    if (!firestore || !teamId) return;
+    if (!firestore || !teamId || teamId === 'allTeams') return;
     try {
       if (ticket.photos && ticket.photos.length > 0) {
         // Delete all photos from storage first

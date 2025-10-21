@@ -5,6 +5,7 @@ import {
   useDoc,
   useUser,
   updateDocumentNonBlocking,
+  useCollection,
 } from '@/firebase';
 import { collection, query, doc, where, getDocs, getDoc, Firestore, onSnapshot } from 'firebase/firestore';
 import { Team, User } from '@/lib/data';
@@ -23,9 +24,9 @@ import {
   CommandList,
 } from './ui/command';
 import { cn } from '@/lib/utils';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSidebar } from './ui/sidebar';
-import { useFirebase } from '@/firebase/provider';
+import { useFirebase, useMemoFirebase } from '@/firebase/provider';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -35,95 +36,44 @@ export function TeamSwitcher() {
   const { firestore } = useFirebase();
   const { state } = useSidebar();
   const [open, setOpen] = useState(false);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
 
-  const activeTeamId = currentUser?.teamId;
+  const teamsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'teams')) : null),
+    [firestore]
+  );
+  const { data: teams, isLoading: isLoadingTeams } = useCollection<Team>(teamsQuery);
+  
   const isAdmin = currentUser?.role === 'Admin';
-
+  
+  // Set the active team from the user's teamId, but only if it's not 'allTeams'
   useEffect(() => {
-    if (!firestore || !currentUser || !currentUser.teamIds) {
-      setIsLoading(false);
-      return;
+    if (currentUser?.teamId && currentUser.teamId !== 'allTeams') {
+      setActiveTeamId(currentUser.teamId);
+    } else if (teams && teams.length > 0 && !activeTeamId) {
+      // If admin has 'allTeams', default to the first team in the list
+      setActiveTeamId(teams[0].id);
     }
-  
-    setIsLoading(true);
-    let unsubscribes: (() => void)[] = [];
-  
-    if (currentUser.role === 'Admin') {
-      const teamsQuery = query(collection(firestore, 'teams'));
-      const unsubscribe = onSnapshot(teamsQuery, 
-        (querySnapshot) => {
-          const fetchedTeams: Team[] = [];
-          querySnapshot.forEach((doc) => {
-            fetchedTeams.push({ id: doc.id, ...doc.data() } as Team);
-          });
-          setTeams(fetchedTeams.sort((a, b) => a.name.localeCompare(b.name)));
-          setIsLoading(false);
-        },
-        (err) => {
-          console.error("Error fetching all teams for admin:", err);
-          const contextualError = new FirestorePermissionError({
-              path: 'teams',
-              operation: 'list',
-          });
-          errorEmitter.emit('permission-error', contextualError);
-          setIsLoading(false);
-        }
-      );
-      unsubscribes.push(unsubscribe);
-    } else if (currentUser.teamIds && currentUser.teamIds.length > 0) {
-      const teamRefs = currentUser.teamIds.map(id => doc(firestore, 'teams', id));
-      unsubscribes = teamRefs.map((ref, index) => 
-        onSnapshot(ref, 
-          (doc) => {
-            if (doc.exists()) {
-              const teamData = { id: doc.id, ...doc.data() } as Team;
-              setTeams(prev => {
-                const newTeams = [...prev];
-                const existingIndex = newTeams.findIndex(t => t.id === teamData.id);
-                if (existingIndex > -1) {
-                  newTeams[existingIndex] = teamData;
-                } else {
-                  newTeams.push(teamData);
-                }
-                return newTeams.sort((a, b) => a.name.localeCompare(b.name));
-              });
-            }
-            if(index === teamRefs.length - 1) setIsLoading(false);
-          },
-          (err) => {
-             console.error(`Error fetching team ${ref.id}:`, err);
-             const contextualError = new FirestorePermissionError({
-                path: ref.path,
-                operation: 'get',
-             });
-             errorEmitter.emit('permission-error', contextualError);
-             if(index === teamRefs.length - 1) setIsLoading(false);
-          }
-        )
-      );
-    } else {
-      setIsLoading(false);
-      setTeams([]);
-    }
-  
-    return () => unsubscribes.forEach(unsub => unsub());
-  }, [firestore, currentUser]);
+  }, [currentUser, teams, activeTeamId]);
 
 
   const handleTeamChange = (teamId: string) => {
-    if (!firestore || !currentUser || !currentUser.teamIds) return;
-
-    // Create a new ordered array of team IDs
-    const newTeamIds = [teamId, ...currentUser.teamIds.filter(id => id !== teamId)];
-
-    const userRef = doc(firestore, 'users', currentUser.uid);
-    updateDocumentNonBlocking(userRef, { teamIds: newTeamIds });
+    if (!firestore || !currentUser) return;
+    
+    setActiveTeamId(teamId);
+    
+    // If the user isn't an admin, update their permanent teamId
+    if (currentUser.role !== 'Admin' && currentUser.role !== 'Coordinator') {
+      const userRef = doc(firestore, 'users', currentUser.uid);
+      updateDocumentNonBlocking(userRef, { teamId: teamId });
+    }
+    
     setOpen(false);
   };
+  
+  const isLoading = isUserLoading || isLoadingTeams;
 
-  if (isLoading || isUserLoading || !currentUser || teams.length === 0) {
+  if (isLoading || !currentUser || !teams || teams.length === 0) {
     return null;
   }
 
@@ -138,7 +88,7 @@ export function TeamSwitcher() {
         <div className="justify-between w-auto h-auto px-2 py-1 border rounded-md">
           <div className="text-left">
             <p className="text-xs font-bold truncate">
-              {selectedTeam ? selectedTeam.name : 'No team assigned'}
+              {selectedTeam ? selectedTeam.name : 'No team selected'}
             </p>
             <p className="text-xs text-muted-foreground truncate">
               {selectedTeam?.department}

@@ -51,20 +51,20 @@ export default function RecurringTasksPage() {
   const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>([]);
 
   const settingsRef = useMemoFirebase(
-    () => (firestore && teamId ? doc(firestore, `teams/${teamId}/settings`, 'appSettings') : null),
+    () => (firestore && teamId && teamId !== 'allTeams' ? doc(firestore, `teams/${teamId}/settings`, 'appSettings') : null),
     [firestore, teamId]
   );
   const { data: settings } = useDoc<AppSettings>(settingsRef);
 
   const recurringTasksQuery = useMemoFirebase(
-    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/recurringTasks`)) : null),
+    () => (firestore && teamId && teamId !== 'allTeams' ? query(collection(firestore, `teams/${teamId}/recurringTasks`)) : null),
     [firestore, teamId]
   );
   const { data: recurringTasks, isLoading: isLoadingRecurringTasks } =
     useCollection<RecurringTask>(recurringTasksQuery);
 
   const categoriesQuery = useMemoFirebase(
-    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/categories`)) : null),
+    () => (firestore && teamId && teamId !== 'allTeams' ? query(collection(firestore, `teams/${teamId}/categories`)) : null),
     [firestore, teamId]
   );
   const { data: categories, isLoading: isLoadingCategories } =
@@ -78,7 +78,7 @@ export default function RecurringTasksPage() {
     useCollection<User>(usersQuery);
 
   const locationsQuery = useMemoFirebase(
-    () => (firestore && teamId ? query(collection(firestore, 'locations'), where('teamId', '==', teamId)) : null),
+    () => (firestore && teamId ? query(collection(firestore, 'locations'), teamId === 'allTeams' ? undefined : where('teamId', '==', teamId)) : null),
     [firestore, teamId]
   );
   const { data: locations, isLoading: isLoadingLocations } =
@@ -154,7 +154,7 @@ export default function RecurringTasksPage() {
 
 
   const handleTaskCheck = (task: RecurringTask) => {
-    if (!firestore || !currentUser || !users || !teamId) return;
+    if (!firestore || !currentUser || !users || !teamId || teamId === 'allTeams') return;
 
     const now = new Date();
     const user = users.find(u => u.uid === currentUser.uid);
@@ -361,5 +361,3 @@ export default function RecurringTasksPage() {
     </div>
   );
 }
-
-    

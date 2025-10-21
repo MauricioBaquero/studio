@@ -60,9 +60,7 @@ const FirebaseUserProvider = ({children}: {children: ReactNode}) => {
 
     const fullUser = useMemo(() => {
         if (!authUser || !userDoc) return null;
-        // The user's active team is the first one in their list.
-        const activeTeamId = userDoc.teamIds && userDoc.teamIds.length > 0 ? userDoc.teamIds[0] : undefined;
-        return { ...authUser, ...userDoc, teamId: activeTeamId };
+        return { ...authUser, ...userDoc };
     }, [authUser, userDoc]);
     
     const contextValue = useMemo(() => ({
@@ -201,5 +199,3 @@ export const useUser = (): UserHookResult => {
   }
   return context;
 };
-
-    

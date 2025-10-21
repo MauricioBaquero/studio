@@ -110,6 +110,10 @@ const seedTeamsAndSubCollections = async (firestore: any) => {
     }
 };
 
+interface FirebaseClientProviderProps {
+  children: ReactNode;
+}
+
 
 export function FirebaseClientProvider({
   children,
@@ -142,5 +146,3 @@ export function FirebaseClientProvider({
     </FirebaseProvider>
   );
 }
-
-    

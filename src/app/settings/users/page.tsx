@@ -105,6 +105,7 @@ export default function UsersPage() {
   const isLoading = isLoadingUsers || isLoadingTeams;
 
   const getTeamName = (teamId: string) => {
+    if (teamId === 'allTeams') return 'Access to all teams';
     return teams?.find(t => t.id === teamId)?.name || teamId;
   }
 
@@ -163,7 +164,7 @@ export default function UsersPage() {
                     {user.role === 'Admin' ? (
                       <span className="text-muted-foreground italic">Access to all teams</span>
                     ) : (
-                      user.teamIds && user.teamIds.length > 0 ? getTeamName(user.teamIds[0]) : 'N/A'
+                      getTeamName(user.teamId)
                     )}
                   </TableCell>
                   <TableCell>

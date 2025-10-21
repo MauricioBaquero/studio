@@ -18,7 +18,7 @@ export default function DashboardPage() {
   const teamId = user?.teamId;
 
   const ticketsQuery = useMemoFirebase(() => {
-    if (!firestore || !teamId) return null;
+    if (!firestore || !teamId || teamId === 'allTeams') return null;
     return query(collection(firestore, `teams/${teamId}/tasks`));
   }, [firestore, teamId]);
   const { data: tickets, isLoading: isLoadingTickets } =
@@ -32,14 +32,14 @@ export default function DashboardPage() {
     useCollection<User>(usersQuery);
 
   const categoriesQuery = useMemoFirebase(() => {
-    if (!firestore || !teamId) return null;
+    if (!firestore || !teamId || teamId === 'allTeams') return null;
     return query(collection(firestore, `teams/${teamId}/categories`));
   }, [firestore, teamId]);
   const { data: categories, isLoading: isLoadingCategories } =
     useCollection<Category>(categoriesQuery);
 
   const recurringTasksQuery = useMemoFirebase(
-    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/recurringTasks`)) : null),
+    () => (firestore && teamId && teamId !== 'allTeams' ? query(collection(firestore, `teams/${teamId}/recurringTasks`)) : null),
     [firestore, teamId]
   );
   const { data: recurringTasks, isLoading: isLoadingRecurringTasks } =
@@ -54,7 +54,8 @@ export default function DashboardPage() {
 
   const teamUsers = useMemo(() => {
     if (!users || !teamId) return [];
-    return users.filter(u => u.teamIds && u.teamIds.includes(teamId));
+    if (teamId === 'allTeams') return users;
+    return users.filter(u => u.teamId === teamId);
   }, [users, teamId]);
 
   const isLoading =
@@ -96,5 +97,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

@@ -60,7 +60,7 @@ export default function LocationsPage() {
   );
 
   const locationsQuery = useMemoFirebase(
-    () => (firestore && teamId ? query(collection(firestore, `locations`), where('teamId', '==', teamId)) : null),
+    () => (firestore && teamId ? query(collection(firestore, `locations`), teamId === 'allTeams' ? undefined : where('teamId', '==', teamId)) : null),
     [firestore, teamId]
   );
   const { data: locations, isLoading } = useCollection<Location>(locationsQuery);
@@ -192,5 +192,3 @@ export default function LocationsPage() {
     </>
   );
 }
-
-    

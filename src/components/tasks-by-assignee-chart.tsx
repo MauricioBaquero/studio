@@ -43,10 +43,10 @@ export function TasksByAssigneeChart({
     unassignedData = { name: 'Unassigned', value: unassignedTasks, fill: grayColor };
   }
 
-  // Sort assigned users alphabetically by name
+  // Filter out users with 0 tasks before sorting
   const sortedAssigned = tasksByAssignee
     .filter(d => d.value > 0)
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => b.value - a.value);
 
   // Add "Unassigned" to the end if it exists
   const chartData = unassignedData

@@ -27,9 +27,9 @@ export const userSchema = z.object({
   name: z.string(),
   email: z.string().email(),
   role: z.enum(USER_ROLES),
-  teamIds: z.array(z.string()),
+  teamId: z.string(),
 });
-export type User = z.infer<typeof userSchema> & { teamId?: string };
+export type User = z.infer<typeof userSchema>;
 
 
 export const subcategorySchema = z.object({
@@ -188,5 +188,3 @@ export const getNextDueDate = (task: RecurringTask): Date => {
       return new Date();
   }
 };
-
-    

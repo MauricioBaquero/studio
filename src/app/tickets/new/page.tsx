@@ -14,20 +14,20 @@ export default function NewTicketPage() {
   const teamId = user?.teamId;
 
   const settingsRef = useMemoFirebase(
-    () => (firestore && teamId ? doc(firestore, `teams/${teamId}/settings`, 'appSettings') : null),
+    () => (firestore && teamId && teamId !== 'allTeams' ? doc(firestore, `teams/${teamId}/settings`, 'appSettings') : null),
     [firestore, teamId]
   );
   const { data: settings, isLoading: isLoadingSettings } = useDoc<AppSettings>(settingsRef);
 
   const categoriesQuery = useMemoFirebase(
-    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/categories`)) : null),
+    () => (firestore && teamId && teamId !== 'allTeams' ? query(collection(firestore, `teams/${teamId}/categories`)) : null),
     [firestore, teamId]
   );
   const { data: categories, isLoading: isLoadingCategories } =
     useCollection<Category>(categoriesQuery);
 
   const locationsQuery = useMemoFirebase(
-    () => (firestore && teamId ? query(collection(firestore, 'locations'), where('teamId', '==', teamId)) : null),
+    () => (firestore && teamId ? query(collection(firestore, 'locations'), teamId === 'allTeams' ? undefined : where('teamId', '==', teamId)) : null),
     [firestore, teamId]
   );
   const { data: locations, isLoading: isLoadingLocations } =
@@ -61,5 +61,3 @@ export default function NewTicketPage() {
     </div>
   );
 }
-
-    

@@ -81,7 +81,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
   const isAssignedToCurrentUser = currentUser && (ticket.assignedToIds || []).includes(currentUser.uid);
 
   const handleClaimTask = () => {
-    if (!firestore || !currentUser || !teamId) return;
+    if (!firestore || !currentUser || !teamId || teamId === 'allTeams') return;
     const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticket.id);
     const updatedTicketData = { 
         assignedToIds: [currentUser.uid],
@@ -95,7 +95,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
   };
 
   const handleReadyForReview = () => {
-    if (!firestore || !teamId) return;
+    if (!firestore || !teamId || teamId === 'allTeams') return;
     const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticket.id);
     const updatedTicketData = {
       status: 'Pending Review' as const,

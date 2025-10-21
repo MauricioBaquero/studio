@@ -53,7 +53,7 @@ export default function CategoriesPage() {
   );
 
   const categoriesQuery = useMemoFirebase(
-    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/categories`)) : null),
+    () => (firestore && teamId && teamId !== 'allTeams' ? query(collection(firestore, `teams/${teamId}/categories`)) : null),
     [firestore, teamId]
   );
   const { data: categories, isLoading } = useCollection<Category>(categoriesQuery);
@@ -79,7 +79,7 @@ export default function CategoriesPage() {
   };
 
   const handleDelete = () => {
-    if (!firestore || !deletingCategoryId || !teamId) return;
+    if (!firestore || !deletingCategoryId || !teamId || teamId === 'allTeams') return;
     const categoryRef = doc(firestore, `teams/${teamId}/categories`, deletingCategoryId);
     deleteDocumentNonBlocking(categoryRef);
     toast({

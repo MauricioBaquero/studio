@@ -40,7 +40,7 @@ import { z } from 'zod';
 const formSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters."),
   role: z.enum(USER_ROLES),
-  teamId: z.string().optional(), // For the form, but will be mapped to teamIds
+  teamId: z.string().optional(),
 });
 
 type UserFormValues = z.infer<typeof formSchema>;
@@ -77,7 +77,7 @@ export function UserForm({
       form.reset({
         name: user.name,
         role: user.role,
-        teamId: user.teamIds ? user.teamIds[0] : '',
+        teamId: user.teamId,
       });
     }
   }, [user, form]);
@@ -87,13 +87,14 @@ export function UserForm({
 
     const userRef = doc(firestore, 'users', user.uid);
     
-    // If the role is admin, give them access to all teams. Otherwise, just the selected one.
-    const finalTeamIds = data.role === 'Admin' || data.role === 'Coordinator' ? teams.map(t => t.id) : (data.teamId ? [data.teamId] : []);
+    const finalTeamId = data.role === 'Admin' || data.role === 'Coordinator'
+        ? 'allTeams'
+        : data.teamId || '';
     
     const finalData = {
         name: data.name,
         role: data.role,
-        teamIds: finalTeamIds,
+        teamId: finalTeamId,
     };
     
     updateDocumentNonBlocking(userRef, finalData);
@@ -195,5 +196,3 @@ export function UserForm({
     </Dialog>
   );
 }
-
-    
