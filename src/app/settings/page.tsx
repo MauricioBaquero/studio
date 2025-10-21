@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -22,10 +21,12 @@ import {
   useMemoFirebase,
   updateDocumentNonBlocking,
   useUser,
+  useCollection,
 } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { doc, collection, query } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { AppSettings, settingsSchema } from '@/lib/data';
+import { AppSettings, settingsSchema, Team } from '@/lib/data';
+import { Badge } from '@/components/ui/badge';
 
 export default function GeneralSettingsPage() {
   const firestore = useFirestore();
@@ -37,7 +38,20 @@ export default function GeneralSettingsPage() {
     () => (firestore && teamId && teamId !== 'allTeams' ? doc(firestore, `teams/${teamId}/settings`, 'appSettings') : null),
     [firestore, teamId]
   );
-  const { data: settings, isLoading } = useDoc<AppSettings>(settingsRef);
+  const { data: settings, isLoading: isLoadingSettings } = useDoc<AppSettings>(settingsRef);
+
+  const teamsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'teams')) : null),
+    [firestore]
+  );
+  const { data: teams, isLoading: isLoadingTeams } = useCollection<Team>(teamsQuery);
+
+  const currentTeam = useMemo(() => {
+    if (!teams || !teamId) return null;
+    if (teamId === 'allTeams' && teams.length > 0) return teams[0];
+    return teams.find(t => t.id === teamId);
+  }, [teams, teamId]);
+
 
   const { register, handleSubmit, reset, formState, watch } =
     useForm<AppSettings>({
@@ -62,15 +76,22 @@ export default function GeneralSettingsPage() {
       description: 'Your changes have been saved successfully.',
     });
   };
+  
+  const isLoading = isLoadingSettings || isLoadingTeams;
 
   return (
     <Card>
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardHeader className="space-y-2">
-          <CardTitle>General Settings</CardTitle>
-          <CardDescription>
-            Adjust general settings for the application.
-          </CardDescription>
+           <div className="space-y-2">
+             <CardTitle>General Settings</CardTitle>
+             <CardDescription>
+                Adjust general settings for the application.
+             </CardDescription>
+              {currentTeam && (
+              <Badge variant="outline">Team: {currentTeam.name}</Badge>
+            )}
+           </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
