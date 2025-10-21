@@ -1,5 +1,4 @@
 
-
 import { addDays, addWeeks, addMonths, setDay, setDate, nextDay, startOfDay, isAfter, isSameDay, toDate as fnsToDate } from "date-fns";
 import type { Timestamp } from 'firebase/firestore';
 import { z } from "zod";
@@ -14,12 +13,20 @@ export type TicketStatus = (typeof TICKET_STATUSES)[number];
 export type RecurringFrequency = (typeof RECURRING_FREQUENCIES)[number];
 export type CategoryColor = (typeof CATEGORY_COLORS)[number];
 
+export const teamSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  department: z.string(),
+});
+export type Team = z.infer<typeof teamSchema>;
+
 // Schemas and Types
 export const userSchema = z.object({
   uid: z.string(),
   name: z.string(),
   email: z.string().email(),
   role: z.enum(USER_ROLES),
+  teamId: z.string(),
 });
 export type User = z.infer<typeof userSchema>;
 

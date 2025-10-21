@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building, LayoutDashboard, GanttChartSquare, Repeat, Settings } from "lucide-react";
+import { LayoutDashboard, GanttChartSquare, Repeat, Settings } from "lucide-react";
 import {
   Sidebar,
   SidebarHeader,
@@ -13,10 +13,10 @@ import {
   SidebarMenuButton,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
 import { UserNav } from "../user-nav";
 import { ThemeToggle } from "../theme-toggle";
 import { useUser } from "@/firebase";
+import { TeamSwitcher } from "../team-switcher";
 
 const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -38,10 +38,11 @@ export default function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="p-4">
+      <SidebarHeader className="p-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 font-bold font-headline text-lg">
           <span className="group-data-[collapsible=icon]:hidden">City Action</span>
         </Link>
+        <TeamSwitcher />
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>

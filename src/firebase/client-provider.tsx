@@ -11,15 +11,27 @@ interface FirebaseClientProviderProps {
   children: ReactNode;
 }
 
-const seedCategories = async (firestore: any) => {
-    const categoriesCollection = collection(firestore, 'categories');
-    const existingCategoriesSnap = await getDocs(query(categoriesCollection));
-    
-    if (!existingCategoriesSnap.empty) {
-        return;
+const seedTeamsAndSubCollections = async (firestore: any) => {
+    const teamsCollectionRef = collection(firestore, 'teams');
+    const teamsSnapshot = await getDocs(query(teamsCollectionRef));
+    if (!teamsSnapshot.empty) {
+        return; // Teams already exist, don't seed again
     }
-    
-    console.log("Categories collection is empty, seeding data...");
+
+    console.log("Seeding initial teams and their data...");
+
+    const teamsToCreate = [
+        { 
+            id: 'parking-facilities', 
+            name: "Parking Facilities", 
+            department: "Transportation and Mobility" 
+        },
+        { 
+            id: 'parking-technicians', 
+            name: "Parking Technicians", 
+            department: "Transportation and Mobility" 
+        },
+    ];
 
     const categoriesData = [
         { name: "Interior Maintenance & Cleaning", color: "blue", subcategories: [
@@ -44,49 +56,59 @@ const seedCategories = async (firestore: any) => {
             "Plumbing-related work"
         ]},
     ];
+    
+    const locationsData = [
+      { name: 'City Hall Garage', numberOfFloors: 5 },
+      { name: 'Courthouse Garage', numberOfFloors: 8 },
+      { name: 'Riverwalk Garage', numberOfFloors: 4 },
+      { name: 'Beach Lot A', numberOfFloors: 0 },
+    ];
+    
+    const settingsData = {
+        completionDateRange: 7,
+        recurringTaskCompletionDays: 2,
+    };
 
     const batch = writeBatch(firestore);
 
-    for (const catData of categoriesData) {
-        const parentId = doc(categoriesCollection).id;
-        const parentDocRef = doc(categoriesCollection, parentId);
-        batch.set(parentDocRef, {
-            id: parentId,
-            name: catData.name,
-            color: catData.color,
-            subcategories: catData.subcategories.map(subName => ({ id: uuidv4(), name: subName }))
-        });
-    }
+    for (const teamData of teamsToCreate) {
+        const teamDocRef = doc(teamsCollectionRef, teamData.id);
+        batch.set(teamDocRef, teamData);
 
+        // Seed categories for the team
+        const categoriesColRef = collection(teamDocRef, 'categories');
+        categoriesData.forEach(catData => {
+            const parentId = doc(categoriesColRef).id;
+            const parentDocRef = doc(categoriesColRef, parentId);
+            batch.set(parentDocRef, {
+                id: parentId,
+                name: catData.name,
+                color: catData.color,
+                subcategories: catData.subcategories.map(subName => ({ id: uuidv4(), name: subName }))
+            });
+        });
+
+        // Seed locations for the team
+        const locationsColRef = collection(teamDocRef, 'locations');
+        locationsData.forEach(locData => {
+            const locationId = doc(locationsColRef).id;
+            const locationDocRef = doc(locationsColRef, locationId);
+            batch.set(locationDocRef, { id: locationId, ...locData });
+        });
+        
+        // Seed settings for the team
+        const settingsDocRef = doc(collection(teamDocRef, 'settings'), 'appSettings');
+        batch.set(settingsDocRef, settingsData);
+    }
+    
     try {
         await batch.commit();
-        console.log('Categories seeded successfully.');
+        console.log('Teams and subcollections seeded successfully.');
     } catch (error) {
-        console.error('Error seeding categories:', error);
+        console.error('Error seeding data:', error);
     }
 };
 
-
-const seedSettings = async (firestore: any) => {
-    const settingsDocRef = doc(firestore, 'settings', 'appSettings');
-    const settingsSnap = await getDoc(settingsDocRef);
-
-    if (settingsSnap.exists()) {
-        return; // Document already exists, no need to seed.
-    }
-
-    console.log("Settings document not found, seeding with default values...");
-
-    try {
-        await setDoc(settingsDocRef, {
-            completionDateRange: 7,
-            recurringTaskCompletionDays: 2
-        });
-        console.log('Settings document seeded successfully.');
-    } catch (error) {
-        console.error('Error seeding settings document:', error);
-    }
-}
 
 export function FirebaseClientProvider({
   children,
@@ -97,22 +119,16 @@ export function FirebaseClientProvider({
 
   useEffect(() => {
     const seedData = async () => {
-      // We no longer check for user here, the provider will handle it
-      if (!firebaseServices.firestore || !firebaseServices.auth) return;
-      // This seeding is basic, it might run before rules are ready on first load.
-      // A more robust solution might involve a dedicated admin setup page.
+      if (!firebaseServices.firestore) return;
       try {
-        await seedCategories(firebaseServices.firestore);
-        await seedSettings(firebaseServices.firestore);
+        await seedTeamsAndSubCollections(firebaseServices.firestore);
       } catch(e) {
-        // This may fail due to permissions on first run, which is okay.
-        // It will be re-attempted when a user logs in.
-        console.warn("Initial data seeding failed, will retry on user login.");
+        console.warn("Initial data seeding failed, will retry on user login.", e);
       }
     };
 
     seedData();
-  }, [firebaseServices.firestore, firebaseServices.auth]);
+  }, [firebaseServices.firestore]);
 
   return (
     <FirebaseProvider
