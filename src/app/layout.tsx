@@ -6,7 +6,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { AppLayout } from '@/components/layout/app-layout';
 
 export const metadata: Metadata = {
-  title: 'Facilities App',
+  title: 'City Action',
   description: 'A ticketing app for Maintenance and Facilities.',
 };
 
