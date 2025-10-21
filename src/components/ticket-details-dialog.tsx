@@ -119,8 +119,13 @@ export function TicketDetailsDialog({
     setIsSaving(true);
     
     try {
-      const finalStatus = newStatus || currentStatus;
+      let finalStatus = newStatus || currentStatus;
       const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticket.id);
+
+      // Automatically set status to "In Progress" if users are assigned and status is "Not Started"
+      if (assignedToIds.length > 0 && finalStatus === 'Not Started') {
+        finalStatus = 'In Progress';
+      }
 
       // 1. Upload new photos
       const newPhotoUploads = newPhotoFiles.map(async file => {
