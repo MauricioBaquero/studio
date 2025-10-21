@@ -4,7 +4,7 @@ import { addDays, addWeeks, addMonths, setDay, setDate, nextDay, startOfDay, isA
 import type { Timestamp } from 'firebase/firestore';
 import { z } from "zod";
 
-export const USER_ROLES = ["Admin", "Staff", "Viewer"] as const;
+export const USER_ROLES = ["Admin", "Coordinator", "Staff", "Viewer"] as const;
 export const TICKET_STATUSES = ["Not Started", "In Progress", "Pending Review", "Completed"] as const;
 export const RECURRING_FREQUENCIES = ["Daily", "Weekly", "Monthly"] as const;
 export const CATEGORY_COLORS = ["red", "orange", "yellow", "green", "blue", "purple", "pink", "teal", "indigo", "cyan"] as const;

@@ -51,6 +51,7 @@ import { UserForm } from './user-form';
 
 const roleColors: Record<UserRole, BadgeProps['color']> = {
   Admin: 'purple',
+  Coordinator: 'teal',
   Staff: 'yellow',
   Viewer: 'pink',
 };

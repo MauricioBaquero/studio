@@ -88,7 +88,7 @@ export function UserForm({
     const userRef = doc(firestore, 'users', user.uid);
     
     // If the role is admin, give them access to all teams. Otherwise, just the selected one.
-    const finalTeamIds = data.role === 'Admin' ? teams.map(t => t.id) : (data.teamId ? [data.teamId] : []);
+    const finalTeamIds = data.role === 'Admin' || data.role === 'Coordinator' ? teams.map(t => t.id) : (data.teamId ? [data.teamId] : []);
     
     const finalData = {
         name: data.name,
@@ -153,7 +153,7 @@ export function UserForm({
                     </FormItem>
                 )}
             />
-            {watchedRole !== 'Admin' && (
+            {watchedRole !== 'Admin' && watchedRole !== 'Coordinator' && (
                 <FormField
                 control={form.control}
                 name="teamId"

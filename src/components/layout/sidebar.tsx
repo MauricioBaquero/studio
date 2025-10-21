@@ -36,6 +36,8 @@ export default function AppSidebar() {
     return pathname.startsWith(path);
   };
 
+  const canSeeSettings = user?.role === 'Admin' || user?.role === 'Coordinator';
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4 flex items-center justify-between">
@@ -67,7 +69,7 @@ export default function AppSidebar() {
           <ThemeToggle />
         </div>
         <SidebarMenu>
-          {user?.role === 'Admin' && (
+          {canSeeSettings && (
             <SidebarMenuItem>
                 <SidebarMenuButton
                 asChild
