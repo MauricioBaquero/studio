@@ -65,9 +65,6 @@ export default function AppSidebar() {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
-        <div className="p-2 flex justify-center group-data-[collapsible=icon]:-ml-2">
-          <ThemeToggle />
-        </div>
         <SidebarMenu>
           {canSeeSettings && (
             <SidebarMenuItem>
@@ -86,6 +83,9 @@ export default function AppSidebar() {
         </SidebarMenu>
         <div className="p-2 flex justify-center group-data-[collapsible=icon]:-ml-2">
             <UserNav />
+        </div>
+        <div className="p-2 flex justify-center group-data-[collapsible=icon]:-ml-2">
+          <ThemeToggle />
         </div>
         <div className="p-4 text-center text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
           Designed with ❤️ 2025 WeAreFTL
