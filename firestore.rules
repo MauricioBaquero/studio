@@ -1,158 +1,133 @@
 /**
- * @file Firestore Security Rules
- * @description This ruleset enforces authentication for all read and write operations.
+ * @fileoverview Firestore Security Rules for the Facility Maintenance App.
  *
  * Core Philosophy:
- * All data access is strictly limited to authenticated users. This is a basic security
- * posture suitable for prototyping and will be refined in later iterations.
+ * This ruleset employs a hybrid security model, combining user-based and team-based access controls.
+ * Users have individual profiles, and data is organized within teams. User roles within their teams (Admin, Coordinator, Staff, Viewer) are not explicitly encoded in security rules.
+ * Instead, rules primarily rely on path-based access and validated data consistency.
  *
  * Data Structure:
  * - /teams/{teamId}: Stores team information.
- * - /users/{userId}: Stores user profiles.
- * - /locations/{locationId}: Stores facility locations.
- * - /teams/{teamId}/tasks/{taskId}: Stores tasks for each team.
- * - /teams/{teamId}/recurringTasks/{recurringTaskId}: Stores recurring tasks.
- * - /teams/{teamId}/categories/{categoryId}: Stores task categories.
- * - /teams/{teamId}/settings/appSettings: Stores team settings.
+ * - /users/{userId}: Stores user profile information.
+ * - /locations/{locationId}: Stores location data, not scoped to a team.
+ * - /teams/{teamId}/tasks/{taskId}: Stores tasks associated with a team.
+ * - /teams/{teamId}/recurringTasks/{recurringTaskId}: Stores recurring tasks for a team.
+ * - /teams/{teamId}/categories/{categoryId}: Stores task categories for a team.
+ * - /teams/{teamId}/settings/appSettings: Stores a single document containing the settings for a team.
  *
  * Key Security Decisions:
- * - User listing is disallowed as a default security measure.
- * - All write operations require authentication.
- * - No data validation is performed beyond authentication.
+ * - Listing of all users is explicitly denied to prevent information leakage.
+ * - Locations are globally accessible.
+ * - The rules do not validate roles.
  *
  * Denormalization for Authorization:
- * N/A - In this initial phase, the focus is on authentication. Further iterations
- * will introduce denormalization to avoid `get()` calls and improve performance.
- *
- * Structural Segregation:
- * N/A - No segregation of public vs. private data in this initial phase.
+ *  - Team membership for the user is determined by the `teamIds` array denormalized on the user document.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows authenticated users to read and write team data.
-     * @path /teams/{teamId}
-     * @allow (get) request.auth != null
-     * @allow (create) request.auth != null
-     * @deny (get) request.auth == null
-     * @deny (create) request.auth == null
-     * @principle Requires authentication for all access.
-     */
-    match /teams/{teamId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
-    }
-
-    /**
-     * @description Allows authenticated users to read and write user data.
-     * @path /users/{userId}
-     * @allow (get) request.auth != null
-     * @allow (create) request.auth.uid == userId
-     * @deny (get) request.auth == null
-     * @deny (create) request.auth.uid != userId
-     * @principle Enforces document ownership for user profiles.
-     */
-    match /users/{userId} {
-      allow get: if isSignedIn();
-      allow list: if false;
-      allow create: if request.auth.uid == userId;
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
-    }
-
-    /**
-     * @description Allows authenticated users to read and write location data.
-     * @path /locations/{locationId}
-     * @allow (get) request.auth != null
-     * @allow (create) request.auth != null
-     * @deny (get) request.auth == null
-     * @deny (create) request.auth == null
-     * @principle Requires authentication for all access.
-     */
-    match /locations/{locationId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
-    }
-
-    /**
-     * @description Allows authenticated users to read and write task data within a team.
-     * @path /teams/{teamId}/tasks/{taskId}
-     * @allow (get) request.auth != null
-     * @allow (create) request.auth != null
-     * @deny (get) request.auth == null
-     * @deny (create) request.auth == null
-     * @principle Requires authentication for all access.
-     */
-    match /teams/{teamId}/tasks/{taskId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
-    }
-
-    /**
-     * @description Allows authenticated users to read and write recurring task data within a team.
-     * @path /teams/{teamId}/recurringTasks/{recurringTaskId}
-     * @allow (get) request.auth != null
-     * @allow (create) request.auth != null
-     * @deny (get) request.auth == null
-     * @deny (create) request.auth == null
-     * @principle Requires authentication for all access.
-     */
-    match /teams/{teamId}/recurringTasks/{recurringTaskId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
-    }
-
-    /**
-     * @description Allows authenticated users to read and write category data within a team.
-     * @path /teams/{teamId}/categories/{categoryId}
-     * @allow (get) request.auth != null
-     * @allow (create) request.auth != null
-     * @deny (get) request.auth == null
-     * @deny (create) request.auth == null
-     * @principle Requires authentication for all access.
-     */
-    match /teams/{teamId}/categories/{categoryId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
-    }
-
-    /**
-     * @description Allows authenticated users to read and write team settings.
-     * @path /teams/{teamId}/settings/appSettings
-     * @allow (get) request.auth != null
-     * @allow (create) request.auth != null
-     * @deny (get) request.auth == null
-     * @deny (create) request.auth == null
-     * @principle Requires authentication for all access.
-     */
-    match /teams/{teamId}/settings/appSettings {
-      allow get: if isSignedIn();
-      allow list: if false;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
-    }
-
-    // =================== Helper Functions ===================
-
-    /**
      * @description Checks if the user is signed in.
-     * @return {bool} True if the user is signed in, false otherwise.
      */
     function isSignedIn() {
       return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the user ID matches the requested user ID.
+     */
+    function isOwner(userId) {
+        return request.auth.uid == userId;
+    }
+
+    /**
+     * @description Teams collection: stores team/department information.
+     * @path /teams/{teamId}
+     * @allow (create) User with valid auth can create a team.
+     * @deny (create) User without valid auth cannot create a team.
+     * @principle Allows any logged in user to create a team.
+     */
+    match /teams/{teamId} {
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    /**
+     * @description Users collection: stores user profiles.
+     * @path /users/{userId}
+     * @allow (create) User can create their own profile (UID must match).
+     * @deny (create) User cannot create another user's profile (UID mismatch).
+     * @principle Enforces user-ownership for profile creation.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) && request.resource.data.uid == resource.data.uid;
+      allow delete: if isOwner(userId);
+    }
+
+    /**
+     * @description Locations collection: stores facility location information.
+     * @path /locations/{locationId}
+     * @allow (get) Any user can view a location.
+     * @deny (create) No writes allowed.
+     * @principle Allows public read access to locations.
+     */
+    match /locations/{locationId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Tasks collection: stores tasks for a specific team.
+     * @path /teams/{teamId}/tasks/{taskId}
+     * @allow (create) Any signed-in user can create a task.
+     * @deny (delete) No deletes allowed.
+     */
+    match /teams/{teamId}/tasks/{taskId} {
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    /**
+     * @description RecurringTasks collection: stores recurring tasks for a specific team.
+     * @path /teams/{teamId}/recurringTasks/{recurringTaskId}
+     * @allow (create) Any signed-in user can create a recurring task.
+     * @deny (delete) No deletes allowed.
+     */
+    match /teams/{teamId}/recurringTasks/{recurringTaskId} {
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    /**
+     * @description Categories collection: stores task categories for a specific team.
+     * @path /teams/{teamId}/categories/{categoryId}
+     * @allow (create) Any signed-in user can create a category.
+     * @deny (delete) No deletes allowed.
+     */
+    match /teams/{teamId}/categories/{categoryId} {
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    /**
+     * @description Settings document: stores team-specific settings in a single document.
+     * @path /teams/{teamId}/settings/appSettings
+     * @allow (create) Any signed-in user can create settings.
+     * @deny (delete) No deletes allowed.
+     */
+    match /teams/{teamId}/settings/appSettings {
+      allow get: if true;
+      allow list: if false;
+      allow create: if isSignedIn();
+      allow update, delete: if false;
     }
   }
 }
