@@ -11,6 +11,7 @@ import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebas
 import { collection, query, where } from 'firebase/firestore';
 import { RecurringTasksSummaryChart } from '@/components/recurring-tasks-summary-chart';
 import { useMemo } from 'react';
+import { ApprovalStatusSummary } from '@/components/approval-status-summary';
 
 export default function DashboardPage() {
   const firestore = useFirestore();
@@ -85,6 +86,7 @@ export default function DashboardPage() {
       <h1 className="text-3xl font-bold font-headline">Dashboard</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 [grid-auto-flow:dense]">
         <TaskStatusChart tickets={chartTickets} />
+        <ApprovalStatusSummary tickets={chartTickets} users={users || []} />
         <RecurringTasksSummaryChart recurringTasks={chartRecurringTasks} />
         <TasksByAssigneeChart tickets={chartTickets} users={chartUsers} />
         <div className="lg:row-span-2">
