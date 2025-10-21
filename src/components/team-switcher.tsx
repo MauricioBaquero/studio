@@ -46,28 +46,8 @@ export function TeamSwitcher() {
     }
 
     setIsLoading(true);
-    let unsubscribe = () => {};
 
-    if (currentUser.role === 'Admin') {
-      const teamsQuery = query(collection(firestore, 'teams'));
-      unsubscribe = onSnapshot(
-        teamsQuery,
-        (snapshot) => {
-          const userTeams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Team));
-          setTeams(userTeams);
-          setIsLoading(false);
-        },
-        (err) => {
-          console.error("Error fetching all teams for admin:", err);
-          const contextualError = new FirestorePermissionError({
-              path: 'teams',
-              operation: 'list',
-          });
-          errorEmitter.emit('permission-error', contextualError);
-          setIsLoading(false);
-        }
-      );
-    } else if (currentUser.teamIds && currentUser.teamIds.length > 0) {
+    if (currentUser.teamIds && currentUser.teamIds.length > 0) {
       const fetchTeams = async () => {
         try {
           const teamRefs = currentUser.teamIds.map(id => doc(firestore, 'teams', id));
@@ -87,7 +67,6 @@ export function TeamSwitcher() {
         setTeams([]);
     }
 
-    return () => unsubscribe();
   }, [firestore, currentUser]);
 
 
