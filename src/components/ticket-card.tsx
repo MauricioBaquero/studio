@@ -42,6 +42,7 @@ const claimSayings = [
   "Let's do this.",
   "Got it.",
   "My turn.",
+  "Taking action"
 ];
 
 interface TicketCardProps {
