@@ -48,7 +48,14 @@
         },
         "teamId": {
           "type": "string",
-          "description": "The ID of the team the user belongs to."
+          "description": "The ID of the user's currently active team."
+        },
+        "teamIds": {
+            "type": "array",
+            "description": "A list of team IDs the user has access to.",
+            "items": {
+                "type": "string"
+            }
         }
       },
       "required": [
@@ -56,7 +63,8 @@
         "name",
         "email",
         "role",
-        "teamId"
+        "teamId",
+        "teamIds"
       ]
     },
     "Task": {
@@ -126,6 +134,13 @@
         "approvedBy": {
           "type": "string",
           "description": "The UID of the user who approved the task completion."
+        },
+        "assignedToIds": {
+            "type": "array",
+            "description": "A list of user IDs assigned to the task.",
+            "items": {
+                "type": "string"
+            }
         }
       },
       "required": [
@@ -252,6 +267,10 @@
         "completionDateRange": {
           "type": "number",
           "description": "The minimum number of days for task completion requests."
+        },
+        "recurringTaskCompletionDays": {
+          "type": "number",
+          "description": "Days in advance a weekly or monthly recurring task can be completed."
         }
       },
       "required": [
@@ -339,3 +358,5 @@
     ]
   }
 }
+
+    

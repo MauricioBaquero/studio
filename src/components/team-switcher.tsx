@@ -3,12 +3,13 @@
 
 import {
   useCollection,
+  useDoc,
   useFirestore,
   useMemoFirebase,
   useUser,
   updateDocumentNonBlocking,
 } from '@/firebase';
-import { collection, query, doc } from 'firebase/firestore';
+import { collection, query, doc, where, getDocs, getDoc } from 'firebase/firestore';
 import { Team, User } from '@/lib/data';
 import { ChevronsUpDown, Check } from 'lucide-react';
 import {
@@ -26,20 +27,43 @@ import {
   CommandList,
 } from './ui/command';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSidebar } from './ui/sidebar';
 
 export function TeamSwitcher() {
-  const { user: currentUser } = useUser();
+  const { user: currentUser, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { state } = useSidebar();
   const [open, setOpen] = useState(false);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const teamsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'teams')) : null),
-    [firestore]
-  );
-  const { data: teams, isLoading } = useCollection<Team>(teamsQuery);
+  useEffect(() => {
+    const fetchTeams = async () => {
+      if (!firestore || !currentUser || !currentUser.teamIds || currentUser.teamIds.length === 0) {
+        setTeams([]);
+        setIsLoading(false);
+        return;
+      }
+      
+      setIsLoading(true);
+      try {
+        const teamRefs = currentUser.teamIds.map(id => doc(firestore, 'teams', id));
+        const teamDocs = await Promise.all(teamRefs.map(ref => getDoc(ref)));
+        const userTeams = teamDocs.map(doc => ({ id: doc.id, ...doc.data() } as Team));
+        setTeams(userTeams);
+      } catch (error) {
+        console.error("Error fetching user's teams:", error);
+        setTeams([]);
+      }
+      setIsLoading(false);
+    };
+
+    if (!isUserLoading) {
+        fetchTeams();
+    }
+  }, [firestore, currentUser, isUserLoading]);
+
 
   const handleTeamChange = (teamId: string) => {
     if (!firestore || !currentUser) return;
@@ -48,7 +72,7 @@ export function TeamSwitcher() {
     setOpen(false);
   };
 
-  if (isLoading || !teams || !currentUser || currentUser.role !== 'Admin') {
+  if (isLoading || !currentUser || currentUser.role !== 'Admin') {
     return null;
   }
 
@@ -106,3 +130,5 @@ export function TeamSwitcher() {
     </Popover>
   );
 }
+
+    
