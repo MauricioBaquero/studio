@@ -89,8 +89,14 @@ export default function ScheduledMaintenancePage() {
     useCollection<Category>(categoriesQuery);
 
   const locationsQuery = useMemoFirebase(
-    () => (firestore && teamId ? query(collection(firestore, 'locations'), teamId === 'allTeams' ? undefined : where('teamId', '==', teamId)) : null),
-    [firestore, teamId]
+    () => {
+        if (!firestore || !teamId) return null;
+        if (currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator') {
+            return query(collection(firestore, `locations`));
+        }
+        return query(collection(firestore, `locations`), where('teamId', '==', teamId));
+    },
+    [firestore, teamId, currentUser?.role]
   );
   const { data: locations, isLoading: isLoadingLocations } =
     useCollection<Location>(locationsQuery);

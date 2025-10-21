@@ -72,11 +72,21 @@ const seedTeamsAndSubCollections = async (firestore: any) => {
 
     const batch = writeBatch(firestore);
 
+    // Create a single set of locations associated with the primary team.
+    const locationsColRef = collection(firestore, 'locations');
+    const primaryTeamId = 'parking-facilities';
+    locationsData.forEach(locData => {
+        const locationId = doc(locationsColRef).id;
+        const locationDocRef = doc(locationsColRef, locationId);
+        batch.set(locationDocRef, { id: locationId, ...locData, teamId: primaryTeamId });
+    });
+
+
     for (const teamData of teamsToCreate) {
         const teamDocRef = doc(teamsCollectionRef, teamData.id);
         batch.set(teamDocRef, teamData);
 
-        // Seed categories for the team
+        // Seed categories for each team
         const categoriesColRef = collection(teamDocRef, 'categories');
         categoriesData.forEach(catData => {
             const parentId = doc(categoriesColRef).id;
@@ -87,14 +97,6 @@ const seedTeamsAndSubCollections = async (firestore: any) => {
                 color: catData.color,
                 subcategories: catData.subcategories.map(subName => ({ id: uuidv4(), name: subName }))
             });
-        });
-
-        // Seed locations at top level, but associated with the team
-        const locationsColRef = collection(firestore, 'locations');
-        locationsData.forEach(locData => {
-            const locationId = doc(locationsColRef).id;
-            const locationDocRef = doc(locationsColRef, locationId);
-            batch.set(locationDocRef, { id: locationId, ...locData, teamId: teamData.id });
         });
         
         // Seed settings for the team

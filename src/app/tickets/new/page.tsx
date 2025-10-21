@@ -27,8 +27,14 @@ export default function NewTicketPage() {
     useCollection<Category>(categoriesQuery);
 
   const locationsQuery = useMemoFirebase(
-    () => (firestore && teamId ? query(collection(firestore, 'locations'), teamId === 'allTeams' ? undefined : where('teamId', '==', teamId)) : null),
-    [firestore, teamId]
+    () => {
+        if (!firestore || !teamId) return null;
+        if (user?.role === 'Admin' || user?.role === 'Coordinator') {
+            return query(collection(firestore, `locations`));
+        }
+        return query(collection(firestore, `locations`), where('teamId', '==', teamId));
+    },
+    [firestore, teamId, user?.role]
   );
   const { data: locations, isLoading: isLoadingLocations } =
     useCollection<Location>(locationsQuery);

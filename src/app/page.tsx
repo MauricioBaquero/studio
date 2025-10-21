@@ -41,8 +41,12 @@ export default function TaskBoardPage() {
 
   const locationsQuery = useMemoFirebase(() => {
     if (!firestore || !teamId) return null;
-    return query(collection(firestore, `locations`), teamId === 'allTeams' ? undefined : where('teamId', '==', teamId));
-  }, [firestore, teamId]);
+    // Admins/Coordinators see all locations, other roles see locations for their team.
+    if (currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator') {
+        return query(collection(firestore, `locations`));
+    }
+    return query(collection(firestore, `locations`), where('teamId', '==', teamId));
+  }, [firestore, teamId, currentUser?.role]);
   
   const { data: tickets, isLoading: isLoadingTickets } = useCollection<Ticket>(ticketsQuery);
   const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
