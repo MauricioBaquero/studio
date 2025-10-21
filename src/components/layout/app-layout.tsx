@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useEffect } from 'react';
@@ -36,11 +37,11 @@ export function AppLayout({ children }: AppLayoutProps) {
       router.replace('/');
     }
 
-    // If user is authenticated but has no teamId, assign them a default one
-    if (firestore && user && !user.teamId) {
-      console.log("User has no teamId, assigning default 'parking-facilities'.");
+    // If user is authenticated but has no teamIds, assign them a default one
+    if (firestore && user && (!user.teamIds || user.teamIds.length === 0)) {
+      console.log("User has no teams, assigning default 'parking-facilities'.");
       const userRef = doc(firestore, 'users', user.uid);
-      updateDocumentNonBlocking(userRef, { teamId: 'parking-facilities', teamIds: ['parking-facilities'] });
+      updateDocumentNonBlocking(userRef, { teamIds: ['parking-facilities'] });
     }
 
   }, [user, isUserLoading, isLoginPage, router, firestore, auth]);
@@ -52,7 +53,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   }
 
   // Show a loading indicator while we verify auth and fetch user data, or if we are about to redirect.
-  if (isUserLoading || !user || !user.teamId) {
+  if (isUserLoading || !user || !user.teamIds || user.teamIds.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p>Loading...</p>
@@ -76,3 +77,5 @@ export function AppLayout({ children }: AppLayoutProps) {
     </SidebarProvider>
   );
 }
+
+    

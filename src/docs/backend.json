@@ -46,13 +46,9 @@
           "enum": ["Admin", "Staff", "Viewer"],
           "description": "The role of the user within their assigned team."
         },
-        "teamId": {
-          "type": "string",
-          "description": "The ID of the user's currently active team."
-        },
         "teamIds": {
             "type": "array",
-            "description": "A list of team IDs the user has access to.",
+            "description": "A list of team IDs the user has access to. The first ID is the active team.",
             "items": {
                 "type": "string"
             }
@@ -63,7 +59,6 @@
         "name",
         "email",
         "role",
-        "teamId",
         "teamIds"
       ]
     },
@@ -368,7 +363,6 @@
     ]
   }
 }
-
     
 
     

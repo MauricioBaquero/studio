@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
@@ -43,7 +44,7 @@ export interface FirebaseServicesAndUser {
 
 // Return type for useUser()
 export interface UserHookResult {
-  user: (User & AuthUser) | null;
+  user: User | null;
   isUserLoading: boolean;
   userError: Error | null;
 }
@@ -55,12 +56,14 @@ const FirebaseUserProvider = ({children}: {children: ReactNode}) => {
     const { auth, firestore, isUserLoading: isAuthLoading, user: authUser } = useFirebase();
 
     const userDocRef = useMemoFirebase(() => (firestore && authUser ? doc(firestore, 'users', authUser.uid) : null), [firestore, authUser]);
-    const { data: user, isLoading: isUserDocLoading, error: userDocError } = useDoc<User>(userDocRef);
+    const { data: userDoc, isLoading: isUserDocLoading, error: userDocError } = useDoc<Omit<User, 'uid'>>(userDocRef);
 
     const fullUser = useMemo(() => {
-        if (!authUser || !user) return null;
-        return { ...authUser, ...user };
-    }, [authUser, user]);
+        if (!authUser || !userDoc) return null;
+        // The user's active team is the first one in their list.
+        const activeTeamId = userDoc.teamIds && userDoc.teamIds.length > 0 ? userDoc.teamIds[0] : undefined;
+        return { ...authUser, ...userDoc, teamId: activeTeamId };
+    }, [authUser, userDoc]);
     
     const contextValue = useMemo(() => ({
         user: fullUser,
@@ -198,3 +201,5 @@ export const useUser = (): UserHookResult => {
   }
   return context;
 };
+
+    

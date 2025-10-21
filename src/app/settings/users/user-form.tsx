@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect } from 'react';
@@ -39,7 +40,7 @@ import { z } from 'zod';
 const formSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters."),
   role: z.enum(USER_ROLES),
-  teamId: z.string(), // No longer required here as it's conditional
+  teamId: z.string().optional(), // For the form, but will be mapped to teamIds
 });
 
 type UserFormValues = z.infer<typeof formSchema>;
@@ -76,7 +77,7 @@ export function UserForm({
       form.reset({
         name: user.name,
         role: user.role,
-        teamId: user.teamId,
+        teamId: user.teamIds ? user.teamIds[0] : '',
       });
     }
   }, [user, form]);
@@ -85,15 +86,14 @@ export function UserForm({
     if (!firestore) return;
 
     const userRef = doc(firestore, 'users', user.uid);
-    // If the role is admin, give them access to all teams.
-    const teamIds = data.role === 'Admin' ? teams.map(t => t.id) : [data.teamId];
     
-    // Make sure teamId is set if not admin
+    // If the role is admin, give them access to all teams. Otherwise, just the selected one.
+    const finalTeamIds = data.role === 'Admin' ? teams.map(t => t.id) : (data.teamId ? [data.teamId] : []);
+    
     const finalData = {
         name: data.name,
         role: data.role,
-        teamId: data.role === 'Admin' ? (user.teamId || teams[0]?.id) : data.teamId,
-        teamIds: teamIds
+        teamIds: finalTeamIds,
     };
     
     updateDocumentNonBlocking(userRef, finalData);
@@ -195,3 +195,5 @@ export function UserForm({
     </Dialog>
   );
 }
+
+    

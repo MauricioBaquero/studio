@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -39,6 +40,8 @@ export function TeamSwitcher() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const activeTeamId = currentUser?.teamId;
+
   useEffect(() => {
     if (!firestore || !currentUser) {
       setIsLoading(false);
@@ -50,8 +53,6 @@ export function TeamSwitcher() {
     let unsubscribe: () => void = () => {};
 
     if (currentUser.teamIds && currentUser.teamIds.length > 0) {
-      // This logic now applies to all users, including admins.
-      // We fetch only the teams listed in their teamIds array.
       const teamRefs = currentUser.teamIds.map(id => doc(firestore, 'teams', id));
       const unsubscribes = teamRefs.map((ref, index) => 
         onSnapshot(ref, 
@@ -94,9 +95,13 @@ export function TeamSwitcher() {
 
 
   const handleTeamChange = (teamId: string) => {
-    if (!firestore || !currentUser) return;
+    if (!firestore || !currentUser || !currentUser.teamIds) return;
+
+    // Create a new ordered array of team IDs
+    const newTeamIds = [teamId, ...currentUser.teamIds.filter(id => id !== teamId)];
+
     const userRef = doc(firestore, 'users', currentUser.uid);
-    updateDocumentNonBlocking(userRef, { teamId: teamId });
+    updateDocumentNonBlocking(userRef, { teamIds: newTeamIds });
     setOpen(false);
   };
 
@@ -104,7 +109,7 @@ export function TeamSwitcher() {
     return null;
   }
 
-  const selectedTeam = teams.find(team => team.id === currentUser.teamId);
+  const selectedTeam = teams.find(team => team.id === activeTeamId);
 
   if (state === 'collapsed') {
     return null;
@@ -145,7 +150,7 @@ export function TeamSwitcher() {
                   <Check
                     className={cn(
                       'mr-2 h-4 w-4',
-                      currentUser.teamId === team.id ? 'opacity-100' : 'opacity-0'
+                      activeTeamId === team.id ? 'opacity-100' : 'opacity-0'
                     )}
                   />
                   {team.name}
@@ -158,3 +163,5 @@ export function TeamSwitcher() {
     </Popover>
   );
 }
+
+    

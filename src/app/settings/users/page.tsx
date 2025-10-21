@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -159,7 +160,7 @@ export default function UsersPage() {
                     </div>
                   </TableCell>
                    <TableCell>
-                    {user.teamId ? getTeamName(user.teamId) : 'N/A'}
+                    {user.teamIds && user.teamIds.length > 0 ? getTeamName(user.teamIds[0]) : 'N/A'}
                   </TableCell>
                   <TableCell>
                     <Badge color={roleColors[user.role] || 'gray'}>
@@ -220,3 +221,5 @@ export default function UsersPage() {
     </>
   );
 }
+
+    
