@@ -1,133 +1,112 @@
 /**
- * @fileoverview Firestore Security Rules for the Facility Maintenance App.
+ * @file Firestore Security Rules
+ * @description This ruleset authenticates the user and allows full access.
  *
  * Core Philosophy:
- * This ruleset employs a hybrid security model, combining user-based and team-based access controls.
- * Users have individual profiles, and data is organized within teams. User roles within their teams (Admin, Coordinator, Staff, Viewer) are not explicitly encoded in security rules.
- * Instead, rules primarily rely on path-based access and validated data consistency.
+ * This ruleset authenticates the user and allows full access
  *
  * Data Structure:
  * - /teams/{teamId}: Stores team information.
- * - /users/{userId}: Stores user profile information.
- * - /locations/{locationId}: Stores location data, not scoped to a team.
- * - /teams/{teamId}/tasks/{taskId}: Stores tasks associated with a team.
- * - /teams/{teamId}/recurringTasks/{recurringTaskId}: Stores recurring tasks for a team.
- * - /teams/{teamId}/categories/{categoryId}: Stores task categories for a team.
- * - /teams/{teamId}/settings/appSettings: Stores a single document containing the settings for a team.
+ * - /users/{userId}: Stores user profiles.
+ * - /locations/{locationId}: Stores location information.
+ * - /teams/{teamId}/tasks/{taskId}: Stores tasks for each team.
+ * - /teams/{teamId}/recurringTasks/{recurringTaskId}: Stores recurring tasks for each team.
+ * - /teams/{teamId}/categories/{categoryId}: Stores task categories for each team.
+ * - /teams/{teamId}/settings/appSettings: Stores team settings.
  *
  * Key Security Decisions:
- * - Listing of all users is explicitly denied to prevent information leakage.
- * - Locations are globally accessible.
- * - The rules do not validate roles.
- *
- * Denormalization for Authorization:
- *  - Team membership for the user is determined by the `teamIds` array denormalized on the user document.
+ * - User authentication is required for all operations.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the user is signed in.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the user ID matches the requested user ID.
-     */
-    function isOwner(userId) {
-        return request.auth.uid == userId;
-    }
-
-    /**
-     * @description Teams collection: stores team/department information.
+     * @description Allows access to teams collection for authenticated users.
      * @path /teams/{teamId}
-     * @allow (create) User with valid auth can create a team.
-     * @deny (create) User without valid auth cannot create a team.
-     * @principle Allows any logged in user to create a team.
+     * @allow (get) User is authenticated.
+     * @deny (create) User is not authenticated.
+     * @principle Allows authenticated users to read and write to the teams collection.
      */
     match /teams/{teamId} {
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update, delete: if false;
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Users collection: stores user profiles.
+     * @description Allows access to users collection for authenticated users.
      * @path /users/{userId}
-     * @allow (create) User can create their own profile (UID must match).
-     * @deny (create) User cannot create another user's profile (UID mismatch).
-     * @principle Enforces user-ownership for profile creation.
+     * @allow (get) User is authenticated.
+     * @deny (create) User is not authenticated.
+     * @principle Allows authenticated users to read and write to the users collection.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && request.resource.data.uid == resource.data.uid;
-      allow delete: if isOwner(userId);
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Locations collection: stores facility location information.
+     * @description Allows access to locations collection for authenticated users.
      * @path /locations/{locationId}
-     * @allow (get) Any user can view a location.
-     * @deny (create) No writes allowed.
-     * @principle Allows public read access to locations.
+     * @allow (get) User is authenticated.
+     * @deny (create) User is not authenticated.
+     * @principle Allows authenticated users to read and write to the locations collection.
      */
     match /locations/{locationId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Tasks collection: stores tasks for a specific team.
+     * @description Allows access to tasks collection for authenticated users.
      * @path /teams/{teamId}/tasks/{taskId}
-     * @allow (create) Any signed-in user can create a task.
-     * @deny (delete) No deletes allowed.
+     * @allow (get) User is authenticated.
+     * @deny (create) User is not authenticated.
+     * @principle Allows authenticated users to read and write to the tasks collection.
      */
     match /teams/{teamId}/tasks/{taskId} {
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update, delete: if false;
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description RecurringTasks collection: stores recurring tasks for a specific team.
+     * @description Allows access to recurringTasks collection for authenticated users.
      * @path /teams/{teamId}/recurringTasks/{recurringTaskId}
-     * @allow (create) Any signed-in user can create a recurring task.
-     * @deny (delete) No deletes allowed.
+     * @allow (get) User is authenticated.
+     * @deny (create) User is not authenticated.
+     * @principle Allows authenticated users to read and write to the recurringTasks collection.
      */
     match /teams/{teamId}/recurringTasks/{recurringTaskId} {
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update, delete: if false;
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Categories collection: stores task categories for a specific team.
+     * @description Allows access to categories collection for authenticated users.
      * @path /teams/{teamId}/categories/{categoryId}
-     * @allow (create) Any signed-in user can create a category.
-     * @deny (delete) No deletes allowed.
+     * @allow (get) User is authenticated.
+     * @deny (create) User is not authenticated.
+     * @principle Allows authenticated users to read and write to the categories collection.
      */
     match /teams/{teamId}/categories/{categoryId} {
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update, delete: if false;
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Settings document: stores team-specific settings in a single document.
+     * @description Allows access to appSettings document for authenticated users.
      * @path /teams/{teamId}/settings/appSettings
-     * @allow (create) Any signed-in user can create settings.
-     * @deny (delete) No deletes allowed.
+     * @allow (get) User is authenticated.
+     * @deny (create) User is not authenticated.
+     * @principle Allows authenticated users to read and write to the appSettings document.
      */
     match /teams/{teamId}/settings/appSettings {
-      allow get: if true;
-      allow list: if false;
-      allow create: if isSignedIn();
-      allow update, delete: if false;
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
+    }
+
+    function isSignedIn() {
+        return request.auth != null;
     }
   }
 }
