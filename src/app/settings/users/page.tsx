@@ -112,7 +112,7 @@ export default function UsersPage() {
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
+        <CardHeader className="space-y-2">
           <CardTitle>User Management</CardTitle>
           <CardDescription>
             View users and manage their roles and permissions.
@@ -128,7 +128,7 @@ export default function UsersPage() {
   return (
     <>
       <Card>
-        <CardHeader>
+        <CardHeader className="space-y-2">
           <CardTitle>User Management</CardTitle>
           <CardDescription>
             View users and manage their roles and permissions.

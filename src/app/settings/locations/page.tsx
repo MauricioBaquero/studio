@@ -100,7 +100,7 @@ export default function LocationsPage() {
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
+        <CardHeader className="space-y-2">
           <CardTitle>Location Management</CardTitle>
           <CardDescription>
             Add, edit, or remove facility locations.
@@ -117,7 +117,7 @@ export default function LocationsPage() {
     <>
       <Card>
         <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
+          <div className="space-y-2">
             <CardTitle>Location Management</CardTitle>
             <CardDescription>
               Add, edit, or remove facility locations.

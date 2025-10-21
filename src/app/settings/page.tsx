@@ -66,7 +66,7 @@ export default function GeneralSettingsPage() {
   return (
     <Card>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <CardHeader>
+        <CardHeader className="space-y-2">
           <CardTitle>General Settings</CardTitle>
           <CardDescription>
             Adjust general settings for the application.

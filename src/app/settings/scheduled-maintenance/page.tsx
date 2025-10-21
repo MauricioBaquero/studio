@@ -161,7 +161,7 @@ export default function ScheduledMaintenancePage() {
     <>
       <Card>
         <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
+          <div className="space-y-2">
             <CardTitle>Scheduled Maintenance</CardTitle>
             <CardDescription>
               Add, edit, or remove recurring tasks.

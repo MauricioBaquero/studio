@@ -93,7 +93,7 @@ export default function CategoriesPage() {
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
+        <CardHeader className="space-y-2">
           <CardTitle>Category Management</CardTitle>
           <CardDescription>
             Add, edit, or remove task categories and subcategories.
@@ -110,7 +110,7 @@ export default function CategoriesPage() {
     <>
       <Card>
         <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
+          <div className="space-y-2">
             <CardTitle>Category Management</CardTitle>
             <CardDescription>
               Add, edit, or remove task categories and subcategories.
