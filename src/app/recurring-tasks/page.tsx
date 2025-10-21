@@ -44,25 +44,26 @@ type CompletedTask = {
 export default function RecurringTasksPage() {
   const firestore = useFirestore();
   const { user: currentUser } = useUser();
+  const teamId = currentUser?.teamId;
   const [allTasks, setAllTasks] = useState<RecurringTask[]>([]);
   const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>([]);
 
   const settingsRef = useMemoFirebase(
-    () => (firestore ? doc(firestore, 'settings', 'appSettings') : null),
-    [firestore]
+    () => (firestore && teamId ? doc(firestore, `teams/${teamId}/settings`, 'appSettings') : null),
+    [firestore, teamId]
   );
   const { data: settings } = useDoc<AppSettings>(settingsRef);
 
   const recurringTasksQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'recurringTasks')) : null),
-    [firestore]
+    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/recurringTasks`)) : null),
+    [firestore, teamId]
   );
   const { data: recurringTasks, isLoading: isLoadingRecurringTasks } =
     useCollection<RecurringTask>(recurringTasksQuery);
 
   const categoriesQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'categories')) : null),
-    [firestore]
+    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/categories`)) : null),
+    [firestore, teamId]
   );
   const { data: categories, isLoading: isLoadingCategories } =
     useCollection<Category>(categoriesQuery);
@@ -75,8 +76,8 @@ export default function RecurringTasksPage() {
     useCollection<User>(usersQuery);
 
   const locationsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'locations')) : null),
-    [firestore]
+    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/locations`)) : null),
+    [firestore, teamId]
   );
   const { data: locations, isLoading: isLoadingLocations } =
     useCollection<Location>(locationsQuery);
@@ -151,13 +152,13 @@ export default function RecurringTasksPage() {
 
 
   const handleTaskCheck = (task: RecurringTask) => {
-    if (!firestore || !currentUser || !users) return;
+    if (!firestore || !currentUser || !users || !teamId) return;
 
     const now = new Date();
     const user = users.find(u => u.uid === currentUser.uid);
 
     if (user) {
-        const recurringTaskRef = doc(firestore, 'recurringTasks', task.id);
+        const recurringTaskRef = doc(firestore, `teams/${teamId}/recurringTasks`, task.id);
         
         updateDocumentNonBlocking(recurringTaskRef, {
             lastCompleted: arrayUnion(now),

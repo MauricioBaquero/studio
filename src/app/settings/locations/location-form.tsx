@@ -28,6 +28,7 @@ import {
   useFirestore,
   addDocumentNonBlocking,
   updateDocumentNonBlocking,
+  useUser,
 } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { z } from 'zod';
@@ -60,6 +61,8 @@ export function LocationForm({
 }: LocationFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const { user: currentUser } = useUser();
+  const teamId = currentUser?.teamId;
   const isEditMode = !!location;
 
   const form = useForm<LocationFormValues>({
@@ -85,13 +88,13 @@ export function LocationForm({
   }, [location, form]);
 
   const onSubmit = (data: LocationFormValues) => {
-    if (!firestore) return;
+    if (!firestore || !teamId) return;
 
     if (isEditMode && location) {
-      const locationRef = doc(firestore, 'locations', location.id);
+      const locationRef = doc(firestore, `teams/${teamId}/locations`, location.id);
       updateDocumentNonBlocking(locationRef, data);
     } else {
-      const locationsCollection = collection(firestore, 'locations');
+      const locationsCollection = collection(firestore, `teams/${teamId}/locations`);
       addDocumentNonBlocking(locationsCollection, data);
     }
 

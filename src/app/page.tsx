@@ -15,6 +15,8 @@ import { collection, query, Timestamp } from 'firebase/firestore';
 export default function TaskBoardPage() {
   const firestore = useFirestore();
   const { user: currentUser } = useUser();
+  const teamId = currentUser?.teamId;
+
   const [filters, setFilters] = useState<FilterValues>({
     assignee: 'all',
     location: 'all',
@@ -23,24 +25,25 @@ export default function TaskBoardPage() {
   });
 
   const ticketsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'tasks'));
-  }, [firestore]);
+    if (!firestore || !teamId) return null;
+    return query(collection(firestore, `teams/${teamId}/tasks`));
+  }, [firestore, teamId]);
 
   const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
+    // Querying the root users collection for filtering purposes
     return query(collection(firestore, 'users'));
   }, [firestore]);
-
+  
   const categoriesQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'categories'));
-  }, [firestore]);
+    if (!firestore || !teamId) return null;
+    return query(collection(firestore, `teams/${teamId}/categories`));
+  }, [firestore, teamId]);
 
   const locationsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'locations'));
-  }, [firestore]);
+    if (!firestore || !teamId) return null;
+    return query(collection(firestore, `teams/${teamId}/locations`));
+  }, [firestore, teamId]);
   
   const { data: tickets, isLoading: isLoadingTickets } = useCollection<Ticket>(ticketsQuery);
   const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
@@ -94,9 +97,9 @@ export default function TaskBoardPage() {
   const isLoading = isLoadingTickets || isLoadingUsers || isLoadingCategories || isLoadingLocations;
 
   const assignableUsers = useMemo(() => {
-    if (!users) return [];
-    return users.filter(u => u.role === 'Admin' || u.role === 'Staff');
-  }, [users]);
+    if (!users || !teamId) return [];
+    return users.filter(u => u.teamId === teamId && (u.role === 'Admin' || u.role === 'Staff'));
+  }, [users, teamId]);
 
   return (
     <div className="flex flex-col h-full gap-6">

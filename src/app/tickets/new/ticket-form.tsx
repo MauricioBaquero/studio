@@ -31,7 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, setDocumentNonBlocking, useStorage } from "@/firebase";
+import { useFirestore, setDocumentNonBlocking, useStorage, useUser } from "@/firebase";
 import { doc, serverTimestamp, arrayUnion } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
@@ -63,6 +63,8 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
   const { toast } = useToast();
   const router = useRouter();
   const firestore = useFirestore();
+  const { user } = useUser();
+  const teamId = user?.teamId;
   const storage = useStorage();
   const [selectedParent, setSelectedParent] = useState<string | null>(null);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
@@ -124,10 +126,10 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore || !storage) {
+    if (!firestore || !storage || !teamId) {
         toast({
             title: "Error",
-            description: "Database or storage connection not found.",
+            description: "Database or storage connection not found, or you are not assigned to a team.",
             variant: "destructive"
         });
         return;
@@ -195,7 +197,7 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
             photos: uploadedPhotos,
         };
 
-        const ticketRef = doc(firestore, "tasks", ticketId);
+        const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticketId);
         setDocumentNonBlocking(ticketRef, ticketData, { merge: false });
         
         toast({

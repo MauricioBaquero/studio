@@ -7,6 +7,7 @@ import {
   useFirestore,
   useMemoFirebase,
   deleteDocumentNonBlocking,
+  useUser,
 } from '@/firebase';
 import { collection, query, doc } from 'firebase/firestore';
 import {
@@ -65,6 +66,8 @@ const WEEK_OF_MONTH = ['', 'First', 'Second', 'Third', 'Fourth'];
 
 export default function ScheduledMaintenancePage() {
   const firestore = useFirestore();
+  const { user: currentUser } = useUser();
+  const teamId = currentUser?.teamId;
   const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<RecurringTask | null>(null);
@@ -72,22 +75,22 @@ export default function ScheduledMaintenancePage() {
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
 
   const tasksQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'recurringTasks')) : null),
-    [firestore]
+    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/recurringTasks`)) : null),
+    [firestore, teamId]
   );
   const { data: tasks, isLoading: isLoadingTasks } =
     useCollection<RecurringTask>(tasksQuery);
 
   const categoriesQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'categories')) : null),
-    [firestore]
+    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/categories`)) : null),
+    [firestore, teamId]
   );
   const { data: categories, isLoading: isLoadingCategories } =
     useCollection<Category>(categoriesQuery);
 
   const locationsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'locations')) : null),
-    [firestore]
+    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/locations`)) : null),
+    [firestore, teamId]
   );
   const { data: locations, isLoading: isLoadingLocations } =
     useCollection<Location>(locationsQuery);
@@ -126,8 +129,8 @@ export default function ScheduledMaintenancePage() {
   };
 
   const handleDelete = () => {
-    if (!firestore || !deletingTaskId) return;
-    const taskRef = doc(firestore, 'recurringTasks', deletingTaskId);
+    if (!firestore || !deletingTaskId || !teamId) return;
+    const taskRef = doc(firestore, `teams/${teamId}/recurringTasks`, deletingTaskId);
     deleteDocumentNonBlocking(taskRef);
     toast({
       title: 'Task Deleted',

@@ -7,6 +7,7 @@ import {
   useFirestore,
   useMemoFirebase,
   deleteDocumentNonBlocking,
+  useUser,
 } from '@/firebase';
 import { collection, query, doc } from 'firebase/firestore';
 import { Category } from '@/lib/data';
@@ -41,6 +42,8 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function CategoriesPage() {
   const firestore = useFirestore();
+  const { user: currentUser } = useUser();
+  const teamId = currentUser?.teamId;
   const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -50,8 +53,8 @@ export default function CategoriesPage() {
   );
 
   const categoriesQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'categories')) : null),
-    [firestore]
+    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/categories`)) : null),
+    [firestore, teamId]
   );
   const { data: categories, isLoading } = useCollection<Category>(categoriesQuery);
 
@@ -76,8 +79,8 @@ export default function CategoriesPage() {
   };
 
   const handleDelete = () => {
-    if (!firestore || !deletingCategoryId) return;
-    const categoryRef = doc(firestore, 'categories', deletingCategoryId);
+    if (!firestore || !deletingCategoryId || !teamId) return;
+    const categoryRef = doc(firestore, `teams/${teamId}/categories`, deletingCategoryId);
     deleteDocumentNonBlocking(categoryRef);
     toast({
       title: 'Category Deleted',

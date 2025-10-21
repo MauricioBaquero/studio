@@ -6,44 +6,46 @@ import { TaskStatusChart } from '@/components/task-status-chart';
 import { TaskTypeChart } from '@/components/task-type-chart';
 import { TasksByAssigneeChart } from '@/components/tasks-by-assignee-chart';
 import { OpenTasksByLocationChart } from '@/components/open-tasks-by-location-chart';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import { RecurringTasksSummaryChart } from '@/components/recurring-tasks-summary-chart';
 
 export default function DashboardPage() {
   const firestore = useFirestore();
+  const { user } = useUser();
+  const teamId = user?.teamId;
 
   const ticketsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'tasks'));
-  }, [firestore]);
+    if (!firestore || !teamId) return null;
+    return query(collection(firestore, `teams/${teamId}/tasks`));
+  }, [firestore, teamId]);
   const { data: tickets, isLoading: isLoadingTickets } =
     useCollection<Ticket>(ticketsQuery);
 
   const usersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'users'));
-  }, [firestore]);
+    if (!firestore || !teamId) return null;
+    return query(collection(firestore, `teams/${teamId}/users`));
+  }, [firestore, teamId]);
   const { data: users, isLoading: isLoadingUsers } =
     useCollection<User>(usersQuery);
 
   const categoriesQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'categories'));
-  }, [firestore]);
+    if (!firestore || !teamId) return null;
+    return query(collection(firestore, `teams/${teamId}/categories`));
+  }, [firestore, teamId]);
   const { data: categories, isLoading: isLoadingCategories } =
     useCollection<Category>(categoriesQuery);
 
   const recurringTasksQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'recurringTasks')) : null),
-    [firestore]
+    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/recurringTasks`)) : null),
+    [firestore, teamId]
   );
   const { data: recurringTasks, isLoading: isLoadingRecurringTasks } =
     useCollection<RecurringTask>(recurringTasksQuery);
   
   const locationsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'locations')) : null),
-    [firestore]
+    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/locations`)) : null),
+    [firestore, teamId]
     );
   const { data: locations, isLoading: isLoadingLocations } =
     useCollection<Location>(locationsQuery);

@@ -50,6 +50,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user: currentUser } = useUser();
+  const teamId = currentUser?.teamId;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [claimSaying, setClaimSaying] = useState('');
 
@@ -80,8 +81,8 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
   const isAssignedToCurrentUser = currentUser && (ticket.assignedToIds || []).includes(currentUser.uid);
 
   const handleClaimTask = () => {
-    if (!firestore || !currentUser) return;
-    const ticketRef = doc(firestore, 'tasks', ticket.id);
+    if (!firestore || !currentUser || !teamId) return;
+    const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticket.id);
     const updatedTicketData = { 
         assignedToIds: [currentUser.uid],
         status: 'In Progress' as const
@@ -94,8 +95,8 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
   };
 
   const handleReadyForReview = () => {
-    if (!firestore) return;
-    const ticketRef = doc(firestore, 'tasks', ticket.id);
+    if (!firestore || !teamId) return;
+    const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticket.id);
     const updatedTicketData = {
       status: 'Pending Review' as const,
       submitToReviewDate: new Date(),

@@ -20,6 +20,7 @@ import {
   useDoc,
   useMemoFirebase,
   updateDocumentNonBlocking,
+  useUser,
 } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -27,11 +28,13 @@ import { AppSettings, settingsSchema } from '@/lib/data';
 
 export default function GeneralSettingsPage() {
   const firestore = useFirestore();
+  const { user: currentUser } = useUser();
+  const teamId = currentUser?.teamId;
   const { toast } = useToast();
 
   const settingsRef = useMemoFirebase(
-    () => (firestore ? doc(firestore, 'settings', 'appSettings') : null),
-    [firestore]
+    () => (firestore && teamId ? doc(firestore, `teams/${teamId}/settings`, 'appSettings') : null),
+    [firestore, teamId]
   );
   const { data: settings, isLoading } = useDoc<AppSettings>(settingsRef);
 

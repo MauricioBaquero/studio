@@ -2,30 +2,32 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useCollection, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, doc } from 'firebase/firestore';
 import type { Category, Location, AppSettings } from '@/lib/data';
 import { TicketForm } from './ticket-form';
 
 export default function NewTicketPage() {
   const firestore = useFirestore();
+  const { user } = useUser();
+  const teamId = user?.teamId;
 
   const settingsRef = useMemoFirebase(
-    () => (firestore ? doc(firestore, 'settings', 'appSettings') : null),
-    [firestore]
+    () => (firestore && teamId ? doc(firestore, `teams/${teamId}/settings`, 'appSettings') : null),
+    [firestore, teamId]
   );
   const { data: settings, isLoading: isLoadingSettings } = useDoc<AppSettings>(settingsRef);
 
   const categoriesQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'categories')) : null),
-    [firestore]
+    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/categories`)) : null),
+    [firestore, teamId]
   );
   const { data: categories, isLoading: isLoadingCategories } =
     useCollection<Category>(categoriesQuery);
 
   const locationsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'locations')) : null),
-    [firestore]
+    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/locations`)) : null),
+    [firestore, teamId]
   );
   const { data: locations, isLoading: isLoadingLocations } =
     useCollection<Location>(locationsQuery);

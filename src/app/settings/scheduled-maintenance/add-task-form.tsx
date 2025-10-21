@@ -42,6 +42,7 @@ import {
   useFirestore,
   addDocumentNonBlocking,
   updateDocumentNonBlocking,
+  useUser,
 } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 
@@ -74,6 +75,8 @@ export function AddTaskForm({
 }: AddTaskFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const { user: currentUser } = useUser();
+  const teamId = currentUser?.teamId;
   const isEditMode = !!editingTask;
 
   const getParentCategoryId = (subcategoryId: string) => {
@@ -138,7 +141,7 @@ export function AddTaskForm({
   }, [selectedParent, parentCategories]);
 
   const onSubmit = (data: RecurringTaskFormValues) => {
-    if (!firestore) return;
+    if (!firestore || !teamId) return;
 
     const taskData: any = {
       title: data.title,
@@ -160,10 +163,10 @@ export function AddTaskForm({
     }
 
     if (isEditMode && editingTask) {
-      const taskRef = doc(firestore, 'recurringTasks', editingTask.id);
+      const taskRef = doc(firestore, `teams/${teamId}/recurringTasks`, editingTask.id);
       updateDocumentNonBlocking(taskRef, taskData);
     } else {
-      const recurringTasksCollection = collection(firestore, 'recurringTasks');
+      const recurringTasksCollection = collection(firestore, `teams/${teamId}/recurringTasks`);
       addDocumentNonBlocking(recurringTasksCollection, taskData);
     }
 

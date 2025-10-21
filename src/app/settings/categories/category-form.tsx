@@ -37,6 +37,7 @@ import {
   useFirestore,
   addDocumentNonBlocking,
   updateDocumentNonBlocking,
+  useUser,
 } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { z } from 'zod';
@@ -69,6 +70,8 @@ export function CategoryForm({
 }: CategoryFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const { user: currentUser } = useUser();
+  const teamId = currentUser?.teamId;
   const isEditMode = !!category;
 
   const form = useForm<CategoryFormValues>({
@@ -102,13 +105,13 @@ export function CategoryForm({
   }, [category, form]);
 
   const onSubmit = (data: CategoryFormValues) => {
-    if (!firestore) return;
+    if (!firestore || !teamId) return;
 
     if (isEditMode && category) {
-      const categoryRef = doc(firestore, 'categories', category.id);
+      const categoryRef = doc(firestore, `teams/${teamId}/categories`, category.id);
       updateDocumentNonBlocking(categoryRef, data);
     } else {
-      const categoriesCollection = collection(firestore, 'categories');
+      const categoriesCollection = collection(firestore, `teams/${teamId}/categories`);
       addDocumentNonBlocking(categoriesCollection, data);
     }
 

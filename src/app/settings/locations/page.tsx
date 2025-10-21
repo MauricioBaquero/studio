@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -6,6 +7,7 @@ import {
   useFirestore,
   useMemoFirebase,
   deleteDocumentNonBlocking,
+  useUser,
 } from '@/firebase';
 import { collection, query, doc } from 'firebase/firestore';
 import { Location } from '@/lib/data';
@@ -47,6 +49,8 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function LocationsPage() {
   const firestore = useFirestore();
+  const { user: currentUser } = useUser();
+  const teamId = currentUser?.teamId;
   const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
@@ -56,8 +60,8 @@ export default function LocationsPage() {
   );
 
   const locationsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'locations')) : null),
-    [firestore]
+    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/locations`)) : null),
+    [firestore, teamId]
   );
   const { data: locations, isLoading } = useCollection<Location>(locationsQuery);
 
@@ -77,8 +81,8 @@ export default function LocationsPage() {
   };
 
   const handleDelete = () => {
-    if (!firestore || !deletingLocationId) return;
-    const locationRef = doc(firestore, 'locations', deletingLocationId);
+    if (!firestore || !deletingLocationId || !teamId) return;
+    const locationRef = doc(firestore, `teams/${teamId}/locations`, deletingLocationId);
     deleteDocumentNonBlocking(locationRef);
     toast({
       title: 'Location Deleted',

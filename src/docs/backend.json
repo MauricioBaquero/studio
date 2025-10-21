@@ -2,6 +2,26 @@
 
 {
   "entities": {
+    "Team": {
+      "title": "Team",
+      "type": "object",
+      "description": "Represents a team, division, or department within the organization.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Team."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the team (e.g., 'Parking Facilities')."
+        },
+        "department": {
+          "type": "string",
+          "description": "The name of the parent department (e.g., 'Transportation and Mobility')."
+        }
+      },
+      "required": ["id", "name", "department"]
+    },
     "User": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
@@ -24,21 +44,26 @@
         "role": {
           "type": "string",
           "enum": ["Admin", "Staff", "Viewer"],
-          "description": "The role of the user."
+          "description": "The role of the user within their assigned team."
+        },
+        "teamId": {
+          "type": "string",
+          "description": "The ID of the team the user belongs to."
         }
       },
       "required": [
         "uid",
         "name",
         "email",
-        "role"
+        "role",
+        "teamId"
       ]
     },
     "Task": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Task",
       "type": "object",
-      "description": "Represents a maintenance or facility task.",
+      "description": "Represents a maintenance or facility task for a specific team.",
       "properties": {
         "id": {
           "type": "string",
@@ -46,7 +71,7 @@
         },
         "categoryId": {
           "type": "string",
-          "description": "Reference to Category."
+          "description": "Reference to a Category within the team."
         },
         "description": {
           "type": "string",
@@ -54,7 +79,7 @@
         },
         "locationId": {
           "type": "string",
-          "description": "Reference to Location."
+          "description": "Reference to a Location within the team."
         },
         "requestedCompletionDate": {
           "type": "string",
@@ -64,12 +89,12 @@
         "submitToReviewDate": {
           "type": "string",
           "format": "date",
-          "description": "The date the task was submitted for review."
+          "description": "The date the task was submitted for review (staff completion date)."
         },
         "actualCompletionDate": {
           "type": "string",
           "format": "date",
-          "description": "The date the task was actually completed."
+          "description": "The date the task was approved and officially completed."
         },
         "status": {
           "type": "string",
@@ -97,6 +122,10 @@
             },
             "required": ["url", "path", "createdAt"]
           }
+        },
+        "approvedBy": {
+          "type": "string",
+          "description": "The UID of the user who approved the task completion."
         }
       },
       "required": [
@@ -112,7 +141,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "RecurringTask",
       "type": "object",
-      "description": "Represents a recurring task schedule.",
+      "description": "Represents a recurring task schedule for a team.",
       "properties": {
         "title": {
           "type": "string",
@@ -120,11 +149,11 @@
         },
         "categoryId": {
           "type": "string",
-          "description": "Reference to Category."
+          "description": "Reference to a Category."
         },
         "locationId": {
           "type": "string",
-          "description": "Reference to Location."
+          "description": "Reference to a Location."
         },
         "frequency": {
           "type": "string",
@@ -163,7 +192,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Location",
       "type": "object",
-      "description": "Represents a facility location.",
+      "description": "Represents a facility location for a team.",
       "properties": {
         "locationName": {
           "type": "string",
@@ -182,7 +211,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Category",
       "type": "object",
-      "description": "Represents a task category, which contains sub-categories.",
+      "description": "Represents a task category for a team, which contains sub-categories.",
       "properties": {
         "id": {
           "type": "string",
@@ -218,7 +247,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Setting",
       "type": "object",
-      "description": "Represents a system setting.",
+      "description": "Represents system settings for a team.",
       "properties": {
         "completionDateRange": {
           "type": "number",
@@ -238,66 +267,75 @@
   "firestore": {
     "structure": [
       {
+        "path": "/teams/{teamId}",
+        "definition": {
+          "entityName": "Team",
+          "schema": {
+            "$ref": "#/backend/entities/Team"
+          },
+          "description": "Stores all teams/departments."
+        }
+      },
+      {
         "path": "/users/{userId}",
         "definition": {
           "entityName": "User",
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Stores user profiles."
+          "description": "Stores user profiles, independent of teams."
         }
       },
       {
-        "path": "/tasks/{taskId}",
+        "path": "/teams/{teamId}/tasks/{taskId}",
         "definition": {
           "entityName": "Task",
           "schema": {
             "$ref": "#/backend/entities/Task"
           },
-          "description": "Stores all tasks for the facility."
+          "description": "Stores all tasks for a specific team."
         }
       },
       {
-        "path": "/recurringTasks/{recurringTaskId}",
+        "path": "/teams/{teamId}/recurringTasks/{recurringTaskId}",
         "definition": {
           "entityName": "RecurringTask",
           "schema": {
             "$ref": "#/backend/entities/RecurringTask"
           },
-          "description": "Stores all recurring tasks."
+          "description": "Stores all recurring tasks for a specific team."
         }
       },
       {
-        "path": "/locations/{locationId}",
+        "path": "/teams/{teamId}/locations/{locationId}",
         "definition": {
           "entityName": "Location",
           "schema": {
             "$ref": "#/backend/entities/Location"
           },
-          "description": "Stores all facility locations."
+          "description": "Stores all facility locations for a specific team."
         }
       },
       {
-        "path": "/categories/{categoryId}",
+        "path": "/teams/{teamId}/categories/{categoryId}",
         "definition": {
           "entityName": "Category",
           "schema": {
             "$ref": "#/backend/entities/Category"
           },
-          "description": "Stores all task categories and sub-categories."
+          "description": "Stores all task categories for a specific team."
         }
       },
       {
-        "path": "/settings/appSettings",
+        "path": "/teams/{teamId}/settings/appSettings",
         "definition": {
           "entityName": "Setting",
           "schema": {
             "$ref": "#/backend/entities/Setting"
           },
-          "description": "Stores system-wide settings in a single document."
+          "description": "Stores team-specific settings in a single document."
         }
       }
     ]
   }
 }
-

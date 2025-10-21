@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -74,6 +73,7 @@ export function TicketDetailsDialog({
   const firestore = useFirestore();
   const storage = useStorage();
   const { user: currentUser } = useUser();
+  const teamId = currentUser?.teamId;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isSaving, setIsSaving] = useState(false);
@@ -114,12 +114,12 @@ export function TicketDetailsDialog({
   
 
   const handleUpdate = async (newStatus?: TicketStatus) => {
-    if (!firestore || !currentUser || !storage) return;
+    if (!firestore || !currentUser || !storage || !teamId) return;
     setIsSaving(true);
     
     try {
       const finalStatus = newStatus || currentStatus;
-      const ticketRef = doc(firestore, 'tasks', ticket.id);
+      const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticket.id);
 
       // 1. Upload new photos
       const newPhotoUploads = newPhotoFiles.map(async file => {
@@ -167,7 +167,7 @@ export function TicketDetailsDialog({
 
   const handleDeletePhoto = async (photo: Photo, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!firestore || !storage) return;
+    if (!firestore || !storage || !teamId) return;
     
     toast({ title: "Deleting Photo...", description: "Please wait." });
     
@@ -177,7 +177,7 @@ export function TicketDetailsDialog({
         await deleteObject(photoRef);
         
         // Remove from Firestore
-        const ticketRef = doc(firestore, 'tasks', ticket.id);
+        const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticket.id);
         await updateDoc(ticketRef, {
             photos: arrayRemove(photo)
         });
@@ -193,14 +193,14 @@ export function TicketDetailsDialog({
   };
 
   const handleDelete = async () => {
-    if (!firestore) return;
+    if (!firestore || !teamId) return;
     try {
       if (ticket.photos && ticket.photos.length > 0) {
         // Delete all photos from storage first
         const deletePromises = ticket.photos.map(p => deleteObject(ref(storage, p.path)));
         await Promise.all(deletePromises);
       }
-      const ticketRef = doc(firestore, 'tasks', ticket.id);
+      const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticket.id);
       deleteDocumentNonBlocking(ticketRef);
       toast({ title: "Ticket Deleted", description: `Ticket ${ticket.id} has been permanently deleted.` });
       onOpenChange(false);
