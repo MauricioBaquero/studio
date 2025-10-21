@@ -2,14 +2,11 @@
 'use client';
 
 import {
-  useCollection,
   useDoc,
-  useFirestore,
-  useMemoFirebase,
   useUser,
   updateDocumentNonBlocking,
 } from '@/firebase';
-import { collection, query, doc, where, getDocs, getDoc } from 'firebase/firestore';
+import { collection, query, doc, where, getDocs, getDoc, Firestore, onSnapshot } from 'firebase/firestore';
 import { Team, User } from '@/lib/data';
 import { ChevronsUpDown, Check } from 'lucide-react';
 import {
@@ -29,49 +26,69 @@ import {
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { useSidebar } from './ui/sidebar';
+import { useFirebase } from '@/firebase/provider';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+
 
 export function TeamSwitcher() {
   const { user: currentUser, isUserLoading } = useUser();
-  const firestore = useFirestore();
+  const { firestore } = useFirebase();
   const { state } = useSidebar();
   const [open, setOpen] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchTeams = async () => {
-      if (!firestore || !currentUser) {
-        setTeams([]);
-        setIsLoading(false);
-        return;
-      }
-      
-      setIsLoading(true);
-      try {
-        let userTeams: Team[] = [];
-        if (currentUser.role === 'Admin') {
-          // Admins get all teams
-          const teamsQuery = query(collection(firestore, 'teams'));
-          const querySnapshot = await getDocs(teamsQuery);
-          userTeams = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Team));
-        } else if (currentUser.teamIds && currentUser.teamIds.length > 0) {
-          // Non-admins get their assigned teams
+    if (!firestore || !currentUser) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    let unsubscribe = () => {};
+
+    if (currentUser.role === 'Admin') {
+      const teamsQuery = query(collection(firestore, 'teams'));
+      unsubscribe = onSnapshot(
+        teamsQuery,
+        (snapshot) => {
+          const userTeams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Team));
+          setTeams(userTeams);
+          setIsLoading(false);
+        },
+        (err) => {
+          console.error("Error fetching all teams for admin:", err);
+          const contextualError = new FirestorePermissionError({
+              path: 'teams',
+              operation: 'list',
+          });
+          errorEmitter.emit('permission-error', contextualError);
+          setIsLoading(false);
+        }
+      );
+    } else if (currentUser.teamIds && currentUser.teamIds.length > 0) {
+      const fetchTeams = async () => {
+        try {
           const teamRefs = currentUser.teamIds.map(id => doc(firestore, 'teams', id));
           const teamDocs = await Promise.all(teamRefs.map(ref => getDoc(ref)));
-          userTeams = teamDocs.filter(doc => doc.exists()).map(doc => ({ id: doc.id, ...doc.data() } as Team));
+          const userTeams = teamDocs.filter(doc => doc.exists()).map(doc => ({ id: doc.id, ...doc.data() } as Team));
+          setTeams(userTeams);
+        } catch (error) {
+          console.error("Error fetching user's teams:", error);
+          // Non-snapshot errors can be console logged for now.
+        } finally {
+          setIsLoading(false);
         }
-        setTeams(userTeams);
-      } catch (error) {
-        console.error("Error fetching user's teams:", error);
+      };
+      fetchTeams();
+    } else {
+        setIsLoading(false);
         setTeams([]);
-      }
-      setIsLoading(false);
-    };
-
-    if (!isUserLoading) {
-        fetchTeams();
     }
-  }, [firestore, currentUser, isUserLoading]);
+
+    return () => unsubscribe();
+  }, [firestore, currentUser]);
 
 
   const handleTeamChange = (teamId: string) => {
@@ -81,7 +98,7 @@ export function TeamSwitcher() {
     setOpen(false);
   };
 
-  if (isLoading || !currentUser || teams.length <= 1) {
+  if (isLoading || isUserLoading || !currentUser || teams.length <= 1) {
     return null;
   }
 
@@ -139,5 +156,3 @@ export function TeamSwitcher() {
     </Popover>
   );
 }
-
-    
