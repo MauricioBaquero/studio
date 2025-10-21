@@ -133,6 +133,10 @@
             "items": {
                 "type": "string"
             }
+        },
+        "unableToComplete": {
+            "type": "boolean",
+            "description": "Indicates if the task was marked as unable to be completed."
         }
       },
       "required": [
@@ -361,3 +365,4 @@
   }
 }
     
+

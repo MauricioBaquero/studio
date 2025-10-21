@@ -19,7 +19,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Calendar, CheckCircle, MapPin, Tag, Camera, AlertTriangle, Users } from 'lucide-react';
+import { Calendar, CheckCircle, MapPin, Tag, Camera, AlertTriangle, Users, XCircle } from 'lucide-react';
 import { format, isPast, startOfDay } from 'date-fns';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -107,6 +107,22 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
       description: `"${ticket.title}" is now pending review.`,
     });
   };
+  
+  const handleUnableToComplete = () => {
+    if (!firestore || !teamId || teamId === 'allTeams') return;
+    const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticket.id);
+    const updatedTicketData = {
+      status: 'Completed' as const,
+      unableToComplete: true,
+      actualCompletionDate: new Date(),
+    };
+    updateDocumentNonBlocking(ticketRef, updatedTicketData);
+    toast({
+      title: 'Task Marked as Unable to Complete',
+      description: `"${ticket.title}" has been moved to completed.`,
+      variant: 'destructive',
+    });
+  };
 
   const canInteract = isAdminOrCoordinator || isViewer || (isStaff && (isAssignedToCurrentUser || !ticket.assignedToIds || ticket.assignedToIds.length === 0));
   
@@ -141,7 +157,9 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
               </Badge>
             )}
             {ticket.status === 'Completed' && (
-                <CheckCircle className="h-5 w-5 text-green-500" />
+                ticket.unableToComplete 
+                    ? <XCircle className="h-5 w-5 text-red-500" />
+                    : <CheckCircle className="h-5 w-5 text-green-500" />
             )}
         </div>
         <CardHeader>
@@ -201,7 +219,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
               )}
               {ticket.status === 'Completed' && (
                 <div className="text-xs text-muted-foreground text-right">
-                  {approver && (
+                  {approver && !ticket.unableToComplete && (
                     <div>Approved by {approver.name}</div>
                   )}
                   {ticket.actualCompletionDate && (
@@ -216,9 +234,14 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
               )}
 
               {ticket.status === 'In Progress' && canMarkForReview && (
-                  <Button variant="success" size="sm" onClick={handleReadyForReview}>
-                    Ready for Review
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="destructive" size="sm" onClick={handleUnableToComplete}>
+                      Unable to Complete
+                    </Button>
+                    <Button variant="success" size="sm" onClick={handleReadyForReview}>
+                      Ready for Review
+                    </Button>
+                  </div>
               )}
             </div>
         </CardFooter>

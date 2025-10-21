@@ -150,7 +150,13 @@ export function TicketDetailsDialog({
       if (finalStatus === 'Completed' && ticket.status !== 'Completed') {
         dataForDb.approvedBy = currentUser.uid;
         dataForDb.actualCompletionDate = new Date();
+        dataForDb.unableToComplete = false;
       }
+      
+      if (finalStatus !== 'Completed') {
+        dataForDb.unableToComplete = false;
+      }
+
 
       // 3. Update Firestore
       await updateDoc(ticketRef, dataForDb);
@@ -394,6 +400,9 @@ export function TicketDetailsDialog({
                           ))}
                       </SelectContent>
                   </Select>
+                  {ticket.unableToComplete && currentStatus === 'Completed' && (
+                    <Badge variant="destructive" className="mt-2">Unable to Complete</Badge>
+                  )}
               </div>
             </div>
           </div>

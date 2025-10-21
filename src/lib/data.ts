@@ -81,6 +81,7 @@ export const ticketSchema = z.object({
   submitToReviewDate: timestampSchema.optional().nullable(),
   actualCompletionDate: timestampSchema.optional().nullable(),
   photos: z.array(photoSchema).optional(),
+  unableToComplete: z.boolean().optional(),
 });
 export type Ticket = z.infer<typeof ticketSchema>;
 
