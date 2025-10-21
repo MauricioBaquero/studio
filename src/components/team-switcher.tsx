@@ -40,7 +40,7 @@ export function TeamSwitcher() {
 
   useEffect(() => {
     const fetchTeams = async () => {
-      if (!firestore || !currentUser || !currentUser.teamIds || currentUser.teamIds.length === 0) {
+      if (!firestore || !currentUser) {
         setTeams([]);
         setIsLoading(false);
         return;
@@ -48,9 +48,18 @@ export function TeamSwitcher() {
       
       setIsLoading(true);
       try {
-        const teamRefs = currentUser.teamIds.map(id => doc(firestore, 'teams', id));
-        const teamDocs = await Promise.all(teamRefs.map(ref => getDoc(ref)));
-        const userTeams = teamDocs.map(doc => ({ id: doc.id, ...doc.data() } as Team));
+        let userTeams: Team[] = [];
+        if (currentUser.role === 'Admin') {
+          // Admins get all teams
+          const teamsQuery = query(collection(firestore, 'teams'));
+          const querySnapshot = await getDocs(teamsQuery);
+          userTeams = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Team));
+        } else if (currentUser.teamIds && currentUser.teamIds.length > 0) {
+          // Non-admins get their assigned teams
+          const teamRefs = currentUser.teamIds.map(id => doc(firestore, 'teams', id));
+          const teamDocs = await Promise.all(teamRefs.map(ref => getDoc(ref)));
+          userTeams = teamDocs.filter(doc => doc.exists()).map(doc => ({ id: doc.id, ...doc.data() } as Team));
+        }
         setTeams(userTeams);
       } catch (error) {
         console.error("Error fetching user's teams:", error);
@@ -72,7 +81,7 @@ export function TeamSwitcher() {
     setOpen(false);
   };
 
-  if (isLoading || !currentUser || currentUser.role !== 'Admin') {
+  if (isLoading || !currentUser || teams.length <= 1) {
     return null;
   }
 

@@ -5,7 +5,7 @@ import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/layout/sidebar';
-import { useUser, useFirestore, updateDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, updateDocumentNonBlocking, useFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
 interface AppLayoutProps {
@@ -16,6 +16,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isUserLoading } = useUser();
+  const { auth } = useFirebase(); // Use useFirebase to get auth
   const firestore = useFirestore();
   const isLoginPage = pathname === '/login';
 
@@ -26,12 +27,12 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
 
     // If user is not authenticated and not on the login page, redirect to login
-    if (!user && !isLoginPage) {
+    if (!auth.currentUser && !isLoginPage) {
       router.replace('/login');
     }
 
     // If user is authenticated and on the login page, redirect to the dashboard
-    if (user && isLoginPage) {
+    if (auth.currentUser && isLoginPage) {
       router.replace('/');
     }
 
@@ -42,7 +43,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       updateDocumentNonBlocking(userRef, { teamId: 'parking-facilities', teamIds: ['parking-facilities'] });
     }
 
-  }, [user, isUserLoading, isLoginPage, router, firestore]);
+  }, [user, isUserLoading, isLoginPage, router, firestore, auth]);
 
 
   // If we are on the login page, just render the children without the layout
