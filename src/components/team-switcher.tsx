@@ -20,7 +20,6 @@ import {
   Command,
   CommandEmpty,
   CommandGroup,
-  CommandInput,
   CommandItem,
   CommandList,
 } from './ui/command';
@@ -43,18 +42,39 @@ export function TeamSwitcher() {
   const activeTeamId = currentUser?.teamId;
 
   useEffect(() => {
-    if (!firestore || !currentUser) {
+    if (!firestore || !currentUser || !currentUser.teamIds) {
       setIsLoading(false);
       return;
     }
-
+  
     setIsLoading(true);
-
-    let unsubscribe: () => void = () => {};
-
-    if (currentUser.teamIds && currentUser.teamIds.length > 0) {
+    let unsubscribes: (() => void)[] = [];
+  
+    if (currentUser.role === 'Admin') {
+      const teamsQuery = query(collection(firestore, 'teams'));
+      const unsubscribe = onSnapshot(teamsQuery, 
+        (querySnapshot) => {
+          const fetchedTeams: Team[] = [];
+          querySnapshot.forEach((doc) => {
+            fetchedTeams.push({ id: doc.id, ...doc.data() } as Team);
+          });
+          setTeams(fetchedTeams.sort((a, b) => a.name.localeCompare(b.name)));
+          setIsLoading(false);
+        },
+        (err) => {
+          console.error("Error fetching all teams for admin:", err);
+          const contextualError = new FirestorePermissionError({
+              path: 'teams',
+              operation: 'list',
+          });
+          errorEmitter.emit('permission-error', contextualError);
+          setIsLoading(false);
+        }
+      );
+      unsubscribes.push(unsubscribe);
+    } else if (currentUser.teamIds && currentUser.teamIds.length > 0) {
       const teamRefs = currentUser.teamIds.map(id => doc(firestore, 'teams', id));
-      const unsubscribes = teamRefs.map((ref, index) => 
+      unsubscribes = teamRefs.map((ref, index) => 
         onSnapshot(ref, 
           (doc) => {
             if (doc.exists()) {
@@ -83,14 +103,12 @@ export function TeamSwitcher() {
           }
         )
       );
-      unsubscribe = () => unsubscribes.forEach(unsub => unsub());
     } else {
-      // User has no teams assigned.
       setIsLoading(false);
       setTeams([]);
     }
-
-    return () => unsubscribe();
+  
+    return () => unsubscribes.forEach(unsub => unsub());
   }, [firestore, currentUser]);
 
 
@@ -137,7 +155,6 @@ export function TeamSwitcher() {
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command>
-          <CommandInput placeholder="Search teams..." />
           <CommandList>
             <CommandEmpty>No team found.</CommandEmpty>
             <CommandGroup>
@@ -163,5 +180,3 @@ export function TeamSwitcher() {
     </Popover>
   );
 }
-
-    
