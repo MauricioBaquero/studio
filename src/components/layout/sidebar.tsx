@@ -12,11 +12,15 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  SidebarMenuBadge,
 } from "@/components/ui/sidebar";
 import { UserNav } from "../user-nav";
 import { ThemeToggle } from "../theme-toggle";
-import { useUser } from "@/firebase";
+import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { TeamSwitcher } from "../team-switcher";
+import { useMemo } from 'react';
+import { collection, query, where } from "firebase/firestore";
+import type { Ticket } from "@/lib/data";
 
 const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -29,6 +33,22 @@ const settingsItem = { href: "/settings", label: "Settings", icon: Settings };
 export default function AppSidebar() {
   const pathname = usePathname();
   const { user } = useUser();
+  const firestore = useFirestore();
+
+  const teamId = user?.teamId;
+
+  const inProgressQuery = useMemoFirebase(() => {
+    if (!firestore || !teamId || teamId === 'allTeams' || !user) return null;
+    return query(
+      collection(firestore, `teams/${teamId}/tasks`),
+      where('status', '==', 'In Progress'),
+      where('assignedToIds', 'array-contains', user.uid)
+    );
+  }, [firestore, teamId, user]);
+
+  const { data: inProgressTasks } = useCollection<Ticket>(inProgressQuery);
+
+  const myInProgressCount = inProgressTasks?.length ?? 0;
 
   const isActive = (path: string) => {
     if (path === "/") return pathname === "/";
@@ -60,6 +80,9 @@ export default function AppSidebar() {
                   <span>{item.label}</span>
                 </Link>
               </SidebarMenuButton>
+              {item.href === "/" && myInProgressCount > 0 && (
+                <SidebarMenuBadge>{myInProgressCount}</SidebarMenuBadge>
+              )}
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
