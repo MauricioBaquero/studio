@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import type { Ticket, User, Category, RecurringTask, Location } from '@/lib/data';
@@ -12,6 +11,7 @@ import { collection, query, where } from 'firebase/firestore';
 import { RecurringTasksSummaryChart } from '@/components/recurring-tasks-summary-chart';
 import { useMemo } from 'react';
 import { ApprovalStatusSummary } from '@/components/approval-status-summary';
+import { ApprovalsByUserChart } from '@/components/approvals-by-user-chart';
 
 export default function DashboardPage() {
   const firestore = useFirestore();
@@ -83,6 +83,7 @@ export default function DashboardPage() {
 
   const chartTickets = tickets || [];
   const chartUsers = teamUsers || [];
+  const allAppUsers = users || [];
   const chartCategories = categories || [];
   const chartRecurringTasks = recurringTasks || [];
   const chartLocations = locations || [];
@@ -92,9 +93,10 @@ export default function DashboardPage() {
       <h1 className="text-3xl font-bold font-headline">Dashboard</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 [grid-auto-flow:dense]">
         <TaskStatusChart tickets={chartTickets} />
-        <ApprovalStatusSummary tickets={chartTickets} users={users || []} />
+        <ApprovalStatusSummary tickets={chartTickets} users={allAppUsers} />
         <RecurringTasksSummaryChart recurringTasks={chartRecurringTasks} />
         <TasksByAssigneeChart tickets={chartTickets} users={chartUsers} />
+        <ApprovalsByUserChart tickets={chartTickets} users={allAppUsers} />
         <div className="lg:row-span-2">
             <TaskTypeChart tickets={chartTickets} categories={chartCategories} />
         </div>
