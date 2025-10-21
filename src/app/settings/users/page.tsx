@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -7,6 +6,7 @@ import {
   useFirestore,
   useMemoFirebase,
   deleteDocumentNonBlocking,
+  useUser,
 } from '@/firebase';
 import { collection, query, doc } from 'firebase/firestore';
 import {
@@ -32,7 +32,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { Badge, BadgeProps } from '@/components/ui/badge';
 import { User, UserRole, Team } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
@@ -47,6 +47,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { UserForm } from './user-form';
+import { AddUserForm } from './add-user-form';
 
 const roleColors: Record<UserRole, BadgeProps['color']> = {
   Admin: 'purple',
@@ -58,7 +59,9 @@ const roleColors: Record<UserRole, BadgeProps['color']> = {
 export default function UsersPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { user: currentUser } = useUser();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
@@ -103,6 +106,7 @@ export default function UsersPage() {
   };
 
   const isLoading = isLoadingUsers || isLoadingTeams;
+  const canAddUser = currentUser?.role === 'Admin';
 
   const getTeamName = (teamId: string) => {
     if (teamId === 'allTeams') return 'Access to all teams';
@@ -128,11 +132,19 @@ export default function UsersPage() {
   return (
     <>
       <Card>
-        <CardHeader className="space-y-2">
-          <CardTitle>User Management</CardTitle>
-          <CardDescription>
-            View users and manage their roles and permissions.
-          </CardDescription>
+        <CardHeader className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+            <div className="space-y-2">
+              <CardTitle>User Management</CardTitle>
+              <CardDescription>
+                View users and manage their roles and permissions.
+              </CardDescription>
+            </div>
+            {canAddUser && (
+              <Button onClick={() => setIsAddFormOpen(true)}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add User
+              </Button>
+            )}
         </CardHeader>
         <CardContent>
           <Table>
@@ -203,6 +215,13 @@ export default function UsersPage() {
           open={isFormOpen}
           onOpenChange={handleCloseForm}
           user={editingUser}
+          teams={teams}
+        />
+      )}
+      {teams && (
+         <AddUserForm
+          open={isAddFormOpen}
+          onOpenChange={setIsAddFormOpen}
           teams={teams}
         />
       )}
