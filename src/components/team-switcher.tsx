@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -40,6 +39,7 @@ export function TeamSwitcher() {
   const [isLoading, setIsLoading] = useState(true);
 
   const activeTeamId = currentUser?.teamId;
+  const isAdmin = currentUser?.role === 'Admin';
 
   useEffect(() => {
     if (!firestore || !currentUser || !currentUser.teamIds) {
@@ -123,7 +123,7 @@ export function TeamSwitcher() {
     setOpen(false);
   };
 
-  if (isLoading || isUserLoading || !currentUser || teams.length <= 1) {
+  if (isLoading || isUserLoading || !currentUser || teams.length === 0) {
     return null;
   }
 
@@ -131,6 +131,21 @@ export function TeamSwitcher() {
 
   if (state === 'collapsed') {
     return null;
+  }
+  
+  if (!isAdmin || teams.length <= 1) {
+    return (
+        <div className="justify-between w-auto h-auto px-2 py-1 border rounded-md">
+          <div className="text-left">
+            <p className="text-xs font-bold truncate">
+              {selectedTeam ? selectedTeam.name : 'No team assigned'}
+            </p>
+            <p className="text-xs text-muted-foreground truncate">
+              {selectedTeam?.department}
+            </p>
+          </div>
+        </div>
+    );
   }
 
   return (
