@@ -340,9 +340,13 @@ export function TicketDetailsDialog({
                                 className="w-full justify-start h-auto"
                                 disabled={isSaving}
                             >
-                                <div className="py-1">
+                                <div className="flex flex-wrap gap-1 py-1">
                                     {assignedToIds.length > 0 ? (
-                                        <span className="truncate">{assignedUsers.map(user => user.name).join(', ')}</span>
+                                        assignedUsers.map(user => (
+                                            <Badge key={user.uid} variant="secondary" className="font-normal">
+                                                {user.name}
+                                            </Badge>
+                                        ))
                                     ) : (
                                         <span className="text-muted-foreground font-normal">Assign users...</span>
                                     )}
@@ -380,7 +384,11 @@ export function TicketDetailsDialog({
                         </PopoverContent>
                     </Popover>
                   ) : (
-                      <p className="text-sm truncate">{assignedUsers.length > 0 ? assignedUsers.map(u => u.name).join(', ') : 'Unassigned'}</p>
+                      <div className="flex flex-wrap gap-1">
+                        {assignedUsers.length > 0 ? assignedUsers.map(u => (
+                            <Badge key={u.uid} variant="secondary" className="font-normal">{u.name}</Badge>
+                        )) : <p className="text-sm">Unassigned</p>}
+                      </div>
                   )}
               </div>
               <div className="space-y-2">
