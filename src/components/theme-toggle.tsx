@@ -22,7 +22,9 @@ export function ThemeToggle() {
       onClick={toggleTheme}
       className={cn(
         "relative",
-        theme === 'light' && "bg-slate-900 text-white hover:bg-slate-800 hover:text-white",
+        theme === 'light' 
+          ? "bg-slate-900 text-white hover:bg-slate-800 hover:text-white"
+          : "bg-white text-slate-900 hover:bg-slate-100 hover:text-slate-900"
       )}
     >
       <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
