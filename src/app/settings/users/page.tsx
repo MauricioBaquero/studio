@@ -34,7 +34,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal } from 'lucide-react';
 import { Badge, BadgeProps } from '@/components/ui/badge';
-import { User, UserRole } from '@/lib/data';
+import { User, UserRole, Team } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -66,7 +66,13 @@ export default function UsersPage() {
     () => (firestore ? query(collection(firestore, 'users')) : null),
     [firestore]
   );
-  const { data: users, isLoading } = useCollection<User>(usersQuery);
+  const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
+
+  const teamsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'teams')) : null),
+    [firestore]
+  );
+  const { data: teams, isLoading: isLoadingTeams } = useCollection<Team>(teamsQuery);
 
   const handleOpenForm = (user: User) => {
     setEditingUser(user);
@@ -94,6 +100,12 @@ export default function UsersPage() {
     setIsAlertOpen(false);
     setDeletingUserId(null);
   };
+
+  const isLoading = isLoadingUsers || isLoadingTeams;
+
+  const getTeamName = (teamId: string) => {
+    return teams?.find(t => t.id === teamId)?.name || teamId;
+  }
 
   if (isLoading) {
     return (
@@ -125,6 +137,7 @@ export default function UsersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>User</TableHead>
+                <TableHead>Team</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -144,6 +157,9 @@ export default function UsersPage() {
                         </p>
                       </div>
                     </div>
+                  </TableCell>
+                   <TableCell>
+                    {user.teamId ? getTeamName(user.teamId) : 'N/A'}
                   </TableCell>
                   <TableCell>
                     <Badge color={roleColors[user.role] || 'gray'}>
@@ -176,11 +192,12 @@ export default function UsersPage() {
           </Table>
         </CardContent>
       </Card>
-      {editingUser && (
+      {editingUser && teams && (
         <UserForm
           open={isFormOpen}
           onOpenChange={handleCloseForm}
           user={editingUser}
+          teams={teams}
         />
       )}
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>

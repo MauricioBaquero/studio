@@ -5,9 +5,8 @@ import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/layout/sidebar';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, updateDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import type { User } from '@/lib/data';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -17,6 +16,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
   const isLoginPage = pathname === '/login';
 
   useEffect(() => {
@@ -34,7 +34,15 @@ export function AppLayout({ children }: AppLayoutProps) {
     if (user && isLoginPage) {
       router.replace('/');
     }
-  }, [user, isUserLoading, isLoginPage, router]);
+
+    // If user is authenticated but has no teamId, assign them a default one
+    if (firestore && user && !user.teamId) {
+      console.log("User has no teamId, assigning default 'parking-facilities'.");
+      const userRef = doc(firestore, 'users', user.uid);
+      updateDocumentNonBlocking(userRef, { teamId: 'parking-facilities', teamIds: ['parking-facilities'] });
+    }
+
+  }, [user, isUserLoading, isLoginPage, router, firestore]);
 
 
   // If we are on the login page, just render the children without the layout
@@ -43,7 +51,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   }
 
   // Show a loading indicator while we verify auth and fetch user data, or if we are about to redirect.
-  if (isUserLoading || !user) {
+  if (isUserLoading || !user || !user.teamId) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p>Loading...</p>
