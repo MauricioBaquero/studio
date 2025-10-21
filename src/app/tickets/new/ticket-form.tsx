@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, useRef } from "react";
@@ -183,10 +184,10 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
 
         uploadedPhotos = await Promise.all(newPhotoUploads);
 
-        const ticketRef = doc(collection(firestore, `teams/${teamId}/tasks`));
+        const ticketRef = doc(collection(firestore, `teams/${teamId}/tasks`), ticketId);
 
         const ticketData = {
-            id: ticketRef.id,
+            id: ticketId,
             title: generateTitle(values.description),
             description: values.description,
             categoryId: values.subcategoryId, // We save the subcategory ID
