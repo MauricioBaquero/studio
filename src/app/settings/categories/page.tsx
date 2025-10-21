@@ -10,7 +10,7 @@ import {
   useUser,
 } from '@/firebase';
 import { collection, query, doc } from 'firebase/firestore';
-import { Category } from '@/lib/data';
+import { Category, Team } from '@/lib/data';
 import {
   Card,
   CardContent,
@@ -39,6 +39,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 export default function CategoriesPage() {
   const firestore = useFirestore();
@@ -56,7 +57,19 @@ export default function CategoriesPage() {
     () => (firestore && teamId && teamId !== 'allTeams' ? query(collection(firestore, `teams/${teamId}/categories`)) : null),
     [firestore, teamId]
   );
-  const { data: categories, isLoading } = useCollection<Category>(categoriesQuery);
+  const { data: categories, isLoading: isLoadingCategories } = useCollection<Category>(categoriesQuery);
+
+  const teamsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'teams')) : null),
+    [firestore]
+  );
+  const { data: teams, isLoading: isLoadingTeams } = useCollection<Team>(teamsQuery);
+
+  const currentTeam = useMemo(() => {
+    if (!teams || !teamId) return null;
+    if (teamId === 'allTeams' && teams.length > 0) return teams[0];
+    return teams.find(t => t.id === teamId);
+  }, [teams, teamId]);
 
   const parentCategories = useMemo(
     () => categories || [],
@@ -89,6 +102,8 @@ export default function CategoriesPage() {
     setIsAlertOpen(false);
     setDeletingCategoryId(null);
   };
+  
+  const isLoading = isLoadingCategories || isLoadingTeams;
 
   if (isLoading) {
     return (
@@ -109,12 +124,15 @@ export default function CategoriesPage() {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <CardHeader className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div className="space-y-2">
             <CardTitle>Category Management</CardTitle>
             <CardDescription>
-              Add, edit, or remove task categories and subcategories.
+              Add, edit, or remove task categories for your team.
             </CardDescription>
+             {currentTeam && (
+              <Badge variant="outline">Team: {currentTeam.name}</Badge>
+            )}
           </div>
           <Button onClick={() => handleOpenForm(null)}>
             <PlusCircle className="mr-2 h-4 w-4" />

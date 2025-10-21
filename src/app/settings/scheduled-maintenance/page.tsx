@@ -14,7 +14,7 @@ import {
   RecurringTask,
   Category,
   Location,
-  getCategoryColor,
+  Team,
 } from '@/lib/data';
 import {
   Card,
@@ -94,6 +94,18 @@ export default function ScheduledMaintenancePage() {
   );
   const { data: locations, isLoading: isLoadingLocations } =
     useCollection<Location>(locationsQuery);
+
+  const teamsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'teams')) : null),
+    [firestore]
+  );
+  const { data: teams, isLoading: isLoadingTeams } = useCollection<Team>(teamsQuery);
+  
+  const currentTeam = useMemo(() => {
+    if (!teams || !teamId) return null;
+    if (teamId === 'allTeams' && teams.length > 0) return teams[0];
+    return teams.find(t => t.id === teamId);
+  }, [teams, teamId]);
     
   const findSubCategory = (subcategoryId: string) => {
     if (!categories) return null;
@@ -155,17 +167,20 @@ export default function ScheduledMaintenancePage() {
   };
 
 
-  const isLoading = isLoadingTasks || isLoadingCategories || isLoadingLocations;
+  const isLoading = isLoadingTasks || isLoadingCategories || isLoadingLocations || isLoadingTeams;
 
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <CardHeader className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div className="space-y-2">
             <CardTitle>Scheduled Maintenance</CardTitle>
             <CardDescription>
               Add, edit, or remove recurring tasks.
             </CardDescription>
+            {currentTeam && (
+              <Badge variant="outline">Team: {currentTeam.name}</Badge>
+            )}
           </div>
           <Button onClick={() => handleOpenForm(null)}>
             <PlusCircle className="mr-2 h-4 w-4" />
