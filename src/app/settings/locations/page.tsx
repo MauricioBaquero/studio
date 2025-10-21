@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   useCollection,
   useFirestore,
@@ -64,6 +64,11 @@ export default function LocationsPage() {
     [firestore, teamId]
   );
   const { data: locations, isLoading } = useCollection<Location>(locationsQuery);
+
+  const sortedLocations = useMemo(() => {
+    if (!locations) return [];
+    return [...locations].sort((a, b) => a.name.localeCompare(b.name));
+  }, [locations]);
 
   const handleOpenForm = (location: Location | null) => {
     setEditingLocation(location);
@@ -133,7 +138,7 @@ export default function LocationsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {locations?.map(location => (
+              {sortedLocations?.map(location => (
                 <TableRow key={location.id}>
                   <TableCell className="font-medium">{location.name}</TableCell>
                   <TableCell>
