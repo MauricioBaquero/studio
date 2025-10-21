@@ -249,7 +249,20 @@ export function TicketDetailsDialog({
   const isStaff = currentUser?.role === 'Staff';
   const isAssignedToCurrentUser = currentUser && (ticket.assignedToIds || []).includes(currentUser.uid);
   const canInteractWithForm = isAdminOrCoordinator || (isStaff && (isAssignedToCurrentUser || !ticket.assignedToIds || ticket.assignedToIds.length === 0));
-  const assignableUsers = users.filter(u => u.role === 'Admin' || u.role === 'Coordinator' || u.role === 'Staff');
+
+  const assignableUsers = useMemo(() => {
+    if (!users || !teamId) return [];
+    if (teamId === 'allTeams') {
+      return users.filter(u => u.role === 'Admin' || u.role === 'Coordinator' || u.role === 'Staff');
+    }
+    return users.filter(u => {
+      const isAssignableRole = u.role === 'Admin' || u.role === 'Coordinator' || u.role === 'Staff';
+      if (!isAssignableRole) return false;
+      const belongsToTeam = u.teamId === teamId;
+      const isGlobalRole = u.role === 'Admin' || u.role === 'Coordinator';
+      return belongsToTeam || isGlobalRole;
+    });
+  }, [users, teamId]);
 
   const sortedAssignableUsers = useMemo(() => {
     return [...assignableUsers].sort((a, b) => {
