@@ -28,6 +28,7 @@ export function TasksByAssigneeChart({
   tickets,
   users,
 }: TasksByAssigneeChartProps) {
+    // Each user gets credit for every task they are assigned to, including multi-assigned tasks.
     const tasksByAssignee = users.map(user => ({
         name: user.name.split(' ')[0], // Use first name for brevity
         value: tickets.filter(ticket => (ticket.assignedToIds || []).includes(user.uid)).length,
