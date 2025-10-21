@@ -6,6 +6,14 @@ import { usePathname, useRouter } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useUser } from "@/firebase";
 import { useEffect, useMemo } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const ALL_TABS = [
   { value: "general", label: "General", href: "/settings", roles: ['Admin', 'Coordinator'] },
@@ -24,6 +32,7 @@ export default function SettingsLayout({
   const pathname = usePathname();
   const router = useRouter();
   const { user, isUserLoading } = useUser();
+  const isMobile = useIsMobile();
 
   const availableTabs = useMemo(() => {
     if (!user) return [];
@@ -39,6 +48,13 @@ export default function SettingsLayout({
       router.replace('/');
     }
   }, [user, isUserLoading, router]);
+  
+  const handleMobileNavChange = (value: string) => {
+    const tab = availableTabs.find(t => t.value === value);
+    if (tab) {
+      router.push(tab.href);
+    }
+  };
 
   if (isUserLoading || (user?.role !== 'Admin' && user?.role !== 'Coordinator')) {
     return (
@@ -56,18 +72,35 @@ export default function SettingsLayout({
           Manage your facility and user settings.
         </p>
       </div>
-      <Tabs value={activeTab} className="w-full">
-        <TabsList>
-          {availableTabs.map((tab) => (
-            <TabsTrigger value={tab.value} key={tab.value} asChild>
-              <Link href={tab.href}>{tab.label}</Link>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        <TabsContent value={activeTab} className="pt-4">
-          {children}
-        </TabsContent>
-      </Tabs>
+
+      {isMobile ? (
+        <Select value={activeTab} onValueChange={handleMobileNavChange}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select a setting" />
+          </SelectTrigger>
+          <SelectContent>
+            {availableTabs.map((tab) => (
+              <SelectItem value={tab.value} key={tab.value}>
+                {tab.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : (
+        <Tabs value={activeTab} className="w-full">
+          <TabsList>
+            {availableTabs.map((tab) => (
+              <TabsTrigger value={tab.value} key={tab.value} asChild>
+                <Link href={tab.href}>{tab.label}</Link>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      )}
+
+      <div className={isMobile ? "pt-4" : "pt-0"}>
+        {children}
+      </div>
     </div>
   );
 }
