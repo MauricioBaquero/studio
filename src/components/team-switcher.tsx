@@ -44,29 +44,25 @@ export function TeamSwitcher() {
   );
   const { data: teams, isLoading: isLoadingTeams } = useCollection<Team>(teamsQuery);
   
-  const isAdmin = currentUser?.role === 'Admin';
+  const isAdminOrCoordinator = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator';
   
-  // Set the active team from the user's teamId, but only if it's not 'allTeams'
+  // Set the active team from the user's teamId
   useEffect(() => {
-    if (currentUser?.teamId && currentUser.teamId !== 'allTeams') {
+    if (currentUser?.teamId) {
       setActiveTeamId(currentUser.teamId);
-    } else if (teams && teams.length > 0 && !activeTeamId) {
-      // If admin has 'allTeams', default to the first team in the list
-      setActiveTeamId(teams[0].id);
     }
-  }, [currentUser, teams, activeTeamId]);
+  }, [currentUser?.teamId]);
 
 
   const handleTeamChange = (teamId: string) => {
     if (!firestore || !currentUser) return;
     
+    // Optimistically update the UI
     setActiveTeamId(teamId);
     
-    // If the user isn't an admin, update their permanent teamId
-    if (currentUser.role !== 'Admin' && currentUser.role !== 'Coordinator') {
-      const userRef = doc(firestore, 'users', currentUser.uid);
-      updateDocumentNonBlocking(userRef, { teamId: teamId });
-    }
+    // Always update the teamId in the user's document
+    const userRef = doc(firestore, 'users', currentUser.uid);
+    updateDocumentNonBlocking(userRef, { teamId: teamId });
     
     setOpen(false);
   };
@@ -83,7 +79,7 @@ export function TeamSwitcher() {
     return null;
   }
   
-  if (!isAdmin || teams.length <= 1) {
+  if (!isAdminOrCoordinator || teams.length <= 1) {
     return (
         <div className="justify-between w-auto h-auto px-2 py-1 border rounded-md">
           <div className="text-left">
