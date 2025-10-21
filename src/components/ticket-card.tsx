@@ -178,7 +178,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <MapPin className="h-4 w-4" />
-            <span>{ticket.location}</span>
+            <span className="truncate">{ticket.location}</span>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <Calendar className="h-4 w-4" />
@@ -188,30 +188,30 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
         <CardFooter className="flex flex-col items-start gap-4">
             <div className="w-full flex items-center justify-between">
                 {assignedUsers.length > 0 ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                         {assignedUsers.length > 1 ? (
                             <div className="flex items-center">
                                 <Users className="h-6 w-6" />
-                                <span className="ml-2 text-sm text-muted-foreground">{assignedUsers.length} users</span>
+                                <span className="ml-2 text-sm text-muted-foreground truncate">{assignedUsers.length} users</span>
                             </div>
                         ) : (
                             <>
                                 <Avatar className="h-6 w-6">
                                     <AvatarFallback>{assignedUsers[0]?.name.charAt(0)}</AvatarFallback>
                                 </Avatar>
-                                <div className="text-sm text-muted-foreground">
+                                <div className="text-sm text-muted-foreground truncate">
                                     <span>{assignedUsers[0]?.name}</span>
                                 </div>
                             </>
                         )}
                         {ticket.status === 'Completed' && ticket.submitToReviewDate && (
-                        <div className="text-xs text-muted-foreground ml-2">Completed: {format(toDate(ticket.submitToReviewDate), 'MM/dd/yyyy')}</div>
+                        <div className="text-xs text-muted-foreground ml-2 whitespace-nowrap">Completed: {format(toDate(ticket.submitToReviewDate), 'MM/dd/yyyy')}</div>
                         )}
                     </div>
                 ) : (
                     <span className="text-sm text-muted-foreground italic">Unassigned</span>
                 )}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 pl-2">
                 {ticket.photos && ticket.photos.length > 0 && (
                     <div className="flex items-center gap-1 text-muted-foreground">
                     <Camera className="h-4 w-4" />
@@ -219,7 +219,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
                     </div>
                 )}
                 {ticket.status === 'Completed' && (
-                    <div className="text-xs text-muted-foreground text-right">
+                    <div className="text-xs text-muted-foreground text-right whitespace-nowrap">
                     {approver && !ticket.unableToComplete && (
                         <div>Approved by {approver.name}</div>
                     )}
@@ -237,7 +237,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
             </div>
             
              {ticket.status === 'In Progress' && canMarkForReview && (
-                <div className="flex w-full gap-2">
+                <div className="flex w-full gap-2 pt-2 border-t">
                     <Button variant="destructive" size="sm" className="flex-1" onClick={handleUnableToComplete}>
                         Unable to Complete
                     </Button>

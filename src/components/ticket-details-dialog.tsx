@@ -380,7 +380,7 @@ export function TicketDetailsDialog({
                         </PopoverContent>
                     </Popover>
                   ) : (
-                      <p className="text-sm">{assignedUsers.length > 0 ? assignedUsers.map(u => u.name).join(', ') : 'Unassigned'}</p>
+                      <p className="text-sm truncate">{assignedUsers.length > 0 ? assignedUsers.map(u => u.name).join(', ') : 'Unassigned'}</p>
                   )}
               </div>
               <div className="space-y-2">
