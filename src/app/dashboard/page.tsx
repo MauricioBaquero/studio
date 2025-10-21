@@ -7,8 +7,9 @@ import { TaskTypeChart } from '@/components/task-type-chart';
 import { TasksByAssigneeChart } from '@/components/tasks-by-assignee-chart';
 import { OpenTasksByLocationChart } from '@/components/open-tasks-by-location-chart';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { RecurringTasksSummaryChart } from '@/components/recurring-tasks-summary-chart';
+import { useMemo } from 'react';
 
 export default function DashboardPage() {
   const firestore = useFirestore();
@@ -23,9 +24,9 @@ export default function DashboardPage() {
     useCollection<Ticket>(ticketsQuery);
 
   const usersQuery = useMemoFirebase(() => {
-    if (!firestore || !teamId) return null;
-    return query(collection(firestore, `teams/${teamId}/users`));
-  }, [firestore, teamId]);
+    if (!firestore) return null;
+    return query(collection(firestore, `users`));
+  }, [firestore]);
   const { data: users, isLoading: isLoadingUsers } =
     useCollection<User>(usersQuery);
 
@@ -44,11 +45,16 @@ export default function DashboardPage() {
     useCollection<RecurringTask>(recurringTasksQuery);
   
   const locationsQuery = useMemoFirebase(
-    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/locations`)) : null),
+    () => (firestore && teamId ? query(collection(firestore, `locations`), where('teamId', '==', teamId)) : null),
     [firestore, teamId]
     );
   const { data: locations, isLoading: isLoadingLocations } =
     useCollection<Location>(locationsQuery);
+
+  const teamUsers = useMemo(() => {
+    if (!users || !teamId) return [];
+    return users.filter(u => u.teamIds && u.teamIds.includes(teamId));
+  }, [users, teamId]);
 
   const isLoading =
     isLoadingTickets ||
@@ -67,7 +73,7 @@ export default function DashboardPage() {
   }
 
   const chartTickets = tickets || [];
-  const chartUsers = users || [];
+  const chartUsers = teamUsers || [];
   const chartCategories = categories || [];
   const chartRecurringTasks = recurringTasks || [];
   const chartLocations = locations || [];
@@ -89,3 +95,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    

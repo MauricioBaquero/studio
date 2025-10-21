@@ -43,6 +43,7 @@ import {
   addDocumentNonBlocking,
   updateDocumentNonBlocking,
   useUser,
+  setDocumentNonBlocking,
 } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 
@@ -167,7 +168,9 @@ export function AddTaskForm({
       updateDocumentNonBlocking(taskRef, taskData);
     } else {
       const recurringTasksCollection = collection(firestore, `teams/${teamId}/recurringTasks`);
-      addDocumentNonBlocking(recurringTasksCollection, taskData);
+      const newDocRef = doc(recurringTasksCollection);
+      const docWithId = { ...taskData, id: newDocRef.id };
+      setDocumentNonBlocking(newDocRef, docWithId, {});
     }
 
     toast({
@@ -430,3 +433,5 @@ export function AddTaskForm({
     </Dialog>
   );
 }
+
+    

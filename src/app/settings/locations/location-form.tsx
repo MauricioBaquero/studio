@@ -29,6 +29,7 @@ import {
   addDocumentNonBlocking,
   updateDocumentNonBlocking,
   useUser,
+  setDocumentNonBlocking,
 } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { z } from 'zod';
@@ -91,11 +92,13 @@ export function LocationForm({
     if (!firestore || !teamId) return;
 
     if (isEditMode && location) {
-      const locationRef = doc(firestore, `teams/${teamId}/locations`, location.id);
+      const locationRef = doc(firestore, `locations`, location.id);
       updateDocumentNonBlocking(locationRef, data);
     } else {
-      const locationsCollection = collection(firestore, `teams/${teamId}/locations`);
-      addDocumentNonBlocking(locationsCollection, data);
+      const locationsCollection = collection(firestore, `locations`);
+      const newDocRef = doc(locationsCollection);
+      const docWithTeam = { ...data, teamId: teamId, id: newDocRef.id };
+      setDocumentNonBlocking(newDocRef, docWithTeam, {});
     }
 
     toast({
@@ -184,3 +187,5 @@ export function LocationForm({
     </Dialog>
   );
 }
+
+    

@@ -9,7 +9,7 @@ import {
   deleteDocumentNonBlocking,
   useUser,
 } from '@/firebase';
-import { collection, query, doc } from 'firebase/firestore';
+import { collection, query, doc, where } from 'firebase/firestore';
 import { Location } from '@/lib/data';
 import {
   Card,
@@ -60,7 +60,7 @@ export default function LocationsPage() {
   );
 
   const locationsQuery = useMemoFirebase(
-    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/locations`)) : null),
+    () => (firestore && teamId ? query(collection(firestore, `locations`), where('teamId', '==', teamId)) : null),
     [firestore, teamId]
   );
   const { data: locations, isLoading } = useCollection<Location>(locationsQuery);
@@ -81,8 +81,8 @@ export default function LocationsPage() {
   };
 
   const handleDelete = () => {
-    if (!firestore || !deletingLocationId || !teamId) return;
-    const locationRef = doc(firestore, `teams/${teamId}/locations`, deletingLocationId);
+    if (!firestore || !deletingLocationId) return;
+    const locationRef = doc(firestore, `locations`, deletingLocationId);
     deleteDocumentNonBlocking(locationRef);
     toast({
       title: 'Location Deleted',
@@ -192,3 +192,5 @@ export default function LocationsPage() {
     </>
   );
 }
+
+    

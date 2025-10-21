@@ -9,7 +9,7 @@ import {
   deleteDocumentNonBlocking,
   useUser,
 } from '@/firebase';
-import { collection, query, doc } from 'firebase/firestore';
+import { collection, query, doc, where } from 'firebase/firestore';
 import {
   RecurringTask,
   Category,
@@ -89,7 +89,7 @@ export default function ScheduledMaintenancePage() {
     useCollection<Category>(categoriesQuery);
 
   const locationsQuery = useMemoFirebase(
-    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/locations`)) : null),
+    () => (firestore && teamId ? query(collection(firestore, 'locations'), where('teamId', '==', teamId)) : null),
     [firestore, teamId]
   );
   const { data: locations, isLoading: isLoadingLocations } =
@@ -262,3 +262,5 @@ export default function ScheduledMaintenancePage() {
     </>
   );
 }
+
+    

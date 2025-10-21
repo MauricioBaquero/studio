@@ -89,3 +89,5 @@ export function OpenTasksByLocationChart({ tickets, locations }: OpenTasksByLoca
     </Card>
   );
 }
+
+    

@@ -7,15 +7,16 @@ import { initializeFirebase } from '@/firebase';
 import { doc, getDoc, setDoc, writeBatch, collection, getDocs, query } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
 
-interface FirebaseClientProviderProps {
-  children: ReactNode;
-}
-
 const seedTeamsAndSubCollections = async (firestore: any) => {
     const teamsCollectionRef = collection(firestore, 'teams');
     const teamsSnapshot = await getDocs(query(teamsCollectionRef));
     if (!teamsSnapshot.empty) {
-        return; // Teams already exist, don't seed again
+        // Teams exist, now check if locations are at the top level
+        const locationsCollectionRef = collection(firestore, 'locations');
+        const locationsSnapshot = await getDocs(query(locationsCollectionRef));
+        if (!locationsSnapshot.empty) {
+            return; // Locations also exist, seeding is likely complete
+        }
     }
 
     console.log("Seeding initial teams and their data...");
@@ -88,12 +89,12 @@ const seedTeamsAndSubCollections = async (firestore: any) => {
             });
         });
 
-        // Seed locations for the team
-        const locationsColRef = collection(teamDocRef, 'locations');
+        // Seed locations at top level, but associated with the team
+        const locationsColRef = collection(firestore, 'locations');
         locationsData.forEach(locData => {
             const locationId = doc(locationsColRef).id;
             const locationDocRef = doc(locationsColRef, locationId);
-            batch.set(locationDocRef, { id: locationId, ...locData });
+            batch.set(locationDocRef, { id: locationId, ...locData, teamId: teamData.id });
         });
         
         // Seed settings for the team
@@ -141,3 +142,5 @@ export function FirebaseClientProvider({
     </FirebaseProvider>
   );
 }
+
+    

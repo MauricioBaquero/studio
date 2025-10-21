@@ -29,6 +29,7 @@ import {
   doc,
   arrayUnion,
   Timestamp,
+  where,
 } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -76,7 +77,7 @@ export default function RecurringTasksPage() {
     useCollection<User>(usersQuery);
 
   const locationsQuery = useMemoFirebase(
-    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/locations`)) : null),
+    () => (firestore && teamId ? query(collection(firestore, 'locations'), where('teamId', '==', teamId)) : null),
     [firestore, teamId]
   );
   const { data: locations, isLoading: isLoadingLocations } =
@@ -359,3 +360,5 @@ export default function RecurringTasksPage() {
     </div>
   );
 }
+
+    

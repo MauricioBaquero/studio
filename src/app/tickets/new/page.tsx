@@ -3,7 +3,7 @@
 
 import { useMemo } from 'react';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, doc } from 'firebase/firestore';
+import { collection, query, doc, where } from 'firebase/firestore';
 import type { Category, Location, AppSettings } from '@/lib/data';
 import { TicketForm } from './ticket-form';
 
@@ -26,7 +26,7 @@ export default function NewTicketPage() {
     useCollection<Category>(categoriesQuery);
 
   const locationsQuery = useMemoFirebase(
-    () => (firestore && teamId ? query(collection(firestore, `teams/${teamId}/locations`)) : null),
+    () => (firestore && teamId ? query(collection(firestore, 'locations'), where('teamId', '==', teamId)) : null),
     [firestore, teamId]
   );
   const { data: locations, isLoading: isLoadingLocations } =
@@ -60,3 +60,5 @@ export default function NewTicketPage() {
     </div>
   );
 }
+
+    

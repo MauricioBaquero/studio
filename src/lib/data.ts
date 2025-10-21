@@ -1,4 +1,5 @@
 
+
 import { addDays, addWeeks, addMonths, setDay, setDate, nextDay, startOfDay, isAfter, isSameDay, toDate as fnsToDate } from "date-fns";
 import type { Timestamp } from 'firebase/firestore';
 import { z } from "zod";
@@ -27,6 +28,7 @@ export const userSchema = z.object({
   email: z.string().email(),
   role: z.enum(USER_ROLES),
   teamId: z.string(),
+  teamIds: z.array(z.string()),
 });
 export type User = z.infer<typeof userSchema>;
 
@@ -48,6 +50,7 @@ export const locationSchema = z.object({
     id: z.string(),
     name: z.string(),
     numberOfFloors: z.number().optional(),
+    teamId: z.string(),
 });
 export type Location = z.infer<typeof locationSchema>;
 
@@ -185,3 +188,5 @@ export const getNextDueDate = (task: RecurringTask): Date => {
       return new Date();
   }
 };
+
+    

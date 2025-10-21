@@ -10,7 +10,7 @@ import TicketBoard from "@/components/ticket-board";
 import { TicketFilters, FilterValues } from '@/components/ticket-filters';
 import { isWithinInterval } from 'date-fns';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, Timestamp } from 'firebase/firestore';
+import { collection, query, Timestamp, where } from 'firebase/firestore';
 
 export default function TaskBoardPage() {
   const firestore = useFirestore();
@@ -31,7 +31,6 @@ export default function TaskBoardPage() {
 
   const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    // Querying the root users collection for filtering purposes
     return query(collection(firestore, 'users'));
   }, [firestore]);
   
@@ -42,7 +41,7 @@ export default function TaskBoardPage() {
 
   const locationsQuery = useMemoFirebase(() => {
     if (!firestore || !teamId) return null;
-    return query(collection(firestore, `teams/${teamId}/locations`));
+    return query(collection(firestore, `locations`), where('teamId', '==', teamId));
   }, [firestore, teamId]);
   
   const { data: tickets, isLoading: isLoadingTickets } = useCollection<Ticket>(ticketsQuery);
@@ -98,7 +97,7 @@ export default function TaskBoardPage() {
 
   const assignableUsers = useMemo(() => {
     if (!users || !teamId) return [];
-    return users.filter(u => u.teamId === teamId && (u.role === 'Admin' || u.role === 'Staff'));
+    return users.filter(u => u.teamIds && u.teamIds.includes(teamId) && (u.role === 'Admin' || u.role === 'Staff'));
   }, [users, teamId]);
 
   return (
@@ -145,3 +144,5 @@ export default function TaskBoardPage() {
     </div>
   );
 }
+
+    
