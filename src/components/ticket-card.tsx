@@ -180,64 +180,70 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
             <MapPin className="h-4 w-4" />
             <span className="truncate">{ticket.location}</span>
           </div>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            <span>Due: {format(requestedCompletionDate, 'MM/dd/yyyy')}</span>
+          <div className="flex items-start gap-2 text-muted-foreground">
+            <Calendar className="h-4 w-4 mt-0.5" />
+            <div className="flex flex-col">
+              <span>Due: {format(requestedCompletionDate, 'MM/dd/yyyy')}</span>
+              {ticket.photos && ticket.photos.length > 0 && (
+                <div className="flex items-center gap-1 text-muted-foreground mt-1">
+                  <Camera className="h-4 w-4" />
+                  <span className="text-xs">{ticket.photos.length}</span>
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
-        <CardFooter className="flex flex-col items-start gap-4">
-            <div className="w-full flex items-center justify-between">
-                {assignedUsers.length > 0 ? (
-                    <div className="flex items-center gap-2 min-w-0">
-                        {assignedUsers.length > 1 ? (
-                            <div className="flex items-center">
-                                <Users className="h-6 w-6" />
-                                <span className="ml-2 text-sm text-muted-foreground truncate">{assignedUsers.length} users</span>
-                            </div>
-                        ) : (
-                            <>
-                                <Avatar className="h-6 w-6">
-                                    <AvatarFallback>{assignedUsers[0]?.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div className="text-sm text-muted-foreground truncate">
-                                    <span>{assignedUsers[0]?.name}</span>
+        <CardFooter className="flex flex-col items-start gap-2">
+            <div className="w-full flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                    {assignedUsers.length > 0 ? (
+                        <div className="flex items-center gap-2">
+                            {assignedUsers.length > 1 ? (
+                                <div className="flex items-center">
+                                    <Users className="h-6 w-6" />
+                                    <span className="ml-2 text-sm text-muted-foreground truncate">{assignedUsers.length} users</span>
                                 </div>
-                            </>
-                        )}
-                        {ticket.status === 'Completed' && ticket.submitToReviewDate && (
-                        <div className="text-xs text-muted-foreground ml-2 whitespace-nowrap">Completed: {format(toDate(ticket.submitToReviewDate), 'MM/dd/yyyy')}</div>
-                        )}
-                    </div>
-                ) : (
-                    <span className="text-sm text-muted-foreground italic">Unassigned</span>
-                )}
-                <div className="flex items-center gap-2 pl-2">
-                {ticket.photos && ticket.photos.length > 0 && (
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                    <Camera className="h-4 w-4" />
-                    <span className="text-xs">{ticket.photos.length}</span>
-                    </div>
-                )}
-                {ticket.status === 'Completed' && (
-                    <div className="text-xs text-muted-foreground text-right whitespace-nowrap">
-                    {approver && !ticket.unableToComplete && (
-                        <div>Approved by {approver.name}</div>
+                            ) : (
+                                <>
+                                    <Avatar className="h-6 w-6">
+                                        <AvatarFallback>{assignedUsers[0]?.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="text-sm text-muted-foreground truncate">
+                                        <span>{assignedUsers[0]?.name}</span>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    ) : (
+                        <span className="text-sm text-muted-foreground italic">Unassigned</span>
                     )}
-                    {ticket.actualCompletionDate && (
-                        <div>{format(toDate(ticket.actualCompletionDate), 'MM/dd/yyyy')}</div>
+
+                    {ticket.status === 'Completed' && ticket.submitToReviewDate && (
+                        <div className="text-xs text-muted-foreground mt-1">Completed: {format(toDate(ticket.submitToReviewDate), 'MM/dd/yyyy')}</div>
                     )}
-                    </div>
-                )}
-                 {ticket.status === 'Not Started' && (!ticket.assignedToIds || ticket.assignedToIds.length === 0) && canClaimTask && (
-                      <Button variant="success" size="sm" onClick={handleClaimTask}>
-                        {claimSaying}
-                      </Button>
-                  )}
+                </div>
+                
+                <div className="text-right">
+                    {ticket.status === 'Completed' && (
+                        <div className="text-xs text-muted-foreground whitespace-nowrap">
+                            {approver && !ticket.unableToComplete && (
+                                <div>Approved by {approver.name}</div>
+                            )}
+                            {ticket.actualCompletionDate && (
+                                <div>{format(toDate(ticket.actualCompletionDate), 'MM/dd/yyyy')}</div>
+                            )}
+                        </div>
+                    )}
+                    {ticket.status === 'Not Started' && (!ticket.assignedToIds || ticket.assignedToIds.length === 0) && canClaimTask && (
+                        <Button variant="success" size="sm" onClick={handleClaimTask}>
+                            {claimSaying}
+                        </Button>
+                    )}
                 </div>
             </div>
             
              {ticket.status === 'In Progress' && canMarkForReview && (
-                <div className="flex w-full gap-2 pt-2 border-t">
+                <div className="flex w-full gap-2 pt-2 border-t mt-2">
                     <Button variant="destructive" size="sm" className="flex-1" onClick={handleUnableToComplete}>
                         Unable to Complete
                     </Button>
