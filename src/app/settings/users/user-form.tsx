@@ -154,7 +154,7 @@ export function UserForm({
                     </FormItem>
                 )}
             />
-            {watchedRole !== 'Admin' && watchedRole !== 'Coordinator' && (
+            {watchedRole !== 'Admin' && watchedRole !== 'Coordinator' ? (
                 <FormField
                 control={form.control}
                 name="teamId"
@@ -179,6 +179,13 @@ export function UserForm({
                     </FormItem>
                 )}
                 />
+            ) : (
+                <FormItem>
+                    <FormLabel>Team</FormLabel>
+                    <div className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-card px-3 py-2 text-sm text-muted-foreground">
+                        Access to all teams
+                    </div>
+                </FormItem>
             )}
             <DialogFooter>
               <Button
