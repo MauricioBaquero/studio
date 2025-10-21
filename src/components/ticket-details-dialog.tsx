@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -251,6 +251,16 @@ export function TicketDetailsDialog({
   const canInteractWithForm = isAdminOrCoordinator || (isStaff && (isAssignedToCurrentUser || !ticket.assignedToIds || ticket.assignedToIds.length === 0));
   const assignableUsers = users.filter(u => u.role === 'Admin' || u.role === 'Coordinator' || u.role === 'Staff');
 
+  const sortedAssignableUsers = useMemo(() => {
+    return [...assignableUsers].sort((a, b) => {
+      const aIsAssigned = assignedToIds.includes(a.uid);
+      const bIsAssigned = assignedToIds.includes(b.uid);
+      if (aIsAssigned && !bIsAssigned) return -1;
+      if (!aIsAssigned && bIsAssigned) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [assignableUsers, assignedToIds]);
+
 
   return (
     <>
@@ -363,7 +373,7 @@ export function TicketDetailsDialog({
                                 <CommandList>
                                     <CommandEmpty>No users found.</CommandEmpty>
                                     <CommandGroup>
-                                        {assignableUsers.map(user => (
+                                        {sortedAssignableUsers.map(user => (
                                             <CommandItem
                                                 key={user.uid}
                                                 onSelect={() => {
