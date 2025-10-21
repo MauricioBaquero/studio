@@ -47,26 +47,66 @@ export function TeamSwitcher() {
 
     setIsLoading(true);
 
-    if (currentUser.teamIds && currentUser.teamIds.length > 0) {
-      const fetchTeams = async () => {
-        try {
-          const teamRefs = currentUser.teamIds.map(id => doc(firestore, 'teams', id));
-          const teamDocs = await Promise.all(teamRefs.map(ref => getDoc(ref)));
-          const userTeams = teamDocs.filter(doc => doc.exists()).map(doc => ({ id: doc.id, ...doc.data() } as Team));
-          setTeams(userTeams);
-        } catch (error) {
-          console.error("Error fetching user's teams:", error);
-          // Non-snapshot errors can be console logged for now.
-        } finally {
+    let unsubscribe: () => void = () => {};
+
+    if (currentUser.role === 'Admin') {
+      // Admin: fetch all teams
+      const teamsQuery = query(collection(firestore, 'teams'));
+      unsubscribe = onSnapshot(teamsQuery, 
+        (snapshot) => {
+          const allTeams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Team));
+          setTeams(allTeams);
+          setIsLoading(false);
+        },
+        (err) => {
+          console.error("Error fetching all teams for admin:", err);
+          const contextualError = new FirestorePermissionError({
+              path: 'teams',
+              operation: 'list',
+          });
+          errorEmitter.emit('permission-error', contextualError);
           setIsLoading(false);
         }
-      };
-      fetchTeams();
+      );
+    } else if (currentUser.teamIds && currentUser.teamIds.length > 0) {
+      // Non-admin: fetch their specific teams
+      const teamRefs = currentUser.teamIds.map(id => doc(firestore, 'teams', id));
+      const unsubscribes = teamRefs.map((ref, index) => 
+        onSnapshot(ref, 
+          (doc) => {
+            if (doc.exists()) {
+              const teamData = { id: doc.id, ...doc.data() } as Team;
+              setTeams(prev => {
+                const newTeams = [...prev];
+                const existingIndex = newTeams.findIndex(t => t.id === teamData.id);
+                if (existingIndex > -1) {
+                  newTeams[existingIndex] = teamData;
+                } else {
+                  newTeams.push(teamData);
+                }
+                return newTeams;
+              });
+            }
+            if(index === teamRefs.length - 1) setIsLoading(false);
+          },
+          (err) => {
+             console.error(`Error fetching team ${ref.id}:`, err);
+             const contextualError = new FirestorePermissionError({
+                path: ref.path,
+                operation: 'get',
+             });
+             errorEmitter.emit('permission-error', contextualError);
+             if(index === teamRefs.length - 1) setIsLoading(false);
+          }
+        )
+      );
+      unsubscribe = () => unsubscribes.forEach(unsub => unsub());
     } else {
-        setIsLoading(false);
-        setTeams([]);
+      setIsLoading(false);
+      setTeams([]);
     }
 
+    return () => unsubscribe();
   }, [firestore, currentUser]);
 
 
