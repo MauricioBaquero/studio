@@ -227,7 +227,10 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
                     {ticket.status === 'Completed' && (
                         <div className="text-xs text-muted-foreground whitespace-nowrap">
                             {approver && !ticket.unableToComplete && (
-                                <div>Approved by {approver.name}</div>
+                                <div>
+                                    Approved by<br />
+                                    {approver.name}
+                                </div>
                             )}
                             {ticket.actualCompletionDate && (
                                 <div>{format(toDate(ticket.actualCompletionDate), 'MM/dd/yyyy')}</div>
