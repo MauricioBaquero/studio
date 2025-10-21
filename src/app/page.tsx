@@ -97,8 +97,8 @@ export default function TaskBoardPage() {
 
   const assignableUsers = useMemo(() => {
     if (!users || !teamId) return [];
-    if (teamId === 'allTeams') return users.filter(u => u.role === 'Admin' || u.role === 'Staff');
-    return users.filter(u => u.teamId === teamId && (u.role === 'Admin' || u.role === 'Staff'));
+    if (teamId === 'allTeams') return users.filter(u => u.role === 'Admin' || u.role === 'Coordinator' || u.role === 'Staff');
+    return users.filter(u => u.teamId === teamId && (u.role === 'Admin' || u.role === 'Coordinator' || u.role === 'Staff'));
   }, [users, teamId]);
 
   return (

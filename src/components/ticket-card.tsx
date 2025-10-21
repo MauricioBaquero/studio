@@ -75,7 +75,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
   const approver = getUserById(ticket.approvedBy || null);
   const subCategoryInfo = findSubCategory(ticket.categoryId);
 
-  const isAdmin = currentUser?.role === 'Admin';
+  const isAdminOrCoordinator = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator';
   const isViewer = currentUser?.role === 'Viewer';
   const isStaff = currentUser?.role === 'Staff';
   const isAssignedToCurrentUser = currentUser && (ticket.assignedToIds || []).includes(currentUser.uid);
@@ -108,7 +108,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
     });
   };
 
-  const canInteract = isAdmin || isViewer || (isStaff && (isAssignedToCurrentUser || !ticket.assignedToIds || ticket.assignedToIds.length === 0));
+  const canInteract = isAdminOrCoordinator || isViewer || (isStaff && (isAssignedToCurrentUser || !ticket.assignedToIds || ticket.assignedToIds.length === 0));
   
   const handleOpenDialog = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('button') || !canInteract) {
@@ -121,8 +121,8 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
   const isOverdue = isPast(startOfDay(requestedCompletionDate)) && ticket.status !== 'Completed';
 
 
-  const canClaimTask = !isViewer && (isAdmin || (isStaff && (!ticket.assignedToIds || ticket.assignedToIds.length === 0)));
-  const canMarkForReview = (isStaff || isAdmin) && isAssignedToCurrentUser;
+  const canClaimTask = !isViewer && (isAdminOrCoordinator || (isStaff && (!ticket.assignedToIds || ticket.assignedToIds.length === 0)));
+  const canMarkForReview = (isStaff || isAdminOrCoordinator) && isAssignedToCurrentUser;
 
   return (
     <>

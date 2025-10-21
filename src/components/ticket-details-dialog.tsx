@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -232,12 +233,12 @@ export function TicketDetailsDialog({
   const assignedUsers = assignedToIds.map(id => getUserById(id)).filter(Boolean) as User[];
   const subCategoryInfo = findSubCategory(ticket.categoryId);
 
-  const isAdmin = currentUser?.role === 'Admin';
+  const isAdminOrCoordinator = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator';
   const isPendingReview = ticket.status === 'Pending Review';
   const isStaff = currentUser?.role === 'Staff';
   const isAssignedToCurrentUser = currentUser && (ticket.assignedToIds || []).includes(currentUser.uid);
-  const canInteractWithForm = isAdmin || (isStaff && (isAssignedToCurrentUser || !ticket.assignedToIds || ticket.assignedToIds.length === 0));
-  const assignableUsers = users.filter(u => u.role === 'Admin' || u.role === 'Staff');
+  const canInteractWithForm = isAdminOrCoordinator || (isStaff && (isAssignedToCurrentUser || !ticket.assignedToIds || ticket.assignedToIds.length === 0));
+  const assignableUsers = users.filter(u => u.role === 'Admin' || u.role === 'Coordinator' || u.role === 'Staff');
 
 
   return (
@@ -318,7 +319,7 @@ export function TicketDetailsDialog({
               </div>
               <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">Assigned To</p>
-                  {isAdmin ? (
+                  {isAdminOrCoordinator ? (
                     <Popover open={multiSelectOpen} onOpenChange={setMultiSelectOpen}>
                         <PopoverTrigger asChild>
                             <Button
@@ -376,7 +377,7 @@ export function TicketDetailsDialog({
                   <Select 
                       value={currentStatus} 
                       onValueChange={(value) => setCurrentStatus(value as TicketStatus)}
-                      disabled={isSaving || !isAdmin }
+                      disabled={isSaving || !isAdminOrCoordinator }
                   >
                       <SelectTrigger className="w-full">
                           <SelectValue placeholder="Set status" />
@@ -386,7 +387,7 @@ export function TicketDetailsDialog({
                               <SelectItem 
                                   key={status} 
                                   value={status}
-                                  disabled={!isAdmin}
+                                  disabled={!isAdminOrCoordinator}
                               >
                                   {status}
                               </SelectItem>
@@ -398,7 +399,7 @@ export function TicketDetailsDialog({
           </div>
           <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-between pt-4 border-t">
             <div className="w-full sm:w-auto">
-              {isAdmin && (
+              {isAdminOrCoordinator && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" disabled={isSaving} className="w-full sm:w-auto">
@@ -424,7 +425,7 @@ export function TicketDetailsDialog({
               <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
                 Cancel
               </Button>
-              {isAdmin && isPendingReview ? (
+              {isAdminOrCoordinator && isPendingReview ? (
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Button onClick={() => handleUpdate('In Progress')} disabled={isSaving} variant="secondary">
                     {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}

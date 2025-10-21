@@ -106,7 +106,7 @@ export default function UsersPage() {
   };
 
   const isLoading = isLoadingUsers || isLoadingTeams;
-  const canAddUser = currentUser?.role === 'Admin';
+  const canAddUser = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator';
 
   const getTeamName = (teamId: string) => {
     if (teamId === 'allTeams') return 'Access to all teams';
@@ -173,7 +173,7 @@ export default function UsersPage() {
                     </div>
                   </TableCell>
                    <TableCell>
-                    {user.role === 'Admin' ? (
+                    {user.role === 'Admin' || user.role === 'Coordinator' ? (
                       <span className="text-muted-foreground italic">Access to all teams</span>
                     ) : (
                       getTeamName(user.teamId)
