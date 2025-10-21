@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -38,6 +37,11 @@ const claimSayings = [
   "I'll grab this",
   'Sign me up!',
   'I claim this one',
+  "This one's mine.",
+  "Challenge accepted.",
+  "Let's do this.",
+  "Got it.",
+  "My turn.",
 ];
 
 interface TicketCardProps {
