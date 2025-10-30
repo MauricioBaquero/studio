@@ -115,7 +115,7 @@ export function AddTaskForm({
       subcategoryId: '',
       locationId: '',
       frequency: 'Daily',
-      assignedToId: '',
+      assignedToId: 'unassigned',
       dayOfWeek: undefined,
       weekOfMonth: undefined,
     },
@@ -130,7 +130,7 @@ export function AddTaskForm({
         subcategoryId: editingTask.categoryId,
         locationId: editingTask.locationId,
         frequency: editingTask.frequency,
-        assignedToId: editingTask.assignedToId || '',
+        assignedToId: editingTask.assignedToId || 'unassigned',
         dayOfWeek: editingTask.dayOfWeek,
         weekOfMonth: editingTask.weekOfMonth,
       });
@@ -142,7 +142,7 @@ export function AddTaskForm({
         subcategoryId: '',
         locationId: '',
         frequency: 'Daily',
-        assignedToId: '',
+        assignedToId: 'unassigned',
         dayOfWeek: undefined,
         weekOfMonth: undefined,
       });
@@ -164,7 +164,7 @@ export function AddTaskForm({
       categoryId: data.subcategoryId,
       locationId: data.locationId,
       frequency: data.frequency,
-      assignedToId: data.assignedToId || null,
+      assignedToId: data.assignedToId === 'unassigned' ? null : data.assignedToId,
     };
     
     if (!isEditMode) {
@@ -342,7 +342,7 @@ export function AddTaskForm({
                             </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                <SelectItem value="">Unassigned</SelectItem>
+                                <SelectItem value="unassigned">Unassigned</SelectItem>
                                 {assignableUsers.map(user => (
                                     <SelectItem key={user.uid} value={user.uid}>
                                         {user.name}
