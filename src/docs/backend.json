@@ -190,6 +190,10 @@
             "type": "string",
             "format": "date-time"
           }
+        },
+        "assignedToId": {
+            "type": "string",
+            "description": "The UID of the user this task is assigned to. Can be empty."
         }
       },
       "required": [
@@ -365,4 +369,3 @@
   }
 }
     
-

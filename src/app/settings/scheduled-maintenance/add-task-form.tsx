@@ -35,7 +35,7 @@ import {
   Location,
   RECURRING_FREQUENCIES,
   RecurringTask,
-  Subcategory,
+  User,
 } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -44,8 +44,10 @@ import {
   updateDocumentNonBlocking,
   useUser,
   setDocumentNonBlocking,
+  useCollection,
+  useMemoFirebase,
 } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, query, where } from 'firebase/firestore';
 
 const recurringTaskSchema = z.object({
   title: z.string().min(3, 'Title is required'),
@@ -53,6 +55,7 @@ const recurringTaskSchema = z.object({
   subcategoryId: z.string().min(1, 'Subcategory is required'),
   locationId: z.string().min(1, 'Location is required'),
   frequency: z.enum(RECURRING_FREQUENCIES),
+  assignedToId: z.string().optional(),
   dayOfWeek: z.coerce.number().optional(),
   weekOfMonth: z.coerce.number().optional(),
 });
@@ -80,6 +83,15 @@ export function AddTaskForm({
   const teamId = currentUser?.teamId;
   const isEditMode = !!editingTask;
 
+  const usersQuery = useMemoFirebase(() => {
+    if (!firestore || !teamId || teamId === 'allTeams') return null;
+    return query(
+        collection(firestore, 'users'), 
+        where('teamId', '==', teamId)
+    );
+  }, [firestore, teamId]);
+  const { data: users } = useCollection<User>(usersQuery);
+
   const getParentCategoryId = (subcategoryId: string) => {
     for (const parent of parentCategories) {
       if (parent.subcategories.some(sub => sub.id === subcategoryId)) {
@@ -103,6 +115,7 @@ export function AddTaskForm({
       subcategoryId: '',
       locationId: '',
       frequency: 'Daily',
+      assignedToId: '',
       dayOfWeek: undefined,
       weekOfMonth: undefined,
     },
@@ -117,6 +130,7 @@ export function AddTaskForm({
         subcategoryId: editingTask.categoryId,
         locationId: editingTask.locationId,
         frequency: editingTask.frequency,
+        assignedToId: editingTask.assignedToId || '',
         dayOfWeek: editingTask.dayOfWeek,
         weekOfMonth: editingTask.weekOfMonth,
       });
@@ -128,6 +142,7 @@ export function AddTaskForm({
         subcategoryId: '',
         locationId: '',
         frequency: 'Daily',
+        assignedToId: '',
         dayOfWeek: undefined,
         weekOfMonth: undefined,
       });
@@ -146,15 +161,15 @@ export function AddTaskForm({
 
     const taskData: any = {
       title: data.title,
-      categoryId: data.subcategoryId, // We save subcategory id as the main categoryId
+      categoryId: data.subcategoryId,
       locationId: data.locationId,
       frequency: data.frequency,
+      assignedToId: data.assignedToId || null,
     };
     
     if (!isEditMode) {
-        taskData.lastCompleted = []; // Only initialize for new tasks
+        taskData.lastCompleted = [];
     }
-
 
     if (data.frequency === 'Weekly') {
       taskData.dayOfWeek = data.dayOfWeek;
@@ -183,6 +198,13 @@ export function AddTaskForm({
   };
 
   const frequency = form.watch('frequency');
+
+  const assignableUsers = useMemo(() => {
+    if (!users) return [];
+    const teamUsers = users.filter(u => u.role === 'Staff');
+    const adminsAndCoordinators = users.filter(u => u.role === 'Admin' || u.role === 'Coordinator');
+    return [...adminsAndCoordinators, ...teamUsers];
+  }, [users]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -276,33 +298,63 @@ export function AddTaskForm({
               )}
             />
             </div>
-             <FormField
-              control={form.control}
-              name="locationId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Location</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a location" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {locations.map(loc => (
-                        <SelectItem key={loc.id} value={loc.id}>
-                          {loc.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+             <div className="grid grid-cols-2 gap-4">
+                <FormField
+                control={form.control}
+                name="locationId"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                    >
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a location" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        {locations.map(loc => (
+                            <SelectItem key={loc.id} value={loc.id}>
+                            {loc.name}
+                            </SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                    control={form.control}
+                    name="assignedToId"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Assigned To</FormLabel>
+                        <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                        >
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Unassigned" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="">Unassigned</SelectItem>
+                                {assignableUsers.map(user => (
+                                    <SelectItem key={user.uid} value={user.uid}>
+                                        {user.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
 
             <FormField
               control={form.control}
@@ -433,5 +485,3 @@ export function AddTaskForm({
     </Dialog>
   );
 }
-
-    

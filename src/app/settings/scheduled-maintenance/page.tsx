@@ -15,6 +15,7 @@ import {
   Category,
   Location,
   Team,
+  User
 } from '@/lib/data';
 import {
   Card,
@@ -107,6 +108,12 @@ export default function ScheduledMaintenancePage() {
   );
   const { data: teams, isLoading: isLoadingTeams } = useCollection<Team>(teamsQuery);
   
+  const usersQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'users')) : null),
+    [firestore]
+  );
+  const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
+
   const currentTeam = useMemo(() => {
     if (!teams || !teamId) return null;
     if (teamId === 'allTeams' && teams.length > 0) return teams[0];
@@ -124,6 +131,7 @@ export default function ScheduledMaintenancePage() {
     return null;
   }
   const getLocationById = (id: string) => locations?.find(l => l.id === id);
+  const getUserById = (id: string) => users?.find(u => u.uid === id);
 
 
   const parentCategories = useMemo(
@@ -173,7 +181,7 @@ export default function ScheduledMaintenancePage() {
   };
 
 
-  const isLoading = isLoadingTasks || isLoadingCategories || isLoadingLocations || isLoadingTeams;
+  const isLoading = isLoadingTasks || isLoadingCategories || isLoadingLocations || isLoadingTeams || isLoadingUsers;
 
   return (
     <>
@@ -204,6 +212,7 @@ export default function ScheduledMaintenancePage() {
                   <TableHead>Category</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Frequency</TableHead>
+                  <TableHead>Assigned To</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -211,6 +220,7 @@ export default function ScheduledMaintenancePage() {
                 {tasks?.map(task => {
                   const subCategoryInfo = findSubCategory(task.categoryId);
                   const location = getLocationById(task.locationId);
+                  const assignedUser = task.assignedToId ? getUserById(task.assignedToId) : null;
                   return (
                     <TableRow key={task.id}>
                       <TableCell className="font-medium">{task.title}</TableCell>
@@ -227,6 +237,9 @@ export default function ScheduledMaintenancePage() {
                         <span className="text-muted-foreground">
                           {getFrequencyDetails(task)}
                         </span>
+                      </TableCell>
+                       <TableCell>
+                        {assignedUser ? assignedUser.name : <span className="text-muted-foreground italic">Unassigned</span>}
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>

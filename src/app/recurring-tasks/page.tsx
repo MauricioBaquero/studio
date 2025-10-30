@@ -106,15 +106,22 @@ export default function RecurringTasksPage() {
   const getLocationById = (id: string | null) => locations?.find(l => l.id === id);
 
   useEffect(() => {
-    if (recurringTasks && users && locations) {
-      setAllTasks(recurringTasks);
+    if (recurringTasks && users && locations && currentUser) {
+      const isAdminOrCoordinator = currentUser.role === 'Admin' || currentUser.role === 'Coordinator';
+      const visibleTasks = recurringTasks.filter(task => {
+        if (isAdminOrCoordinator) return true; // Admins/Coordinators see all
+        if (!task.assignedToId) return true; // Everyone sees unassigned
+        return task.assignedToId === currentUser.uid; // Staff see tasks assigned to them
+      });
+
+      setAllTasks(visibleTasks);
 
       const allCompleted: CompletedTask[] = [];
-      recurringTasks.forEach(task => {
+      visibleTasks.forEach(task => {
         if (task.lastCompleted && task.lastCompleted.length > 0) {
             task.lastCompleted.forEach(completion => {
                 const latestCompletion = toDate(completion);
-                const completedByUser = getUserById(task.completedBy);
+                const completedByUser = getUserById(task.completedBy || null);
                 const location = getLocationById(task.locationId);
                 if (completedByUser) {
                     allCompleted.push({
@@ -132,7 +139,7 @@ export default function RecurringTasksPage() {
       });
       setCompletedTasks(allCompleted.sort((a,b) => b.completedAt.getTime() - a.completedAt.getTime()));
     }
-  }, [recurringTasks, users, locations]);
+  }, [recurringTasks, users, locations, currentUser]);
   
   const findSubCategory = (subcategoryId: string) => {
     if (!categories) return null;
