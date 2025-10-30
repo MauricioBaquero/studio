@@ -15,7 +15,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { format, isToday, isPast, startOfDay, isSameDay, differenceInDays } from 'date-fns';
+import { format, isToday, isPast, startOfDay, isSameDay, differenceInDays, isWithinInterval } from 'date-fns';
 import {
   useCollection,
   useFirestore,
@@ -35,6 +35,8 @@ import {
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { RecurringTaskFilters, FilterValues } from '@/components/recurring-task-filters';
+
 
 type CompletedTask = {
     id: string;
@@ -42,6 +44,8 @@ type CompletedTask = {
     completedAt: Date;
     completedBy: User;
     locationName: string;
+    categoryId: string;
+    locationId: string;
 };
 
 export default function RecurringTasksPage() {
@@ -50,6 +54,13 @@ export default function RecurringTasksPage() {
   const teamId = currentUser?.teamId;
   const [allTasks, setAllTasks] = useState<RecurringTask[]>([]);
   const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>([]);
+  const [filters, setFilters] = useState<FilterValues>({
+    task: 'all',
+    location: 'all',
+    category: 'all',
+    dateRange: { from: undefined, to: undefined },
+  });
+
 
   const settingsRef = useMemoFirebase(
     () => (firestore && teamId && teamId !== 'allTeams' ? doc(firestore, `teams/${teamId}/settings`, 'appSettings') : null),
@@ -111,7 +122,9 @@ export default function RecurringTasksPage() {
                         title: task.title,
                         completedAt: latestCompletion,
                         completedBy: completedByUser,
-                        locationName: location?.name || 'N/A'
+                        locationName: location?.name || 'N/A',
+                        categoryId: task.categoryId,
+                        locationId: task.locationId
                     });
                 }
             })
@@ -120,12 +133,40 @@ export default function RecurringTasksPage() {
       setCompletedTasks(allCompleted.sort((a,b) => b.completedAt.getTime() - a.completedAt.getTime()));
     }
   }, [recurringTasks, users, locations]);
+  
+  const findSubCategory = (subcategoryId: string) => {
+    if (!categories) return null;
+    for (const parent of categories) {
+        const sub = parent.subcategories?.find(s => s.id === subcategoryId);
+        if (sub) {
+            return { ...sub, parentName: parent.name, color: parent.color, parentId: parent.id };
+        }
+    }
+    return null;
+  }
 
   const { dueTasks, completedTodayTasks } = useMemo(() => {
     if (!allTasks) {
       return { dueTasks: [], completedTodayTasks: [] };
     }
-    const sortedTasks = allTasks.sort(
+
+    const filtered = allTasks.filter(task => {
+        if (filters.task !== 'all' && task.id !== filters.task) return false;
+        if (filters.location !== 'all' && task.locationId !== filters.location) return false;
+        
+        if (filters.category !== 'all') {
+            const subCatInfo = findSubCategory(task.categoryId);
+            if (subCatInfo?.parentId !== filters.category) return false;
+        }
+
+        if (filters.dateRange.from && filters.dateRange.to) {
+            const nextDueDate = getNextDueDate(task);
+            if (!isWithinInterval(nextDueDate, filters.dateRange)) return false;
+        }
+        return true;
+    });
+
+    const sortedTasks = filtered.sort(
       (a, b) => getNextDueDate(a).getTime() - getNextDueDate(b).getTime()
     );
 
@@ -147,19 +188,26 @@ export default function RecurringTasksPage() {
     });
 
     return { dueTasks: due, completedTodayTasks: completed };
-  }, [allTasks]);
-
-
-  const findSubCategory = (subcategoryId: string) => {
-    if (!categories) return null;
-    for (const parent of categories) {
-        const sub = parent.subcategories?.find(s => s.id === subcategoryId);
-        if (sub) {
-            return { ...sub, parentName: parent.name, color: parent.color };
+  }, [allTasks, filters, categories]);
+  
+  const filteredCompletedTasks = useMemo(() => {
+    return completedTasks.filter(task => {
+        if (filters.task !== 'all' && task.id !== filters.task) return false;
+        if (filters.location !== 'all' && task.locationId !== filters.location) return false;
+        
+        if (filters.category !== 'all') {
+            const subCatInfo = findSubCategory(task.categoryId);
+            if (subCatInfo?.parentId !== filters.category) return false;
         }
-    }
-    return null;
-  }
+
+        if (filters.dateRange.from && filters.dateRange.to) {
+            if (!isWithinInterval(task.completedAt, filters.dateRange)) return false;
+        }
+        return true;
+    });
+  }, [completedTasks, filters, categories]);
+
+
   
   const handleTaskCheck = (task: RecurringTask) => {
     if (!firestore || !currentUser || !users || !teamId || teamId === 'allTeams') return;
@@ -184,6 +232,8 @@ export default function RecurringTasksPage() {
             completedBy: user,
             completedAt: now,
             locationName: location?.name || 'N/A',
+            categoryId: task.categoryId,
+            locationId: task.locationId
         };
         setCompletedTasks(prev => [optimisticCompletedTask, ...prev].sort((a,b) => b.completedAt.getTime() - a.completedAt.getTime()));
 
@@ -268,18 +318,31 @@ export default function RecurringTasksPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col h-full">
-        <h1 className="text-3xl font-bold font-headline mb-6">
+      <div className="flex flex-col h-full gap-6">
+        <h1 className="text-3xl font-bold font-headline">
           Recurring Tasks
         </h1>
         <p>Loading recurring tasks...</p>
       </div>
     );
   }
+  
+  const parentCategories = categories || [];
+  const validLocations = locations || [];
+  const validTasks = recurringTasks || [];
+
 
   return (
-    <div className="flex flex-col h-full">
-      <h1 className="text-3xl font-bold font-headline mb-6">Recurring Tasks</h1>
+    <div className="flex flex-col h-full gap-6">
+      <h1 className="text-3xl font-bold font-headline">Recurring Tasks</h1>
+      
+      <RecurringTaskFilters 
+        parentCategories={parentCategories}
+        locations={validLocations}
+        tasks={validTasks}
+        onFilterChange={setFilters}
+      />
+
       <div className="grid md:grid-cols-2 gap-6 flex-1">
         <Card className="flex flex-col">
           <CardHeader>
@@ -341,8 +404,8 @@ export default function RecurringTasksPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {completedTasks.length > 0 ? (
-                  completedTasks.map(task => {
+                {filteredCompletedTasks.length > 0 ? (
+                  filteredCompletedTasks.map(task => {
                     return (
                       <TableRow
                         key={`completed-${task.id}-${task.completedAt.getTime()}`}
