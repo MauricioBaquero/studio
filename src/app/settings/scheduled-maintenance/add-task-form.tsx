@@ -84,12 +84,9 @@ export function AddTaskForm({
   const isEditMode = !!editingTask;
 
   const usersQuery = useMemoFirebase(() => {
-    if (!firestore || !teamId || teamId === 'allTeams') return null;
-    return query(
-        collection(firestore, 'users'), 
-        where('teamId', '==', teamId)
-    );
-  }, [firestore, teamId]);
+    if (!firestore) return null;
+    return query(collection(firestore, 'users'));
+  }, [firestore]);
   const { data: users } = useCollection<User>(usersQuery);
 
   const getParentCategoryId = (subcategoryId: string) => {
@@ -200,10 +197,21 @@ export function AddTaskForm({
   const frequency = form.watch('frequency');
 
   const assignableUsers = useMemo(() => {
-    if (!users) return [];
-    // Only 'Coordinator' and 'Staff' can be assigned.
-    return users.filter(u => u.role === 'Coordinator' || u.role === 'Staff');
-  }, [users]);
+    if (!users || !teamId) return [];
+    
+    const assignableRoles = ['Coordinator', 'Staff'];
+
+    if (teamId === 'allTeams') {
+      return users.filter(u => assignableRoles.includes(u.role));
+    }
+    
+    return users.filter(u => {
+      if (!assignableRoles.includes(u.role)) return false;
+      const belongsToTeam = u.teamId === teamId;
+      const isCoordinator = u.role === 'Coordinator';
+      return belongsToTeam || isCoordinator;
+    });
+  }, [users, teamId]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
