@@ -1,9 +1,8 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { RecurringTask, Category, User, getNextDueDate, toDate, Location, AppSettings } from '@/lib/data';
+import { RecurringTask, Category, User, getNextDueDate, toDate, Location, AppSettings, RecurringFrequency } from '@/lib/data';
 import {
   Table,
   TableBody,
@@ -46,6 +45,7 @@ type CompletedTask = {
     locationName: string;
     categoryId: string;
     locationId: string;
+    frequency: RecurringFrequency;
 };
 
 export default function RecurringTasksPage() {
@@ -131,7 +131,8 @@ export default function RecurringTasksPage() {
                         completedBy: completedByUser,
                         locationName: location?.name || 'N/A',
                         categoryId: task.categoryId,
-                        locationId: task.locationId
+                        locationId: task.locationId,
+                        frequency: task.frequency,
                     });
                 }
             })
@@ -240,7 +241,8 @@ export default function RecurringTasksPage() {
             completedAt: now,
             locationName: location?.name || 'N/A',
             categoryId: task.categoryId,
-            locationId: task.locationId
+            locationId: task.locationId,
+            frequency: task.frequency,
         };
         setCompletedTasks(prev => [optimisticCompletedTask, ...prev].sort((a,b) => b.completedAt.getTime() - a.completedAt.getTime()));
 
@@ -406,6 +408,7 @@ export default function RecurringTasksPage() {
                 <TableRow>
                   <TableHead>Task</TableHead>
                   <TableHead>Location</TableHead>
+                  <TableHead>Frequency</TableHead>
                   <TableHead>Completed By</TableHead>
                   <TableHead>Completed At</TableHead>
                 </TableRow>
@@ -421,6 +424,7 @@ export default function RecurringTasksPage() {
                           {task.title}
                         </TableCell>
                         <TableCell>{task.locationName}</TableCell>
+                        <TableCell>{task.frequency}</TableCell>
                         <TableCell>{task.completedBy?.name || 'N/A'}</TableCell>
                         <TableCell>
                             {format(task.completedAt, 'MM/dd/yyyy')}
@@ -430,7 +434,7 @@ export default function RecurringTasksPage() {
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">
+                    <TableCell colSpan={5} className="h-24 text-center">
                       No recurring tasks have been completed yet.
                     </TableCell>
                   </TableRow>
