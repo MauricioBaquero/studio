@@ -343,7 +343,7 @@ export default function RecurringTasksPage() {
         onFilterChange={setFilters}
       />
 
-      <div className="grid md:grid-cols-2 gap-6 flex-1">
+      <div className="grid lg:grid-cols-2 gap-6 flex-1">
         <Card className="flex flex-col">
           <CardHeader>
             <CardTitle>Scheduled Maintenance</CardTitle>
