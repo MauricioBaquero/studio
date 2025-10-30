@@ -77,7 +77,7 @@ export default function AppSidebar() {
               >
                 <Link href={item.href}>
                   <item.icon />
-                  <span>{item.label}</span>
+                  <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                 </Link>
               </SidebarMenuButton>
               {item.href === "/" && myInProgressCount > 0 && (
@@ -98,7 +98,7 @@ export default function AppSidebar() {
                 >
                 <Link href={settingsItem.href}>
                     <settingsItem.icon />
-                    <span>{settingsItem.label}</span>
+                    <span className="group-data-[collapsible=icon]:hidden">{settingsItem.label}</span>
                 </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
