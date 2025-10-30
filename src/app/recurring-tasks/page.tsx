@@ -41,6 +41,7 @@ type CompletedTask = {
     title: string;
     completedAt: Date;
     completedBy: User;
+    locationName: string;
 };
 
 export default function RecurringTasksPage() {
@@ -90,8 +91,11 @@ export default function RecurringTasksPage() {
   const { data: locations, isLoading: isLoadingLocations } =
     useCollection<Location>(locationsQuery);
   
+  const getUserById = (id: string | null) => users?.find(u => u.uid === id);
+  const getLocationById = (id: string | null) => locations?.find(l => l.id === id);
+
   useEffect(() => {
-    if (recurringTasks) {
+    if (recurringTasks && users && locations) {
       setAllTasks(recurringTasks);
 
       const allCompleted: CompletedTask[] = [];
@@ -99,13 +103,15 @@ export default function RecurringTasksPage() {
         if (task.lastCompleted && task.lastCompleted.length > 0) {
             task.lastCompleted.forEach(completion => {
                 const latestCompletion = toDate(completion);
-                const completedByUser = users?.find(u => u.uid === task.completedBy);
+                const completedByUser = getUserById(task.completedBy);
+                const location = getLocationById(task.locationId);
                 if (completedByUser) {
                     allCompleted.push({
                         id: task.id,
                         title: task.title,
                         completedAt: latestCompletion,
-                        completedBy: completedByUser
+                        completedBy: completedByUser,
+                        locationName: location?.name || 'N/A'
                     });
                 }
             })
@@ -113,7 +119,7 @@ export default function RecurringTasksPage() {
       });
       setCompletedTasks(allCompleted.sort((a,b) => b.completedAt.getTime() - a.completedAt.getTime()));
     }
-  }, [recurringTasks, users]);
+  }, [recurringTasks, users, locations]);
 
   const { dueTasks, completedTodayTasks } = useMemo(() => {
     if (!allTasks) {
@@ -155,15 +161,12 @@ export default function RecurringTasksPage() {
     return null;
   }
   
-  const getUserById = (id: string | null) => users?.find(u => u.uid === id);
-  const getLocationById = (id: string | null) => locations?.find(l => l.id === id);
-
-
   const handleTaskCheck = (task: RecurringTask) => {
     if (!firestore || !currentUser || !users || !teamId || teamId === 'allTeams') return;
 
     const now = new Date();
     const user = users.find(u => u.uid === currentUser.uid);
+    const location = getLocationById(task.locationId);
 
     if (user) {
         const recurringTaskRef = doc(firestore, `teams/${teamId}/recurringTasks`, task.id);
@@ -180,6 +183,7 @@ export default function RecurringTasksPage() {
             title: task.title,
             completedBy: user,
             completedAt: now,
+            locationName: location?.name || 'N/A',
         };
         setCompletedTasks(prev => [optimisticCompletedTask, ...prev].sort((a,b) => b.completedAt.getTime() - a.completedAt.getTime()));
 
@@ -331,6 +335,7 @@ export default function RecurringTasksPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Task</TableHead>
+                  <TableHead>Location</TableHead>
                   <TableHead>Completed By</TableHead>
                   <TableHead>Completed At</TableHead>
                 </TableRow>
@@ -345,6 +350,7 @@ export default function RecurringTasksPage() {
                         <TableCell className="font-medium">
                           {task.title}
                         </TableCell>
+                        <TableCell>{task.locationName}</TableCell>
                         <TableCell>{task.completedBy?.name || 'N/A'}</TableCell>
                         <TableCell>
                             {format(task.completedAt, 'MM/dd/yyyy')}
