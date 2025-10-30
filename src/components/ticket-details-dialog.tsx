@@ -252,15 +252,20 @@ export function TicketDetailsDialog({
 
   const assignableUsers = useMemo(() => {
     if (!users || !teamId) return [];
+    
+    // Only 'Coordinator' and 'Staff' can be assigned.
+    const assignableRoles = ['Coordinator', 'Staff'];
+
     if (teamId === 'allTeams') {
-      return users.filter(u => u.role === 'Admin' || u.role === 'Coordinator' || u.role === 'Staff');
+      return users.filter(u => assignableRoles.includes(u.role));
     }
+    
     return users.filter(u => {
-      const isAssignableRole = u.role === 'Admin' || u.role === 'Coordinator' || u.role === 'Staff';
-      if (!isAssignableRole) return false;
+      if (!assignableRoles.includes(u.role)) return false;
       const belongsToTeam = u.teamId === teamId;
-      const isGlobalRole = u.role === 'Admin' || u.role === 'Coordinator';
-      return belongsToTeam || isGlobalRole;
+      // Coordinators are assignable even if their current teamId doesn't match, as they can switch.
+      const isCoordinator = u.role === 'Coordinator';
+      return belongsToTeam || isCoordinator;
     });
   }, [users, teamId]);
 

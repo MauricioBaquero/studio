@@ -201,9 +201,8 @@ export function AddTaskForm({
 
   const assignableUsers = useMemo(() => {
     if (!users) return [];
-    const teamUsers = users.filter(u => u.role === 'Staff');
-    const adminsAndCoordinators = users.filter(u => u.role === 'Admin' || u.role === 'Coordinator');
-    return [...adminsAndCoordinators, ...teamUsers];
+    // Only 'Coordinator' and 'Staff' can be assigned.
+    return users.filter(u => u.role === 'Coordinator' || u.role === 'Staff');
   }, [users]);
 
   return (
@@ -334,7 +333,7 @@ export function AddTaskForm({
                         <FormLabel>Assigned To</FormLabel>
                         <Select
                             onValueChange={field.onChange}
-                            value={field.value}
+                            value={field.value || 'unassigned'}
                         >
                             <FormControl>
                             <SelectTrigger>
