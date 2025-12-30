@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -61,7 +62,7 @@ export default function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 font-bold font-headline text-2xl">
-          <span className="group-data-[collapsible=icon]:hidden">PWL App</span>
+          <span className="group-data-[collapsible=icon]:hidden">Parking Work Log</span>
         </Link>
         <TeamSwitcher />
       </SidebarHeader>

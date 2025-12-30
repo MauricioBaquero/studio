@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
@@ -6,7 +7,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { AppLayout } from '@/components/layout/app-layout';
 
 export const metadata: Metadata = {
-  title: 'PWL App',
+  title: 'Parking Work Log',
   description: 'A ticketing app for Maintenance and Facilities.',
 };
 
