@@ -128,8 +128,14 @@ export default function UsersPage() {
       <Card>
         <CardHeader className="space-y-2">
           <CardTitle>User Management</CardTitle>
-          <CardDescription>
-            Manage users and their roles. Roles include: <strong>Admin</strong> (full access), <strong>Coordinator</strong> (team management), <strong>Staff</strong> (task completion), and <strong>Viewer</strong> (read-only).
+           <CardDescription>
+            Manage users and their roles.
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+                <li><strong>Admin:</strong> Full access to all settings, can assign/delete tasks, and manage users/teams.</li>
+                <li><strong>Coordinator:</strong> Access to team settings, can assign/delete tasks.</li>
+                <li><strong>Staff:</strong> Can only view and complete tasks assigned to them.</li>
+                <li><strong>Viewer:</strong> Read-only access to view tasks. No editing capabilities.</li>
+            </ul>
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -146,7 +152,13 @@ export default function UsersPage() {
             <div className="space-y-2">
               <CardTitle>User Management</CardTitle>
               <CardDescription>
-                Manage users and their roles. Roles include: <strong>Admin</strong> (full access), <strong>Coordinator</strong> (team management), <strong>Staff</strong> (task completion), and <strong>Viewer</strong> (read-only).
+                Manage users and their roles.
+                <ul className="list-disc pl-5 mt-2 space-y-1">
+                    <li><strong>Admin:</strong> Full access to all settings, can assign/delete tasks, and manage users/teams.</li>
+                    <li><strong>Coordinator:</strong> Access to team settings, can assign/delete tasks.</li>
+                    <li><strong>Staff:</strong> Can only view and complete tasks assigned to them.</li>
+                    <li><strong>Viewer:</strong> Read-only access to view tasks. No editing capabilities.</li>
+                </ul>
               </CardDescription>
             </div>
             {canAddUser && (
