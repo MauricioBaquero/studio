@@ -129,7 +129,7 @@ export default function UsersPage() {
         <CardHeader className="space-y-2">
           <CardTitle>User Management</CardTitle>
           <CardDescription>
-            View users and manage their roles and permissions.
+            Manage users and their roles. Roles include: <strong>Admin</strong> (full access), <strong>Coordinator</strong> (team management), <strong>Staff</strong> (task completion), and <strong>Viewer</strong> (read-only).
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -146,7 +146,7 @@ export default function UsersPage() {
             <div className="space-y-2">
               <CardTitle>User Management</CardTitle>
               <CardDescription>
-                View users and manage their roles and permissions.
+                Manage users and their roles. Roles include: <strong>Admin</strong> (full access), <strong>Coordinator</strong> (team management), <strong>Staff</strong> (task completion), and <strong>Viewer</strong> (read-only).
               </CardDescription>
             </div>
             {canAddUser && (
