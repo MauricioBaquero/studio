@@ -154,9 +154,9 @@ export default function UsersPage() {
               <CardDescription>
                 Manage users and their roles.
                 <ul className="list-disc pl-5 mt-2 space-y-1">
-                    <li><strong>Admin:</strong> Full access to all settings, can assign/delete tasks, and manage users/teams.</li>
-                    <li><strong>Coordinator:</strong> Access to team settings, can assign/delete tasks.</li>
-                    <li><strong>Staff:</strong> Can only view and complete tasks assigned to them.</li>
+                    <li><strong>Admin:</strong> Full access to all settings. Can assign/delete tasks, approve task reviews, and manage users/teams.</li>
+                    <li><strong>Coordinator:</strong> Access to team settings. Can assign/delete tasks and approve task reviews.</li>
+                    <li><strong>Staff:</strong> Can view tasks, self-assign unassigned tasks, and complete tasks assigned to them. Cannot access settings.</li>
                     <li><strong>Viewer:</strong> Read-only access to view tasks. No editing capabilities.</li>
                 </ul>
               </CardDescription>
