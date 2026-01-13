@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
@@ -287,6 +288,9 @@ export function TicketDetailsDialog({
           <DialogHeader>
             <DialogTitle>Ticket Details</DialogTitle>
             <DialogDescription>ID: {ticket.id}</DialogDescription>
+            <div className="text-sm text-muted-foreground pt-1">
+                Created By: {creator?.name || 'Unknown'}
+            </div>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-1 grid gap-6 py-4">
             <div className="space-y-2">
@@ -355,10 +359,6 @@ export function TicketDetailsDialog({
               <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">Location</p>
                   <p className="text-sm">{ticket.location}</p>
-              </div>
-              <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Created By</p>
-                  <p className="text-sm">{creator?.name || 'Unknown'}</p>
               </div>
               <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">Assigned To</p>
@@ -512,5 +512,3 @@ export function TicketDetailsDialog({
     </>
   );
 }
-
-    
