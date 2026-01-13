@@ -127,10 +127,10 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore || !storage || !teamId || teamId === 'allTeams') {
+    if (!firestore || !storage || !teamId || teamId === 'allTeams' || !user) {
         toast({
             title: "Error",
-            description: "Database or storage connection not found, or you have not selected a team.",
+            description: "Database connection not found, or you have not selected a team.",
             variant: "destructive"
         });
         return;
@@ -195,6 +195,7 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
             locationId: values.locationId,
             requestedCompletionDate: values.requestedCompletionDate,
             status: "Not Started",
+            creatorId: user.uid,
             assignedToIds: [],
             createdAt: serverTimestamp(),
             photos: uploadedPhotos,

@@ -46,12 +46,9 @@
           "enum": ["Admin", "Coordinator", "Staff", "Viewer"],
           "description": "The role of the user within their assigned team."
         },
-        "teamIds": {
-            "type": "array",
-            "description": "A list of team IDs the user has access to. The first ID is the active team.",
-            "items": {
-                "type": "string"
-            }
+        "teamId": {
+            "type": "string",
+            "description": "The ID of the team the user belongs to, or 'allTeams' for admins."
         }
       },
       "required": [
@@ -59,7 +56,7 @@
         "name",
         "email",
         "role",
-        "teamIds"
+        "teamId"
       ]
     },
     "Task": {
@@ -126,6 +123,10 @@
             "required": ["url", "path", "createdAt"]
           }
         },
+        "creatorId": {
+            "type": "string",
+            "description": "The UID of the user who created the task."
+        },
         "approvedBy": {
           "type": "string",
           "description": "The UID of the user who approved the task completion."
@@ -136,6 +137,10 @@
             "items": {
                 "type": "string"
             }
+        },
+        "unableToComplete": {
+            "type": "boolean",
+            "description": "Indicates if the task was marked as unable to be completed."
         }
       },
       "required": [
@@ -144,7 +149,8 @@
         "description",
         "locationId",
         "requestedCompletionDate",
-        "status"
+        "status",
+        "creatorId"
       ]
     },
     "RecurringTask": {
@@ -189,6 +195,10 @@
             "type": "string",
             "format": "date-time"
           }
+        },
+        "assignedToId": {
+            "type": "string",
+            "description": "The UID of the user this task is assigned to. Can be empty."
         }
       },
       "required": [
@@ -363,6 +373,4 @@
     ]
   }
 }
-    
-
     

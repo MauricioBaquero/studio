@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -77,6 +78,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
   }
 
   const assignedUsers = (ticket.assignedToIds || []).map(id => getUserById(id)).filter(Boolean) as User[];
+  const creator = getUserById(ticket.creatorId || null);
   const approver = getUserById(ticket.approvedBy || null);
   const subCategoryInfo = findSubCategory(ticket.categoryId);
 
@@ -171,6 +173,9 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
           <CardTitle className="text-base font-bold truncate pr-8">
             {ticket.id}
           </CardTitle>
+          {creator && (
+            <p className="text-xs text-muted-foreground -mt-1">Created By: {creator.name}</p>
+          )}
           <CardDescription className="line-clamp-4 h-[5rem]">{ticket.description}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm flex-1">
