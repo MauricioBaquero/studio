@@ -243,6 +243,7 @@ export function TicketDetailsDialog({
   
   const assignedUsers = assignedToIds.map(id => getUserById(id)).filter(Boolean) as User[];
   const subCategoryInfo = findSubCategory(ticket.categoryId);
+  const creator = getUserById(ticket.creatorId);
 
   const isAdminOrCoordinator = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator';
   const isPendingReview = ticket.status === 'Pending Review';
@@ -274,7 +275,7 @@ export function TicketDetailsDialog({
       const aIsAssigned = assignedToIds.includes(a.uid);
       const bIsAssigned = assignedToIds.includes(b.uid);
       if (aIsAssigned && !bIsAssigned) return -1;
-      if (!aIsAssigned && bIsAssigned) return 1;
+      if (!aIsAssigned && isBAssigned) return 1;
       return a.name.localeCompare(b.name);
     });
   }, [assignableUsers, assignedToIds]);
@@ -355,6 +356,10 @@ export function TicketDetailsDialog({
               <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">Location</p>
                   <p className="text-sm">{ticket.location}</p>
+              </div>
+              <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">Created By</p>
+                  <p className="text-sm">{creator?.name || 'Unknown'}</p>
               </div>
               <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">Assigned To</p>
