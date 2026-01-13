@@ -9,6 +9,7 @@
  * - /teams/{teamId}: Stores team information.
  * - /users/{userId}: Stores user profiles.
  * - /locations/{locationId}: Stores location information.
+ * - /auditLogs/{logId}: Stores a global list of all audit trail events.
  * - /teams/{teamId}/tasks/{taskId}: Stores tasks for each team.
  * - /teams/{teamId}/recurringTasks/{recurringTaskId}: Stores recurring tasks for each team.
  * - /teams/{teamId}/categories/{categoryId}: Stores task categories for each team.
@@ -43,6 +44,19 @@ service cloud.firestore {
     match /users/{userId} {
       allow get, list: if isSignedIn();
       allow create, update, delete: if isSignedIn();
+    }
+    
+    /**
+     * @description Manages access to the global audit log.
+     * @path /auditLogs/{logId}
+     * @allow (get, list) User is an Admin.
+     * @allow (create) Any signed-in user can create a log entry.
+     * @principle Only Admins can read the audit log. All authenticated users can create entries.
+     */
+    match /auditLogs/{logId} {
+      allow get, list: if getUserRole(request.auth.uid) == 'Admin';
+      allow create: if isSignedIn();
+      allow update, delete: if false; // Logs are immutable
     }
 
     /**
@@ -107,6 +121,10 @@ service cloud.firestore {
 
     function isSignedIn() {
         return request.auth != null;
+    }
+    
+    function getUserRole(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.role;
     }
   }
 }
