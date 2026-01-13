@@ -171,7 +171,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
           <CardTitle className="text-base font-bold truncate pr-8">
             {ticket.id}
           </CardTitle>
-          <CardDescription className="line-clamp-2 h-[2.5rem]">{ticket.title}</CardDescription>
+          <CardDescription className="line-clamp-4 h-[5rem]">{ticket.description}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm flex-1">
           <div className="flex items-center gap-2 text-muted-foreground">
