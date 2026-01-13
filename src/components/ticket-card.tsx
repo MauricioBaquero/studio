@@ -169,9 +169,9 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
         </div>
         <CardHeader>
           <CardTitle className="text-base font-bold truncate pr-8">
-            {ticket.title}
+            ID: {ticket.id}
           </CardTitle>
-          <CardDescription>ID: {ticket.id}</CardDescription>
+          <CardDescription className="truncate">{ticket.title}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm flex-1">
           <div className="flex items-center gap-2 text-muted-foreground">
