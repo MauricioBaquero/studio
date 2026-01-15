@@ -36,7 +36,7 @@ export function TeamSwitcher() {
   const { firestore } = useFirebase();
   const { state } = useSidebar();
   const [open, setOpen] = useState(false);
-  const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
+  const [activeTeamId, setActiveTeamId] = useState<string | null>(currentUser?.teamId || null);
 
   const teamsQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, 'teams')) : null),

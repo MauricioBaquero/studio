@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
 import { useUser } from '@/firebase';
+import { cn } from '@/lib/utils';
 
 export type FilterValues = {
   assignee: string;
@@ -77,7 +78,7 @@ export function TicketFilters({
 
       <DatePicker
         value={dateRange?.from}
-        onSelect={(date) => setDateRange(prev => ({ ...prev, from: date }))}
+        onSelect={(date) => setDateRange(prev => ({ from: date, to: undefined }))}
         className="w-full sm:w-[240px]"
       />
        <DatePicker

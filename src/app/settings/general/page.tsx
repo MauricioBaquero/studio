@@ -18,7 +18,7 @@ import {
   useFirestore,
   useDoc,
   useMemoFirebase,
-  updateDocumentNonBlocking,
+  setDocumentNonBlocking,
   useUser,
   useCollection,
 } from '@/firebase';
@@ -68,10 +68,8 @@ export default function GeneralSettingsPage() {
   }, [settings, reset]);
 
   const onSubmit = (data: AppSettings) => {
-    if (!settingsRef || !firestore || !currentUser) return;
-    
-    updateDocumentNonBlocking(settingsRef, data);
-    
+    if (!settingsRef) return;
+    setDocumentNonBlocking(settingsRef, data, { merge: true });
     toast({
       title: 'Settings Saved',
       description: 'Your changes have been saved successfully.',
@@ -108,7 +106,7 @@ export default function GeneralSettingsPage() {
                   type="number"
                   min="1"
                   className="max-w-xs"
-                  {...register('completionDateRange')}
+                  {...register('completionDateRange', { valueAsNumber: true })}
                 />
                 <p className="text-sm text-muted-foreground">
                   Set the minimum number of days from today for a ticket's
@@ -129,7 +127,7 @@ export default function GeneralSettingsPage() {
                   type="number"
                   min="0"
                   className="max-w-xs"
-                  {...register('recurringTaskCompletionDays')}
+                  {...register('recurringTaskCompletionDays', { valueAsNumber: true })}
                 />
                 <p className="text-sm text-muted-foreground">
                   Days in advance a weekly or monthly recurring task can be completed.
