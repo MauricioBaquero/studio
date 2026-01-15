@@ -153,10 +153,11 @@ export default function RecurringTasksPage() {
     return null;
   }
 
-  const { dueTasks, completedTodayTasks } = useMemo(() => {
+  const { dueTasks, completedTodayTasks, upcomingTasks } = useMemo(() => {
     if (!allTasks) {
-      return { dueTasks: [], completedTodayTasks: [] };
+      return { dueTasks: [], completedTodayTasks: [], upcomingTasks: [] };
     }
+    const advanceCompletionDays = settings?.recurringTaskCompletionDays ?? 2;
 
     const filtered = allTasks.filter(task => {
         if (filters.task !== 'all' && task.id !== filters.task) return false;
@@ -180,6 +181,7 @@ export default function RecurringTasksPage() {
 
     const due: RecurringTask[] = [];
     const completed: RecurringTask[] = [];
+    const upcoming: RecurringTask[] = [];
 
     sortedTasks.forEach(task => {
       const lastCompletion =
@@ -187,16 +189,25 @@ export default function RecurringTasksPage() {
           ? toDate(task.lastCompleted[task.lastCompleted.length - 1] as Timestamp)
           : null;
       const isCompletedToday = lastCompletion && isToday(lastCompletion);
+      const nextDueDate = getNextDueDate(task);
+      const daysUntilDue = differenceInDays(nextDueDate, new Date());
+      let isEarly = false;
+        if (task.frequency === 'Weekly' || task.frequency === 'Monthly') {
+            isEarly = daysUntilDue > advanceCompletionDays;
+        }
 
       if (isCompletedToday) {
         completed.push(task);
-      } else {
+      } else if (isEarly) {
+        upcoming.push(task);
+      }
+      else {
         due.push(task);
       }
     });
 
-    return { dueTasks: due, completedTodayTasks: completed };
-  }, [allTasks, filters, categories]);
+    return { dueTasks: due, completedTodayTasks: completed, upcomingTasks: upcoming };
+  }, [allTasks, filters, categories, settings]);
   
   const filteredCompletedTasks = useMemo(() => {
     return completedTasks.filter(task => {
@@ -253,7 +264,7 @@ export default function RecurringTasksPage() {
 
   const isLoading = isLoadingRecurringTasks || isLoadingCategories || isLoadingUsers || isLoadingLocations;
 
-  const renderTaskRow = (task: RecurringTask, isCompleted: boolean) => {
+  const renderTaskRow = (task: RecurringTask, isCompleted: boolean, isUpcoming: boolean) => {
     const subCategoryInfo = findSubCategory(task.categoryId);
     const location = getLocationById(task.locationId);
     const nextDueDate = getNextDueDate(task);
@@ -280,7 +291,7 @@ export default function RecurringTasksPage() {
     );
 
     return (
-      <TableRow key={task.id} className={cn(isCompleted && "text-muted-foreground opacity-50")}>
+      <TableRow key={task.id} className={cn((isCompleted || isUpcoming) && "text-muted-foreground opacity-50")}>
         <TableCell className="text-center">
             {isEarly ? (
                  <TooltipProvider>
@@ -369,7 +380,7 @@ export default function RecurringTasksPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dueTasks.length === 0 && completedTodayTasks.length === 0 ? (
+                {dueTasks.length === 0 && completedTodayTasks.length === 0 && upcomingTasks.length === 0 ? (
                    <TableRow>
                     <TableCell colSpan={5} className="h-24 text-center">
                       No scheduled maintenance tasks found.
@@ -377,7 +388,7 @@ export default function RecurringTasksPage() {
                   </TableRow>
                 ) : (
                   <>
-                    {dueTasks.map(task => renderTaskRow(task, false))}
+                    {dueTasks.map(task => renderTaskRow(task, false, false))}
                     
                     {dueTasks.length > 0 && completedTodayTasks.length > 0 && (
                        <TableRow>
@@ -391,7 +402,21 @@ export default function RecurringTasksPage() {
                       </TableRow>
                     )}
 
-                    {completedTodayTasks.map(task => renderTaskRow(task, true))}
+                    {completedTodayTasks.map(task => renderTaskRow(task, true, false))}
+                    
+                    {upcomingTasks.length > 0 && (dueTasks.length > 0 || completedTodayTasks.length > 0) && (
+                       <TableRow>
+                        <TableCell colSpan={5} className="!p-0">
+                          <div className="flex items-center gap-4 py-2 px-4">
+                            <Separator className="flex-1" />
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">Upcoming</span>
+                            <Separator className="flex-1" />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    
+                    {upcomingTasks.map(task => renderTaskRow(task, false, true))}
                   </>
                 )}
               </TableBody>
