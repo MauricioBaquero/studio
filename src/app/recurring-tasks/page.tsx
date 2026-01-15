@@ -58,6 +58,7 @@ export default function RecurringTasksPage() {
     task: 'all',
     location: 'all',
     category: 'all',
+    frequency: 'all',
     dateRange: { from: undefined, to: undefined },
   });
 
@@ -162,6 +163,7 @@ export default function RecurringTasksPage() {
     const filtered = allTasks.filter(task => {
         if (filters.task !== 'all' && task.id !== filters.task) return false;
         if (filters.location !== 'all' && task.locationId !== filters.location) return false;
+        if (filters.frequency !== 'all' && task.frequency !== filters.frequency) return false;
         
         if (filters.category !== 'all') {
             const subCatInfo = findSubCategory(task.categoryId);
@@ -216,6 +218,7 @@ export default function RecurringTasksPage() {
     return completedTasks.filter(task => {
         if (filters.task !== 'all' && task.id !== filters.task) return false;
         if (filters.location !== 'all' && task.locationId !== filters.location) return false;
+        if (filters.frequency !== 'all' && task.frequency !== filters.frequency) return false;
         
         if (filters.category !== 'all') {
             const subCatInfo = findSubCategory(task.categoryId);

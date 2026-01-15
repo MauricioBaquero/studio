@@ -3,7 +3,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Category, Location, RecurringTask } from '@/lib/data';
+import { Category, Location, RECURRING_FREQUENCIES, RecurringTask } from '@/lib/data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ export type FilterValues = {
   task: string;
   location: string;
   category: string;
+  frequency: string;
   dateRange: { from: Date | undefined; to: Date | undefined };
 };
 
@@ -33,6 +34,7 @@ export function RecurringTaskFilters({
   const [task, setTask] = useState('all');
   const [location, setLocation] = useState('all');
   const [category, setCategory] = useState('all');
+  const [frequency, setFrequency] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   useEffect(() => {
@@ -40,18 +42,20 @@ export function RecurringTaskFilters({
       task,
       location,
       category,
+      frequency,
       dateRange: { from: dateRange?.from, to: dateRange?.to },
     });
-  }, [task, location, category, dateRange, onFilterChange]);
+  }, [task, location, category, frequency, dateRange, onFilterChange]);
   
   const handleClearFilters = () => {
     setTask('all');
     setLocation('all');
     setCategory('all');
+    setFrequency('all');
     setDateRange(undefined);
   }
 
-  const hasActiveFilters = task !== 'all' || location !== 'all' || category !== 'all' || dateRange?.from || dateRange?.to;
+  const hasActiveFilters = task !== 'all' || location !== 'all' || category !== 'all' || frequency !== 'all' || dateRange?.from || dateRange?.to;
 
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-lg bg-card p-4 border shadow-sm">
@@ -68,6 +72,20 @@ export function RecurringTaskFilters({
         className="w-full sm:w-[240px]"
         fromDate={dateRange?.from}
       />
+
+      <Select value={frequency} onValueChange={setFrequency}>
+        <SelectTrigger className="w-full sm:w-[180px]">
+          <SelectValue placeholder="Filter by frequency" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Frequencies</SelectItem>
+          {RECURRING_FREQUENCIES.map((freq) => (
+            <SelectItem key={freq} value={freq}>
+              {freq}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       
       <Select value={category} onValueChange={setCategory}>
         <SelectTrigger className="w-full sm:w-[180px]">
@@ -121,4 +139,3 @@ export function RecurringTaskFilters({
     </div>
   );
 }
-
