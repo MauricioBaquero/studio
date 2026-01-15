@@ -83,8 +83,9 @@ export function TicketFilters({
        <DatePicker
         value={dateRange?.to}
         onSelect={(date) => setDateRange(prev => ({ ...prev, to: date }))}
-        className="w-full sm:w-[240px]"
+        className={cn("w-full sm:w-[240px]", !dateRange?.from && "opacity-50 cursor-not-allowed")}
         fromDate={dateRange?.from}
+        disabled={!dateRange?.from}
       />
       
       <Select value={location} onValueChange={setLocation}>
@@ -94,7 +95,7 @@ export function TicketFilters({
         <SelectContent>
           <SelectItem value="all">All Locations</SelectItem>
           {locations.map((loc) => (
-            <SelectItem key={loc.id} value={loc.name}>
+            <SelectItem key={loc.id} value={loc.id}>
               {loc.name}
             </SelectItem>
           ))}

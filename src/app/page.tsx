@@ -41,7 +41,6 @@ export default function TaskBoardPage() {
 
   const locationsQuery = useMemoFirebase(() => {
     if (!firestore || !teamId) return null;
-    // Admins/Coordinators see all locations, other roles see locations for their team.
     if (currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator') {
         return query(collection(firestore, `locations`));
     }
@@ -61,7 +60,7 @@ export default function TaskBoardPage() {
     return tickets.filter(ticket => {
       const requestedCompletionDate = ticket.requestedCompletionDate instanceof Timestamp 
         ? ticket.requestedCompletionDate.toDate() 
-        : ticket.requestedCompletionDate;
+        : new Date(ticket.requestedCompletionDate);
 
       if (filters.assignee === 'me-unassigned') {
         const isAssignedToMe = (ticket.assignedToIds || []).includes(currentUser.uid);
@@ -75,14 +74,14 @@ export default function TaskBoardPage() {
         }
       }
 
-      if (filters.location !== 'all' && !ticket.location.startsWith(filters.location)) {
+      if (filters.location !== 'all' && ticket.locationId !== filters.location) {
          return false;
       }
 
       if (filters.category !== 'all') {
         const parentCat = categories?.find(c => c.id === filters.category);
-        const subCat = parentCat?.subcategories.find(s => s.id === ticket.categoryId);
-        if (!subCat) {
+        const allSubcategoryIds = parentCat?.subcategories.map(s => s.id) || [];
+        if (!allSubcategoryIds.includes(ticket.categoryId)) {
           return false;
         }
       }

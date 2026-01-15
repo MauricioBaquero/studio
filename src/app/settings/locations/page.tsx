@@ -49,7 +49,6 @@ import { useToast } from '@/hooks/use-toast';
 export default function LocationsPage() {
   const firestore = useFirestore();
   const { user: currentUser } = useUser();
-  const teamId = currentUser?.teamId;
   const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
@@ -59,14 +58,8 @@ export default function LocationsPage() {
   );
 
   const locationsQuery = useMemoFirebase(
-    () => {
-        if (!firestore || !teamId) return null;
-        if (currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator') {
-            return query(collection(firestore, `locations`));
-        }
-        return query(collection(firestore, `locations`), where('teamId', '==', teamId));
-    },
-    [firestore, teamId, currentUser?.role]
+    () => (firestore ? query(collection(firestore, `locations`)) : null),
+    [firestore]
   );
   const { data: locations, isLoading } = useCollection<Location>(locationsQuery);
 

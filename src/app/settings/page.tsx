@@ -19,7 +19,7 @@ import {
   useFirestore,
   useDoc,
   useMemoFirebase,
-  updateDocumentNonBlocking,
+  setDocumentNonBlocking,
   useUser,
   useCollection,
 } from '@/firebase';
@@ -70,7 +70,7 @@ export default function GeneralSettingsPage() {
 
   const onSubmit = (data: AppSettings) => {
     if (!settingsRef) return;
-    updateDocumentNonBlocking(settingsRef, data);
+    setDocumentNonBlocking(settingsRef, data, { merge: true });
     toast({
       title: 'Settings Saved',
       description: 'Your changes have been saved successfully.',
