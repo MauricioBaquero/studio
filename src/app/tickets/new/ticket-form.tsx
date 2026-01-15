@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -57,6 +57,13 @@ const formSchema = z.object({
   }),
 });
 
+const generateTitle = (description: string) => {
+    const words = description.split(' ');
+    if (words.length > 5) {
+        return words.slice(0, 5).join(' ') + '...';
+    }
+    return description;
+}
 
 export function TicketForm({ parentCategories, locations, minimumNoticeDays }: TicketFormProps) {
   const { toast } = useToast();
@@ -71,6 +78,12 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
   const [newPhotoFiles, setNewPhotoFiles] = useState<File[]>([]);
   const [newPhotoPreviews, setNewPhotoPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const ticketIdRef = useRef<string>(doc(collection(firestore, 'dummy')).id); // Generate ID upfront
+
+  useEffect(() => {
+    // Generate a new ID whenever the component mounts for a new form
+    ticketIdRef.current = doc(collection(firestore, 'dummy')).id;
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -106,10 +119,6 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
     return floors;
   }, [selectedLocation]);
   
-  const getAbbreviation = (name: string) => {
-    return name.substring(0, 3).toUpperCase();
-  };
-  
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
      if (e.target.files) {
         const files = Array.from(e.target.files);
@@ -136,13 +145,7 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
 
     setIsSubmitting(true);
     
-    // Generate new Ticket ID
-    const parentCategory = parentCategories.find(p => p.id === values.categoryId);
-    const subCategory = parentCategory?.subcategories.find(s => s.id === values.subcategoryId);
-    const catAbbr = parentCategory ? getAbbreviation(parentCategory.name) : 'GEN';
-    const subCatAbbr = subCategory ? getAbbreviation(subCategory.name) : 'GEN';
-    const randomId = Math.floor(10000 + Math.random() * 90000).toString();
-    const ticketId = `T-${catAbbr}-${subCatAbbr}-${randomId}`;
+    const ticketId = ticketIdRef.current;
     
     const locationName = locations.find(l => l.id === values.locationId)?.name;
 
@@ -155,14 +158,6 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
     }
     
     const fullLocation = [locationName, floorDisplay, values.additionalDetails].filter(Boolean).join(', ');
-
-    const generateTitle = (description: string) => {
-        const words = description.split(' ');
-        if (words.length > 5) {
-            return words.slice(0, 5).join(' ') + '...';
-        }
-        return description;
-    }
     
     let uploadedPhotos = [];
 
@@ -171,7 +166,7 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
         const newPhotoUploads = newPhotoFiles.map(async file => {
             const photoId = uuidv4();
             const fileExtension = file.name.split('.').pop();
-            const storagePath = `taskphotos/createnewticket/${ticketId}/${photoId}.${fileExtension}`;
+            const storagePath = `taskphotos/${ticketId}/${photoId}.${fileExtension}`;
             const storageRef = ref(storage, storagePath);
 
             await uploadBytes(storageRef, file);
@@ -182,7 +177,7 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
 
         uploadedPhotos = await Promise.all(newPhotoUploads);
 
-        const ticketRef = doc(collection(firestore, `teams/${teamId}/tasks`), ticketId);
+        const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticketId);
 
         const ticketData = {
             id: ticketId,
@@ -450,3 +445,5 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
     </Form>
   );
 }
+
+    
