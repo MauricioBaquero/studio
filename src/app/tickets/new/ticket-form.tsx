@@ -78,6 +78,7 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
   const [newPhotoFiles, setNewPhotoFiles] = useState<File[]>([]);
   const [newPhotoPreviews, setNewPhotoPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const emlFileInputRef = useRef<HTMLInputElement>(null);
   const ticketIdRef = useRef<string>(doc(collection(firestore, 'dummy')).id); // Generate ID upfront
 
   useEffect(() => {
@@ -300,20 +301,32 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
                 />
             </div>
             <div className="md:col-span-2 space-y-4">
-              <Label>Photo (optional)</Label>
-              <div className="flex items-center gap-4">
-                  <Button
-                      type="button"
-                      variant="outline"
-                      className="border-2 border-dashed hover:border-solid hover:bg-accent"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isSubmitting}
-                  >
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload Photo
-                  </Button>
+              <Label>Attachments (optional)</Label>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <div className="flex items-center gap-4">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="border-2 border-dashed hover:border-solid hover:bg-accent"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isSubmitting}
+                    >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload Photo
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="border-2 border-dashed hover:border-solid hover:bg-accent"
+                        onClick={() => emlFileInputRef.current?.click()}
+                        disabled={isSubmitting}
+                    >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload EML
+                    </Button>
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                      Restriction size to 5MB and files .jpg, .jpeg and .png allowed
+                      Restriction files .jpg, .eml allowed
                   </p>
               </div>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
@@ -334,6 +347,15 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
                   className="hidden"
                   multiple
                   accept="image/jpeg, image/png, image/jpg"
+                  onChange={handleFileChange}
+                  disabled={isSubmitting}
+              />
+              <input
+                  type="file"
+                  ref={emlFileInputRef}
+                  className="hidden"
+                  multiple
+                  accept=".eml"
                   onChange={handleFileChange}
                   disabled={isSubmitting}
               />
@@ -445,5 +467,3 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
     </Form>
   );
 }
-
-    
