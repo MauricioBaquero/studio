@@ -55,7 +55,6 @@ export default function RecurringTasksPage() {
   const [allTasks, setAllTasks] = useState<RecurringTask[]>([]);
   const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>([]);
   const [filters, setFilters] = useState<FilterValues>({
-    task: 'all',
     location: 'all',
     category: 'all',
     frequency: 'all',
@@ -161,7 +160,6 @@ export default function RecurringTasksPage() {
     const advanceCompletionDays = settings?.recurringTaskCompletionDays ?? 2;
 
     const filtered = allTasks.filter(task => {
-        if (filters.task !== 'all' && task.id !== filters.task) return false;
         if (filters.location !== 'all' && task.locationId !== filters.location) return false;
         if (filters.frequency !== 'all' && task.frequency !== filters.frequency) return false;
         
@@ -216,7 +214,6 @@ export default function RecurringTasksPage() {
   
   const filteredCompletedTasks = useMemo(() => {
     return completedTasks.filter(task => {
-        if (filters.task !== 'all' && task.id !== filters.task) return false;
         if (filters.location !== 'all' && task.locationId !== filters.location) return false;
         if (filters.frequency !== 'all' && task.frequency !== filters.frequency) return false;
         
@@ -370,7 +367,6 @@ export default function RecurringTasksPage() {
   
   const parentCategories = categories || [];
   const validLocations = locations || [];
-  const validTasks = recurringTasks || [];
 
 
   return (
@@ -380,7 +376,6 @@ export default function RecurringTasksPage() {
       <RecurringTaskFilters 
         parentCategories={parentCategories}
         locations={validLocations}
-        tasks={validTasks}
         onFilterChange={setFilters}
       />
 

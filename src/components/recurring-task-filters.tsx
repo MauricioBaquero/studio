@@ -3,7 +3,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Category, Location, RECURRING_FREQUENCIES, RecurringTask } from '@/lib/data';
+import { Category, Location, RECURRING_FREQUENCIES } from '@/lib/data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,6 @@ import { X } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
 
 export type FilterValues = {
-  task: string;
   location: string;
   category: string;
   frequency: string;
@@ -21,17 +20,14 @@ export type FilterValues = {
 interface RecurringTaskFiltersProps {
   parentCategories: Category[];
   locations: Location[];
-  tasks: RecurringTask[];
   onFilterChange: (filters: FilterValues) => void;
 }
 
 export function RecurringTaskFilters({
   parentCategories,
   locations,
-  tasks,
   onFilterChange,
 }: RecurringTaskFiltersProps) {
-  const [task, setTask] = useState('all');
   const [location, setLocation] = useState('all');
   const [category, setCategory] = useState('all');
   const [frequency, setFrequency] = useState('all');
@@ -39,23 +35,21 @@ export function RecurringTaskFilters({
 
   useEffect(() => {
     onFilterChange({
-      task,
       location,
       category,
       frequency,
       dateRange: { from: dateRange?.from, to: dateRange?.to },
     });
-  }, [task, location, category, frequency, dateRange, onFilterChange]);
+  }, [location, category, frequency, dateRange, onFilterChange]);
   
   const handleClearFilters = () => {
-    setTask('all');
     setLocation('all');
     setCategory('all');
     setFrequency('all');
     setDateRange(undefined);
   }
 
-  const hasActiveFilters = task !== 'all' || location !== 'all' || category !== 'all' || frequency !== 'all' || dateRange?.from || dateRange?.to;
+  const hasActiveFilters = location !== 'all' || category !== 'all' || frequency !== 'all' || dateRange?.from || dateRange?.to;
 
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-lg bg-card p-4 border shadow-sm">
@@ -96,20 +90,6 @@ export function RecurringTaskFilters({
           {parentCategories.map((cat) => (
             <SelectItem key={cat.id} value={cat.id}>
               {cat.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select value={task} onValueChange={setTask}>
-        <SelectTrigger className="w-full sm:w-[180px]">
-          <SelectValue placeholder="Filter by task" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Tasks</SelectItem>
-          {tasks.map((t) => (
-            <SelectItem key={t.id} value={t.id}>
-              {t.title}
             </SelectItem>
           ))}
         </SelectContent>
