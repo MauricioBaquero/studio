@@ -22,7 +22,6 @@ import {
   useUser,
   updateDocumentNonBlocking,
   useDoc,
-  logAudit
 } from '@/firebase';
 import {
   collection,
@@ -231,14 +230,6 @@ export default function RecurringTasksPage() {
         updateDocumentNonBlocking(recurringTaskRef, {
             lastCompleted: arrayUnion(now),
             completedBy: currentUser.uid,
-        });
-
-        logAudit(firestore, {
-            action: 'update',
-            collectionName: 'recurringTasks',
-            docId: task.id,
-            newData: { completedAt: now.toISOString() },
-            user: { uid: currentUser.uid, name: currentUser.name || currentUser.email! },
         });
 
         const updatedLastCompleted = (Array.isArray(task.lastCompleted) ? task.lastCompleted : []).concat(now);

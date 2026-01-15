@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo } from 'react';
@@ -22,7 +21,6 @@ import {
   updateDocumentNonBlocking,
   useUser,
   useCollection,
-  logAudit,
 } from '@/firebase';
 import { doc, collection, query } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -74,14 +72,6 @@ export default function GeneralSettingsPage() {
     
     updateDocumentNonBlocking(settingsRef, data);
     
-    logAudit(firestore, {
-        action: 'update',
-        collectionName: 'settings',
-        docId: `appSettings for team ${teamId}`,
-        newData: data,
-        user: { uid: currentUser.uid, name: currentUser.name || currentUser.email! },
-    });
-
     toast({
       title: 'Settings Saved',
       description: 'Your changes have been saved successfully.',
