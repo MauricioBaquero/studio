@@ -21,7 +21,8 @@ import {
   useMemoFirebase,
   useUser,
   updateDocumentNonBlocking,
-  useDoc
+  useDoc,
+  logAudit
 } from '@/firebase';
 import {
   collection,
@@ -232,6 +233,14 @@ export default function RecurringTasksPage() {
             completedBy: currentUser.uid,
         });
 
+        logAudit(firestore, {
+            action: 'update',
+            collectionName: 'recurringTasks',
+            docId: task.id,
+            newData: { completedAt: now.toISOString() },
+            user: { uid: currentUser.uid, name: currentUser.name || currentUser.email! },
+        });
+
         const updatedLastCompleted = (Array.isArray(task.lastCompleted) ? task.lastCompleted : []).concat(now);
 
         const optimisticCompletedTask: CompletedTask = {
@@ -289,7 +298,7 @@ export default function RecurringTasksPage() {
                             <span>{checkbox}</span>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Due in over {advanceCompletionDays} days. Cannot complete yet.</p>
+                            <p>Too early to complete. Must be within {advanceCompletionDays} days.</p>
                         </TooltipContent>
                     </Tooltip>
                  </TooltipProvider>
@@ -384,7 +393,7 @@ export default function RecurringTasksPage() {
                         <TableCell colSpan={5} className="!p-0">
                           <div className="flex items-center gap-4 py-2 px-4">
                             <Separator className="flex-1" />
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">Already completed today, Upcoming tasks.</span>
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">Already completed today</span>
                             <Separator className="flex-1" />
                           </div>
                         </TableCell>
