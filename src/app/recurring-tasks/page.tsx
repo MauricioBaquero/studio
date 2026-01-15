@@ -14,7 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { format, isToday, isPast, startOfDay, isSameDay, differenceInDays, isWithinInterval } from 'date-fns';
+import { format, isToday, isPast, startOfDay, isSameDay, differenceInDays, isWithinInterval, subDays } from 'date-fns';
 import {
   useCollection,
   useFirestore,
@@ -268,8 +268,14 @@ export default function RecurringTasksPage() {
     const subCategoryInfo = findSubCategory(task.categoryId);
     const location = getLocationById(task.locationId);
     const nextDueDate = getNextDueDate(task);
-    const isTaskOverdue =
+    
+    // Overdue logic only for Weekly and Monthly
+    const isTaskOverdue = (task.frequency === 'Weekly' || task.frequency === 'Monthly') &&
       isPast(nextDueDate) && !isSameDay(startOfDay(nextDueDate), startOfDay(new Date()));
+
+    const lastCompletionDate = task.lastCompleted && task.lastCompleted.length > 0 ? toDate(task.lastCompleted[task.lastCompleted.length - 1]) : null;
+    const missedYesterday = task.frequency === 'Daily' && isToday(nextDueDate) && (!lastCompletionDate || !isSameDay(lastCompletionDate, subDays(new Date(), 1)));
+
 
     const daysUntilDue = differenceInDays(nextDueDate, new Date());
     const advanceCompletionDays = settings?.recurringTaskCompletionDays ?? 2;
@@ -329,6 +335,9 @@ export default function RecurringTasksPage() {
           {format(nextDueDate, 'MM/dd/yyyy')}
           {!isCompleted && isTaskOverdue && (
             <span className="ml-2">(Overdue)</span>
+          )}
+           {!isCompleted && missedYesterday && (
+            <span className="ml-2 text-yellow-600">(Missed Yesterday)</span>
           )}
         </TableCell>
       </TableRow>
