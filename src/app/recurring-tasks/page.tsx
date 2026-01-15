@@ -14,7 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { format, isToday, isPast, startOfDay, isSameDay, differenceInDays, isWithinInterval, subDays } from 'date-fns';
+import { format, isToday, isPast, startOfDay, isSameDay, differenceInDays, isWithinInterval, subDays, isTomorrow } from 'date-fns';
 import {
   useCollection,
   useFirestore,
@@ -192,9 +192,12 @@ export default function RecurringTasksPage() {
       const nextDueDate = getNextDueDate(task);
       const daysUntilDue = differenceInDays(nextDueDate, new Date());
       let isEarly = false;
-        if (task.frequency === 'Weekly' || task.frequency === 'Monthly') {
-            isEarly = daysUntilDue > advanceCompletionDays;
-        }
+        
+      if (task.frequency === 'Daily') {
+        isEarly = isTomorrow(nextDueDate);
+      } else if (task.frequency === 'Weekly' || task.frequency === 'Monthly') {
+        isEarly = daysUntilDue > advanceCompletionDays;
+      }
 
       if (isCompletedToday) {
         completed.push(task);
@@ -281,7 +284,9 @@ export default function RecurringTasksPage() {
     const advanceCompletionDays = settings?.recurringTaskCompletionDays ?? 2;
     
     let isEarly = false;
-    if (task.frequency === 'Weekly' || task.frequency === 'Monthly') {
+    if (task.frequency === 'Daily') {
+        isEarly = isTomorrow(nextDueDate);
+    } else if (task.frequency === 'Weekly' || task.frequency === 'Monthly') {
         isEarly = daysUntilDue > advanceCompletionDays;
     }
     const isCompletable = !isCompleted && !isEarly;
@@ -306,7 +311,11 @@ export default function RecurringTasksPage() {
                             <span>{checkbox}</span>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Too early to complete. Must be within {advanceCompletionDays} days.</p>
+                            <p>
+                                {task.frequency === 'Daily' 
+                                    ? "Too early to complete. Daily tasks can only be completed on their due date."
+                                    : `Too early to complete. Must be within ${advanceCompletionDays} days.`}
+                            </p>
                         </TooltipContent>
                     </Tooltip>
                  </TooltipProvider>
@@ -337,7 +346,7 @@ export default function RecurringTasksPage() {
             <span className="ml-2">(Overdue)</span>
           )}
            {!isCompleted && missedYesterday && (
-            <span className="ml-2 text-yellow-600">(Missed Yesterday)</span>
+            <span className="ml-2 text-yellow-600 font-semibold">(Missed Yesterday)</span>
           )}
         </TableCell>
       </TableRow>
