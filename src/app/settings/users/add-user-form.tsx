@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -37,7 +38,7 @@ import {
 } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { z } from 'zod';
-import { createUserWithEmailAndPassword, deleteAuth, getAuth } from 'firebase/auth';
+import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { firebaseConfig } from '@/firebase/config';
 
@@ -92,14 +93,13 @@ export function AddUserForm({
     const tempAuth = getAuth(tempApp);
 
     try {
-        // 1. Create user in Firebase Auth using the temporary instance
         const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
         const authUser = userCredential.user;
 
-        // 2. Create user document in Firestore
         const userRef = doc(firestore, 'users', authUser.uid);
-        const finalTeamId = data.role === 'Admin' || data.role === 'Coordinator' ? 'allTeams' : data.teamId || '';
         
+        const finalTeamId = data.role === 'Admin' || data.role === 'Coordinator' ? 'allTeams' : data.teamId;
+
         const userData = {
             uid: authUser.uid,
             name: data.name,
@@ -124,7 +124,6 @@ export function AddUserForm({
             description: error.message || 'An unknown error occurred.',
         });
     } finally {
-        // 3. Clean up the temporary Firebase app instance
         await deleteApp(tempApp);
         setIsSubmitting(false);
     }

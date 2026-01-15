@@ -36,31 +36,31 @@ export function TeamSwitcher() {
   const { firestore } = useFirebase();
   const { state } = useSidebar();
   const [open, setOpen] = useState(false);
-  const [activeTeamId, setActiveTeamId] = useState<string | null>(currentUser?.teamId || null);
-
+  
   const teamsQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, 'teams')) : null),
     [firestore]
   );
   const { data: teams, isLoading: isLoadingTeams } = useCollection<Team>(teamsQuery);
   
-  const isAdminOrCoordinator = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator';
-  
-  // Set the active team from the user's teamId
+  const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
+
   useEffect(() => {
     if (currentUser?.teamId) {
       setActiveTeamId(currentUser.teamId);
     }
   }, [currentUser?.teamId]);
 
-
+  const isAdminOrCoordinator = useMemo(
+    () => currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator',
+    [currentUser?.role]
+  );
+  
   const handleTeamChange = (teamId: string) => {
     if (!firestore || !currentUser) return;
     
-    // Optimistically update the UI
     setActiveTeamId(teamId);
     
-    // Always update the teamId in the user's document
     const userRef = doc(firestore, 'users', currentUser.uid);
     updateDocumentNonBlocking(userRef, { teamId: teamId });
     
@@ -69,8 +69,8 @@ export function TeamSwitcher() {
   
   const isLoading = isUserLoading || isLoadingTeams;
 
-  if (isLoading || !currentUser || !teams || teams.length === 0) {
-    return null;
+  if (isLoading || !currentUser || !teams || !activeTeamId || teams.length === 0) {
+    return null; // Don't render until all data is loaded
   }
 
   const selectedTeam = teams.find(team => team.id === activeTeamId);

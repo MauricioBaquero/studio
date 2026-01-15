@@ -55,14 +55,11 @@ export default function DashboardPage() {
 
   const teamUsers = useMemo(() => {
     if (!users || !teamId) return [];
-    // For Admins/Coordinators viewing 'allTeams', we should probably still show all users.
-    // However, for a specific team, we must filter.
     if (teamId === 'allTeams') {
-        // This is tricky. If an admin is viewing all teams, which users should show?
-        // Let's assume for now we show all users that belong to *any* team.
-        return users;
+      return users;
     }
-    return users.filter(u => (u.teamId === teamId) || u.role === 'Admin' || u.role === 'Coordinator');
+    // Only show users belonging to the specific team, plus any Admins/Coordinators
+    return users.filter(u => u.teamId === teamId || u.role === 'Admin' || u.role === 'Coordinator');
   }, [users, teamId]);
 
   const isLoading =
