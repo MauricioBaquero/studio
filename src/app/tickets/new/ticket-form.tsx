@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
@@ -35,8 +36,9 @@ import { doc, serverTimestamp, collection } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import Image from "next/image";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Info } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 interface TicketFormProps {
@@ -75,8 +77,11 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
   const [selectedParent, setSelectedParent] = useState<string | null>(null);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const [newPhotoFiles, setNewPhotoFiles] = useState<File[]>([]);
   const [newPhotoPreviews, setNewPhotoPreviews] = useState<string[]>([]);
+  const [newEmlFiles, setNewEmlFiles] = useState<File[]>([]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emlFileInputRef = useRef<HTMLInputElement>(null);
   const ticketIdRef = useRef<string>(doc(collection(firestore, 'dummy')).id); // Generate ID upfront
@@ -120,7 +125,7 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
     return floors;
   }, [selectedLocation]);
   
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
      if (e.target.files) {
         const files = Array.from(e.target.files);
         setNewPhotoFiles(prev => [...prev, ...files]);
@@ -128,10 +133,21 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
         setNewPhotoPreviews(prev => [...prev, ...previews]);
     }
   }
+  
+  const handleEmlFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+     if (e.target.files) {
+        const files = Array.from(e.target.files);
+        setNewEmlFiles(prev => [...prev, ...files]);
+    }
+  }
 
   const removeNewPhotoPreview = (index: number) => {
     setNewPhotoFiles(files => files.filter((_, i) => i !== index));
     setNewPhotoPreviews(previews => previews.filter((_, i) => i !== index));
+  }
+  
+  const removeNewEmlFile = (index: number) => {
+    setNewEmlFiles(files => files.filter((_, i) => i !== index));
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -160,8 +176,6 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
     
     const fullLocation = [locationName, floorDisplay, values.additionalDetails].filter(Boolean).join(', ');
     
-    let uploadedPhotos = [];
-
     try {
         // Upload new photos
         const newPhotoUploads = newPhotoFiles.map(async file => {
@@ -175,8 +189,23 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
             
             return { url: downloadURL, path: storagePath, createdAt: new Date() };
         });
+        
+        // Upload new EML files
+        const newEmlUploads = newEmlFiles.map(async file => {
+            const emlId = uuidv4();
+            const storagePath = `eml/${ticketId}/${emlId}-${file.name}`;
+            const storageRef = ref(storage, storagePath);
 
-        uploadedPhotos = await Promise.all(newPhotoUploads);
+            await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(storageRef);
+            
+            return { name: file.name, url: downloadURL, path: storagePath, createdAt: new Date() };
+        });
+
+        const [uploadedPhotos, uploadedEmls] = await Promise.all([
+            Promise.all(newPhotoUploads),
+            Promise.all(newEmlUploads)
+        ]);
 
         const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticketId);
 
@@ -193,6 +222,7 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
             assignedToIds: [],
             createdAt: serverTimestamp(),
             photos: uploadedPhotos,
+            emlAttachments: uploadedEmls,
         };
 
         setDocumentNonBlocking(ticketRef, ticketData, { merge: false });
@@ -304,30 +334,49 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
               <Label>Attachments (optional)</Label>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                   <div className="flex items-center gap-4">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className="border-2 border-dashed hover:border-solid hover:bg-accent"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isSubmitting}
-                    >
-                        <Upload className="mr-2 h-4 w-4" />
-                        Upload Photo
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className="border-2 border-dashed hover:border-solid hover:bg-accent"
-                        onClick={() => emlFileInputRef.current?.click()}
-                        disabled={isSubmitting}
-                    >
-                        <Upload className="mr-2 h-4 w-4" />
-                        Upload EML
-                    </Button>
+                    <TooltipProvider>
+                      <div className="flex items-center gap-2">
+                          <Button
+                              type="button"
+                              variant="outline"
+                              className="border-2 border-dashed hover:border-solid hover:bg-accent"
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={isSubmitting}
+                          >
+                              <Upload className="mr-2 h-4 w-4" />
+                              Upload Photo
+                          </Button>
+                          <Tooltip>
+                              <TooltipTrigger asChild>
+                                  <Info className="h-4 w-4 text-muted-foreground cursor-pointer" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                  <p>Restriction size to 5MB and files .jpg, .jpeg and .png allowed</p>
+                              </TooltipContent>
+                          </Tooltip>
+                      </div>
+                      <div className="flex items-center gap-2">
+                          <Button
+                              type="button"
+                              variant="outline"
+                              className="border-2 border-dashed hover:border-solid hover:bg-accent"
+                              onClick={() => emlFileInputRef.current?.click()}
+                              disabled={isSubmitting}
+                          >
+                              <Upload className="mr-2 h-4 w-4" />
+                              Upload EML
+                          </Button>
+                          <Tooltip>
+                              <TooltipTrigger asChild>
+                                  <Info className="h-4 w-4 text-muted-foreground cursor-pointer" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                  <p>Only .eml files are allowed.</p>
+                              </TooltipContent>
+                          </Tooltip>
+                      </div>
+                    </TooltipProvider>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                      Restriction files .jpg, .eml allowed
-                  </p>
               </div>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                   {newPhotoPreviews.map((url, index) => (
@@ -341,13 +390,23 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
                       </div>
                   ))}
               </div>
+              <div className="space-y-1">
+                  {newEmlFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between text-sm bg-muted/50 p-2 rounded-md">
+                          <span className="truncate">{file.name}</span>
+                          <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeNewEmlFile(index)}>
+                              <X className="h-4 w-4" />
+                          </Button>
+                      </div>
+                  ))}
+              </div>
               <input
                   type="file"
                   ref={fileInputRef}
                   className="hidden"
                   multiple
                   accept="image/jpeg, image/png, image/jpg"
-                  onChange={handleFileChange}
+                  onChange={handlePhotoFileChange}
                   disabled={isSubmitting}
               />
               <input
@@ -356,7 +415,7 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
                   className="hidden"
                   multiple
                   accept=".eml"
-                  onChange={handleFileChange}
+                  onChange={handleEmlFileChange}
                   disabled={isSubmitting}
               />
             </div>

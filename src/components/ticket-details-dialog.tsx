@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
@@ -11,6 +12,7 @@ import {
   Category,
   toDate,
   Photo,
+  EmlAttachment,
 } from '@/lib/data';
 import {
   Dialog,
@@ -30,7 +32,7 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Trash2, X, Upload, Check } from 'lucide-react';
+import { Loader2, Trash2, X, Upload, Check, FileText } from 'lucide-react';
 import { useFirestore, useUser, useStorage, deleteDocumentNonBlocking } from '@/firebase';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -73,7 +75,8 @@ export function TicketDetailsDialog({
   const storage = useStorage();
   const { user: currentUser } = useUser();
   const teamId = currentUser?.teamId;
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoFileInputRef = useRef<HTMLInputElement>(null);
+  const emlFileInputRef = useRef<HTMLInputElement>(null);
 
   const [isSaving, setIsSaving] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<TicketStatus>(ticket.status);
@@ -82,6 +85,10 @@ export function TicketDetailsDialog({
   const [currentPhotos, setCurrentPhotos] = useState<Photo[]>([]);
   const [newPhotoFiles, setNewPhotoFiles] = useState<File[]>([]);
   const [newPhotoPreviews, setNewPhotoPreviews] = useState<string[]>([]);
+  
+  const [currentEmlAttachments, setCurrentEmlAttachments] = useState<EmlAttachment[]>([]);
+  const [newEmlFiles, setNewEmlFiles] = useState<File[]>([]);
+
 
   const [selectedImage, setSelectedImage] = useState<Photo | null>(null);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
@@ -105,8 +112,10 @@ export function TicketDetailsDialog({
       setCurrentStatus(ticket.status);
       setAssignedToIds(ticket.assignedToIds || []);
       setCurrentPhotos(ticket.photos || []);
+      setCurrentEmlAttachments(ticket.emlAttachments || []);
       setNewPhotoFiles([]);
       setNewPhotoPreviews([]);
+      setNewEmlFiles([]);
       setIsSaving(false);
     }
   }, [open, ticket]);
@@ -129,16 +138,28 @@ export function TicketDetailsDialog({
       const newPhotoUploads = newPhotoFiles.map(async file => {
         const photoId = uuidv4();
         const fileExtension = file.name.split('.').pop();
-        const storagePath = `taskphotos/completed/${ticket.id}/${photoId}.${fileExtension}`;
+        const storagePath = `taskphotos/${ticket.id}/${photoId}.${fileExtension}`;
         const storageRef = ref(storage, storagePath);
-
         await uploadBytes(storageRef, file);
         const downloadURL = await getDownloadURL(storageRef);
-        
         return { url: downloadURL, path: storagePath, createdAt: new Date() };
       });
+      
+       // Upload new EML files
+        const newEmlUploads = newEmlFiles.map(async file => {
+            const emlId = uuidv4();
+            const storagePath = `eml/${ticket.id}/${emlId}-${file.name}`;
+            const storageRef = ref(storage, storagePath);
+            await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(storageRef);
+            return { name: file.name, url: downloadURL, path: storagePath, createdAt: new Date() };
+        });
 
-      const uploadedPhotos = await Promise.all(newPhotoUploads);
+      const [uploadedPhotos, uploadedEmls] = await Promise.all([
+          Promise.all(newPhotoUploads),
+          Promise.all(newEmlUploads)
+      ]);
+
 
       // 2. Prepare data for Firestore update
       const dataForDb: any = {
@@ -148,6 +169,9 @@ export function TicketDetailsDialog({
 
       if (uploadedPhotos.length > 0) {
         dataForDb.photos = arrayUnion(...uploadedPhotos);
+      }
+      if (uploadedEmls.length > 0) {
+        dataForDb.emlAttachments = arrayUnion(...uploadedEmls);
       }
       
       if (finalStatus === 'Completed' && ticket.status !== 'Completed') {
@@ -201,15 +225,43 @@ export function TicketDetailsDialog({
         toast({ title: "Deletion Failed", description: "Could not delete photo.", variant: "destructive" });
     }
   };
+  
+  const handleDeleteEml = async (eml: EmlAttachment, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!firestore || !storage || !teamId || teamId === 'allTeams') return;
+    
+    toast({ title: "Deleting EML...", description: "Please wait." });
+    
+    try {
+        const emlRef = ref(storage, eml.path);
+        await deleteObject(emlRef);
+        
+        const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticket.id);
+        await updateDoc(ticketRef, {
+            emlAttachments: arrayRemove(eml)
+        });
+
+        setCurrentEmlAttachments(currentEmlAttachments.filter(e => e.path !== eml.path));
+        
+        toast({ title: "EML Deleted", description: "The EML file has been removed." });
+    } catch (error) {
+        console.error("Failed to delete EML:", error);
+        toast({ title: "Deletion Failed", description: "Could not delete EML file.", variant: "destructive" });
+    }
+  };
 
   const handleDelete = async () => {
-    if (!firestore || !teamId || teamId === 'allTeams') return;
+    if (!firestore || !teamId || teamId === 'allTeams' || !storage) return;
     try {
+      const deletePromises = [];
       if (ticket.photos && ticket.photos.length > 0) {
-        // Delete all photos from storage first
-        const deletePromises = ticket.photos.map(p => deleteObject(ref(storage, p.path)));
-        await Promise.all(deletePromises);
+        ticket.photos.forEach(p => deletePromises.push(deleteObject(ref(storage, p.path))));
       }
+      if (ticket.emlAttachments && ticket.emlAttachments.length > 0) {
+        ticket.emlAttachments.forEach(e => deletePromises.push(deleteObject(ref(storage, e.path))));
+      }
+      await Promise.all(deletePromises);
+      
       const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticket.id);
       deleteDocumentNonBlocking(ticketRef);
       toast({ title: "Ticket Deleted", description: `Ticket ${ticket.id} has been permanently deleted.` });
@@ -220,7 +272,7 @@ export function TicketDetailsDialog({
     }
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
      if (e.target.files) {
         const files = Array.from(e.target.files);
         setNewPhotoFiles(prev => [...prev, ...files]);
@@ -228,10 +280,21 @@ export function TicketDetailsDialog({
         setNewPhotoPreviews(prev => [...prev, ...previews]);
     }
   }
+  
+  const handleEmlFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+     if (e.target.files) {
+        const files = Array.from(e.target.files);
+        setNewEmlFiles(prev => [...prev, ...files]);
+    }
+  }
 
   const removeNewPhotoPreview = (index: number) => {
     setNewPhotoFiles(files => files.filter((_, i) => i !== index));
     setNewPhotoPreviews(previews => previews.filter((_, i) => i !== index));
+  }
+  
+  const removeNewEmlFile = (index: number) => {
+    setNewEmlFiles(files => files.filter((_, i) => i !== index));
   }
   
   const handlePhotoClick = (photo: Photo) => {
@@ -299,20 +362,26 @@ export function TicketDetailsDialog({
             </div>
 
             <div className="space-y-2">
-              <Label>Photo(s)</Label>
+              <Label>Attachments</Label>
               <div className="flex items-center gap-4">
                   <Button
                       variant="outline"
                       className="border-2 border-dashed hover:border-solid hover:bg-accent"
-                      onClick={() => fileInputRef.current?.click()}
+                      onClick={() => photoFileInputRef.current?.click()}
                       disabled={isSaving}
                   >
                       <Upload className="mr-2 h-4 w-4" />
                       Upload Photo
                   </Button>
-                  <p className="text-xs text-muted-foreground">
-                      Restriction size to 5MB and files .jpg, .jpeg and .png allowed
-                  </p>
+                   <Button
+                      variant="outline"
+                      className="border-2 border-dashed hover:border-solid hover:bg-accent"
+                      onClick={() => emlFileInputRef.current?.click()}
+                      disabled={isSaving}
+                  >
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload EML
+                  </Button>
               </div>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                   {currentPhotos.map((photo, index) => (
@@ -337,13 +406,43 @@ export function TicketDetailsDialog({
                       </div>
                   ))}
               </div>
+              <div className="space-y-1">
+                  {currentEmlAttachments.map((eml, index) => (
+                       <div key={index} className="flex items-center justify-between text-sm bg-muted/50 p-2 rounded-md">
+                          <a href={eml.url} target="_blank" rel="noopener noreferrer" className="truncate flex items-center gap-2 hover:underline">
+                            <FileText className="h-4 w-4" />
+                            {eml.name}
+                          </a>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => handleDeleteEml(eml, e)}>
+                              <X className="h-4 w-4" />
+                          </Button>
+                      </div>
+                  ))}
+                  {newEmlFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between text-sm bg-muted/50 p-2 rounded-md">
+                          <span className="truncate">{file.name}</span>
+                          <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeNewEmlFile(index)}>
+                              <X className="h-4 w-4" />
+                          </Button>
+                      </div>
+                  ))}
+              </div>
               <input
                   type="file"
-                  ref={fileInputRef}
+                  ref={photoFileInputRef}
                   className="hidden"
                   multiple
                   accept="image/jpeg, image/png, image/jpg"
-                  onChange={handleFileChange}
+                  onChange={handlePhotoFileChange}
+                  disabled={isSaving}
+              />
+               <input
+                  type="file"
+                  ref={emlFileInputRef}
+                  className="hidden"
+                  multiple
+                  accept=".eml"
+                  onChange={handleEmlFileChange}
                   disabled={isSaving}
               />
             </div>
@@ -466,7 +565,7 @@ export function TicketDetailsDialog({
                     <AlertDialogHeader>
                       <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will permanently delete the ticket and all associated photos. This action cannot be undone.
+                        This will permanently delete the ticket and all associated attachments. This action cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

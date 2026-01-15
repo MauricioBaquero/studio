@@ -64,6 +64,14 @@ export const photoSchema = z.object({
 });
 export type Photo = z.infer<typeof photoSchema>;
 
+export const emlAttachmentSchema = z.object({
+  name: z.string(),
+  url: z.string(),
+  path: z.string(),
+  createdAt: timestampSchema,
+});
+export type EmlAttachment = z.infer<typeof emlAttachmentSchema>;
+
 export const ticketSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -80,6 +88,7 @@ export const ticketSchema = z.object({
   submitToReviewDate: timestampSchema.optional().nullable(),
   actualCompletionDate: timestampSchema.optional().nullable(),
   photos: z.array(photoSchema).optional(),
+  emlAttachments: z.array(emlAttachmentSchema).optional(),
   unableToComplete: z.boolean().optional(),
 });
 export type Ticket = z.infer<typeof ticketSchema>;
