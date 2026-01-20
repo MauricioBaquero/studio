@@ -259,7 +259,6 @@ export default function ScheduledMaintenancePage() {
                 ))}
             </div>
             <div className="pt-4">
-                <h4 className="text-sm font-medium text-muted-foreground mb-2">Tasks by Assignee</h4>
                 <div className="flex flex-wrap gap-x-6 gap-y-2">
                     {tasksByUser.map(user => (
                         <div key={user.name} className="text-sm">
