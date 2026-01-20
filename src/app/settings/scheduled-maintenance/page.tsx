@@ -169,6 +169,27 @@ export default function ScheduledMaintenancePage() {
     return Object.values(counts).filter(c => c.count > 0).sort((a,b) => b.count - a.count);
   }, [tasks, categories]);
 
+  const tasksByUser = useMemo(() => {
+    if (!tasks || !users) {
+      return [];
+    }
+    const counts: { [userId: string]: { name: string; count: number } } = {};
+
+    for (const task of tasks) {
+      if (task.assignedToId) {
+        const user = getUserById(task.assignedToId);
+        if (user) {
+          if (!counts[user.uid]) {
+            counts[user.uid] = { name: user.name, count: 0 };
+          }
+          counts[user.uid].count++;
+        }
+      }
+    }
+
+    return Object.values(counts).sort((a, b) => b.count - a.count);
+  }, [tasks, users]);
+
 
   const handleOpenForm = (task: RecurringTask | null) => {
     setEditingTask(task);
@@ -235,6 +256,18 @@ export default function ScheduledMaintenancePage() {
                         {cat.name}: {cat.count}
                     </Badge>
                 ))}
+            </div>
+            <div className="pt-4">
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">Tasks by Assignee</h4>
+                <div className="flex flex-wrap gap-x-6 gap-y-2">
+                    {tasksByUser.map(user => (
+                        <div key={user.name} className="text-sm">
+                            <span className="font-semibold">{user.name}:</span>
+                            <span className="text-muted-foreground ml-1">{user.count}</span>
+                        </div>
+                    ))}
+                    {tasksByUser.length === 0 && <p className="text-sm text-muted-foreground italic">No tasks assigned to users.</p>}
+                </div>
             </div>
           </div>
           <Button onClick={() => handleOpenForm(null)}>
