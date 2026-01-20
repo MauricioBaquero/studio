@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -138,6 +137,16 @@ export default function ScheduledMaintenancePage() {
     () => categories || [],
     [categories]
   );
+  
+  const taskCounts = useMemo(() => {
+    if (!tasks) {
+      return { daily: 0, weekly: 0, monthly: 0, total: 0 };
+    }
+    const daily = tasks.filter(t => t.frequency === 'Daily').length;
+    const weekly = tasks.filter(t => t.frequency === 'Weekly').length;
+    const monthly = tasks.filter(t => t.frequency === 'Monthly').length;
+    return { daily, weekly, monthly, total: tasks.length };
+  }, [tasks]);
 
   const handleOpenForm = (task: RecurringTask | null) => {
     setEditingTask(task);
@@ -192,6 +201,9 @@ export default function ScheduledMaintenancePage() {
             <CardDescription>
               Add, edit, or remove recurring tasks.
             </CardDescription>
+            <p className="text-sm text-foreground font-medium pt-2">
+              {taskCounts.daily} Daily + {taskCounts.weekly} Weekly + {taskCounts.monthly} Monthly = {taskCounts.total} Total Tasks
+            </p>
             {currentTeam && (
               <Badge variant="outline">Team: {currentTeam.name}</Badge>
             )}
