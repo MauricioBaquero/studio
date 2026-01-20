@@ -201,12 +201,12 @@ export default function ScheduledMaintenancePage() {
             <CardDescription>
               Add, edit, or remove recurring tasks.
             </CardDescription>
-            <p className="text-sm text-foreground font-medium pt-2">
-              {taskCounts.daily} Daily + {taskCounts.weekly} Weekly + {taskCounts.monthly} Monthly = {taskCounts.total} Total Tasks
-            </p>
             {currentTeam && (
               <Badge variant="outline">Team: {currentTeam.name}</Badge>
             )}
+            <p className="text-sm text-foreground font-medium pt-2">
+              {taskCounts.daily} Daily + {taskCounts.weekly} Weekly + {taskCounts.monthly} Monthly = {taskCounts.total} Total Tasks
+            </p>
           </div>
           <Button onClick={() => handleOpenForm(null)}>
             <PlusCircle className="mr-2 h-4 w-4" />
