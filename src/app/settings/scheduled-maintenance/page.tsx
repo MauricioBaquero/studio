@@ -14,7 +14,8 @@ import {
   Category,
   Location,
   Team,
-  User
+  User,
+  CategoryColor
 } from '@/lib/data';
 import {
   Card,
@@ -124,7 +125,7 @@ export default function ScheduledMaintenancePage() {
     for (const parent of categories) {
         const sub = parent.subcategories?.find(s => s.id === subcategoryId);
         if (sub) {
-            return { ...sub, parentName: parent.name, color: parent.color };
+            return { ...sub, parentName: parent.name, color: parent.color, parentId: parent.id };
         }
     }
     return null;
@@ -147,6 +148,27 @@ export default function ScheduledMaintenancePage() {
     const monthly = tasks.filter(t => t.frequency === 'Monthly').length;
     return { daily, weekly, monthly, total: tasks.length };
   }, [tasks]);
+
+  const taskCountsByParentCategory = useMemo(() => {
+    if (!tasks || !categories) {
+      return [];
+    }
+    const counts: { [parentId: string]: { name: string; color: CategoryColor; count: number } } = {};
+
+    for (const parent of categories) {
+        counts[parent.id] = { name: parent.name, color: parent.color || 'blue', count: 0 };
+    }
+
+    for (const task of tasks) {
+      const subCatInfo = findSubCategory(task.categoryId);
+      if (subCatInfo?.parentId && counts[subCatInfo.parentId]) {
+        counts[subCatInfo.parentId].count++;
+      }
+    }
+
+    return Object.values(counts).filter(c => c.count > 0).sort((a,b) => b.count - a.count);
+  }, [tasks, categories]);
+
 
   const handleOpenForm = (task: RecurringTask | null) => {
     setEditingTask(task);
@@ -207,6 +229,13 @@ export default function ScheduledMaintenancePage() {
             <p className="text-sm text-foreground font-medium pt-2">
               {taskCounts.daily} Daily + {taskCounts.weekly} Weekly + {taskCounts.monthly} Monthly = {taskCounts.total} Total Tasks
             </p>
+            <div className="flex flex-wrap gap-2 pt-2">
+                {taskCountsByParentCategory.map(cat => (
+                    <Badge key={cat.name} color={cat.color} variant="default">
+                        {cat.name}: {cat.count}
+                    </Badge>
+                ))}
+            </div>
           </div>
           <Button onClick={() => handleOpenForm(null)}>
             <PlusCircle className="mr-2 h-4 w-4" />
