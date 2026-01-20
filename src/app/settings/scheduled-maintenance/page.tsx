@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -187,7 +188,7 @@ export default function ScheduledMaintenancePage() {
       }
     }
 
-    return Object.values(counts).sort((a, b) => b.count - a.count);
+    return Object.values(counts).sort((a, b) => a.name.localeCompare(b.name));
   }, [tasks, users]);
 
 
