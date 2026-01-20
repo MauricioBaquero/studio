@@ -127,6 +127,10 @@ export default function LocationsPage() {
             <CardTitle>Location Management</CardTitle>
             <CardDescription>
               Add, edit, or remove facility locations.
+              <ul className="list-disc pl-5 mt-2 space-y-1">
+                <li><strong>Field Site Location:</strong> A specific parking area, lot, or zone within Fort Lauderdale where parking infrastructure exists.</li>
+                <li><strong>Off-Site Location:</strong> A location outside the primary service area or a parking area without active monitoring infrastructure.</li>
+              </ul>
             </CardDescription>
           </div>
           <Button onClick={() => handleOpenForm(null)}>
