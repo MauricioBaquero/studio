@@ -315,8 +315,8 @@ export function TicketDetailsDialog({
   const assignableUsers = useMemo(() => {
     if (!users || !teamId) return [];
     
-    // Only 'Coordinator' and 'Staff' can be assigned.
-    const assignableRoles = ['Coordinator', 'Staff'];
+    // Admin, Coordinator, and Staff roles can be assigned tasks.
+    const assignableRoles = ['Admin', 'Coordinator', 'Staff'];
 
     if (teamId === 'allTeams') {
       return users.filter(u => assignableRoles.includes(u.role));
@@ -325,9 +325,9 @@ export function TicketDetailsDialog({
     return users.filter(u => {
       if (!assignableRoles.includes(u.role)) return false;
       const belongsToTeam = u.teamId === teamId;
-      // Coordinators are assignable even if their current teamId doesn't match, as they can switch.
-      const isCoordinator = u.role === 'Coordinator';
-      return belongsToTeam || isCoordinator;
+      // Admins and Coordinators are assignable even if their current teamId doesn't match, as they can switch.
+      const isPrivileged = u.role === 'Admin' || u.role === 'Coordinator';
+      return belongsToTeam || isPrivileged;
     });
   }, [users, teamId]);
 

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -198,7 +199,7 @@ export function AddTaskForm({
   const assignableUsers = useMemo(() => {
     if (!users || !teamId) return [];
     
-    const assignableRoles = ['Coordinator', 'Staff'];
+    const assignableRoles = ['Admin', 'Coordinator', 'Staff'];
 
     if (teamId === 'allTeams') {
       return users.filter(u => assignableRoles.includes(u.role));
@@ -207,8 +208,8 @@ export function AddTaskForm({
     return users.filter(u => {
       if (!assignableRoles.includes(u.role)) return false;
       const belongsToTeam = u.teamId === teamId;
-      const isCoordinator = u.role === 'Coordinator';
-      return belongsToTeam || isCoordinator;
+      const isPrivileged = u.role === 'Admin' || u.role === 'Coordinator';
+      return belongsToTeam || isPrivileged;
     });
   }, [users, teamId]);
 
