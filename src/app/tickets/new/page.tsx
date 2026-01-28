@@ -2,7 +2,8 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, doc, where } from 'firebase/firestore';
 import type { Category, Location, AppSettings } from '@/lib/data';
@@ -10,8 +11,15 @@ import { TicketForm } from './ticket-form';
 
 export default function NewTicketPage() {
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
   const teamId = user?.teamId;
+
+  useEffect(() => {
+    if (!isUserLoading && user?.role === 'Viewer') {
+      router.replace('/');
+    }
+  }, [user, isUserLoading, router]);
 
   const settingsRef = useMemoFirebase(
     () => (firestore && teamId && teamId !== 'allTeams' ? doc(firestore, `teams/${teamId}/settings`, 'appSettings') : null),
@@ -46,8 +54,12 @@ export default function NewTicketPage() {
     return [...locations].sort((a, b) => a.name.localeCompare(b.name));
   }, [locations]);
 
-  const isLoading = isLoadingCategories || isLoadingLocations || isLoadingSettings;
+  const isLoading = isLoadingCategories || isLoadingLocations || isLoadingSettings || isUserLoading;
   const minimumNoticeDays = settings?.completionDateRange ?? 7;
+  
+  if (isUserLoading || (user && user.role === 'Viewer')) {
+    return <p>Loading or unauthorized...</p>
+  }
 
   return (
     <div>
