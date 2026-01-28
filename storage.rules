@@ -3,10 +3,10 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Apply rules to all files in the bucket
+    // This rule applies to all files in the bucket, including 'taskphotos' and 'eml'.
+    // WARNING: This is insecure and not recommended for production.
+    // This allows anyone to read and write to your storage bucket.
     match /{allPaths=**} {
-      // WARNING: This is insecure and not recommended for production.
-      // This allows anyone to read and write to your storage bucket.
       allow read, write;
     }
   }
