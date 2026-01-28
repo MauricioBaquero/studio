@@ -388,9 +388,11 @@ export function TicketDetailsDialog({
                       <div key={index} onClick={() => handlePhotoClick(photo)} className="cursor-pointer">
                           <div className="relative group aspect-square">
                               <Image src={photo.url} alt={`Ticket photo ${index + 1}`} fill className="object-cover rounded-md border" />
-                              <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => handleDeletePhoto(photo, e)}>
-                                  <X className="h-4 w-4" />
-                              </Button>
+                              {isAdminOrCoordinator && (
+                                <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => handleDeletePhoto(photo, e)}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                              )}
                           </div>
                           <p className="text-xs text-muted-foreground text-center mt-1">{format(toDate(photo.createdAt), 'MM/dd/yyyy')}</p>
                       </div>
@@ -413,9 +415,11 @@ export function TicketDetailsDialog({
                             <FileText className="h-4 w-4" />
                             {eml.name}
                           </a>
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => handleDeleteEml(eml, e)}>
-                              <X className="h-4 w-4" />
-                          </Button>
+                          {isAdminOrCoordinator && (
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => handleDeleteEml(eml, e)}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                          )}
                       </div>
                   ))}
                   {newEmlFiles.map((file, index) => (
