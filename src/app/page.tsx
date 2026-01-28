@@ -40,12 +40,9 @@ export default function TaskBoardPage() {
   }, [firestore, teamId]);
 
   const locationsQuery = useMemoFirebase(() => {
-    if (!firestore || !teamId) return null;
-    if (currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator') {
-        return query(collection(firestore, `locations`));
-    }
-    return query(collection(firestore, `locations`), where('teamId', '==', teamId));
-  }, [firestore, teamId, currentUser?.role]);
+    if (!firestore) return null;
+    return query(collection(firestore, 'locations'));
+  }, [firestore]);
   
   const { data: tickets, isLoading: isLoadingTickets } = useCollection<Ticket>(ticketsQuery);
   const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
@@ -53,6 +50,11 @@ export default function TaskBoardPage() {
   const { data: locations, isLoading: isLoadingLocations } = useCollection<Location>(locationsQuery);
 
   const parentCategories = useMemo(() => categories || [], [categories]);
+
+  const sortedLocations = useMemo(() => {
+    if (!locations) return [];
+    return [...locations].sort((a, b) => a.name.localeCompare(b.name));
+  }, [locations]);
   
   const filteredTickets = useMemo(() => {
     if (!tickets || !currentUser) return [];
@@ -118,7 +120,7 @@ export default function TaskBoardPage() {
 
       <TicketFilters
         parentCategories={parentCategories}
-        locations={locations || []}
+        locations={sortedLocations}
         users={assignableUsers}
         onFilterChange={setFilters}
       />

@@ -91,14 +91,8 @@ export default function ScheduledMaintenancePage() {
     useCollection<Category>(categoriesQuery);
 
   const locationsQuery = useMemoFirebase(
-    () => {
-        if (!firestore || !teamId) return null;
-        if (currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator') {
-            return query(collection(firestore, `locations`));
-        }
-        return query(collection(firestore, `locations`), where('teamId', '==', teamId));
-    },
-    [firestore, teamId, currentUser?.role]
+    () => (firestore ? query(collection(firestore, `locations`)) : null),
+    [firestore]
   );
   const { data: locations, isLoading: isLoadingLocations } =
     useCollection<Location>(locationsQuery);
@@ -114,6 +108,11 @@ export default function ScheduledMaintenancePage() {
     [firestore]
   );
   const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
+
+  const sortedLocations = useMemo(() => {
+    if (!locations) return [];
+    return [...locations].sort((a, b) => a.name.localeCompare(b.name));
+  }, [locations]);
 
   const currentTeam = useMemo(() => {
     if (!teams || !teamId) return null;
@@ -349,7 +348,7 @@ export default function ScheduledMaintenancePage() {
         open={isFormOpen}
         onOpenChange={handleCloseForm}
         parentCategories={parentCategories}
-        locations={locations || []}
+        locations={sortedLocations}
         editingTask={editingTask}
       />
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>

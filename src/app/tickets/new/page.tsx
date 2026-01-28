@@ -28,13 +28,10 @@ export default function NewTicketPage() {
 
   const locationsQuery = useMemoFirebase(
     () => {
-        if (!firestore || !teamId) return null;
-        if (user?.role === 'Admin' || user?.role === 'Coordinator') {
-            return query(collection(firestore, `locations`));
-        }
-        return query(collection(firestore, `locations`), where('teamId', '==', teamId));
+        if (!firestore) return null;
+        return query(collection(firestore, `locations`));
     },
-    [firestore, teamId, user?.role]
+    [firestore]
   );
   const { data: locations, isLoading: isLoadingLocations } =
     useCollection<Location>(locationsQuery);
@@ -43,6 +40,11 @@ export default function NewTicketPage() {
     () => categories || [],
     [categories]
   );
+
+  const sortedLocations = useMemo(() => {
+    if (!locations) return [];
+    return [...locations].sort((a, b) => a.name.localeCompare(b.name));
+  }, [locations]);
 
   const isLoading = isLoadingCategories || isLoadingLocations || isLoadingSettings;
   const minimumNoticeDays = settings?.completionDateRange ?? 7;
@@ -60,7 +62,7 @@ export default function NewTicketPage() {
       ) : (
         <TicketForm
           parentCategories={parentCategories}
-          locations={locations || []}
+          locations={sortedLocations}
           minimumNoticeDays={minimumNoticeDays}
         />
       )}

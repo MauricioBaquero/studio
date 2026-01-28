@@ -91,16 +91,18 @@ export default function RecurringTasksPage() {
 
   const locationsQuery = useMemoFirebase(
     () => {
-        if (!firestore || !teamId) return null;
-        if (currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator') {
-            return query(collection(firestore, `locations`));
-        }
-        return query(collection(firestore, `locations`), where('teamId', '==', teamId));
+        if (!firestore) return null;
+        return query(collection(firestore, `locations`));
     },
-    [firestore, teamId, currentUser?.role]
+    [firestore]
   );
   const { data: locations, isLoading: isLoadingLocations } =
     useCollection<Location>(locationsQuery);
+
+  const sortedLocations = useMemo(() => {
+    if (!locations) return [];
+    return [...locations].sort((a, b) => a.name.localeCompare(b.name));
+  }, [locations]);
   
   const getUserById = (id: string | null) => users?.find(u => u.uid === id);
   const getLocationById = (id: string | null) => locations?.find(l => l.id === id);
@@ -366,7 +368,6 @@ export default function RecurringTasksPage() {
   }
   
   const parentCategories = categories || [];
-  const validLocations = locations || [];
 
 
   return (
@@ -375,7 +376,7 @@ export default function RecurringTasksPage() {
       
       <RecurringTaskFilters 
         parentCategories={parentCategories}
-        locations={validLocations}
+        locations={sortedLocations}
         onFilterChange={setFilters}
       />
 
