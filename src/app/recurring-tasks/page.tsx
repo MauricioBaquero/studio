@@ -122,8 +122,8 @@ export default function RecurringTasksPage() {
       visibleTasks.forEach(task => {
         if (task.lastCompleted && task.lastCompleted.length > 0) {
             task.lastCompleted.forEach(completion => {
-                const latestCompletion = toDate(completion);
-                const completedByUser = getUserById(task.completedBy || null);
+                const latestCompletion = toDate(completion.completedAt);
+                const completedByUser = getUserById(completion.completedBy);
                 const location = getLocationById(task.locationId);
                 if (completedByUser) {
                     allCompleted.push({
@@ -186,10 +186,12 @@ export default function RecurringTasksPage() {
     const upcoming: RecurringTask[] = [];
 
     sortedTasks.forEach(task => {
-      const lastCompletion =
+      const lastCompletionTimestamp =
         task.lastCompleted && task.lastCompleted.length > 0
-          ? toDate(task.lastCompleted[task.lastCompleted.length - 1] as Timestamp)
+          ? Math.max(...task.lastCompleted.map(log => toDate(log.completedAt).getTime()))
           : null;
+      const lastCompletion = lastCompletionTimestamp ? new Date(lastCompletionTimestamp) : null;
+
       const isCompletedToday = lastCompletion && isToday(lastCompletion);
       const nextDueDate = getNextDueDate(task);
       const daysUntilDue = differenceInDays(nextDueDate, new Date());
@@ -242,13 +244,13 @@ export default function RecurringTasksPage() {
 
     if (user) {
         const recurringTaskRef = doc(firestore, `teams/${teamId}/recurringTasks`, task.id);
+        const newCompletionLog = { completedAt: now, completedBy: currentUser.uid };
         
         updateDocumentNonBlocking(recurringTaskRef, {
-            lastCompleted: arrayUnion(now),
-            completedBy: currentUser.uid,
+            lastCompleted: arrayUnion(newCompletionLog),
         });
 
-        const updatedLastCompleted = (Array.isArray(task.lastCompleted) ? task.lastCompleted : []).concat(now);
+        const updatedLastCompleted = [...(task.lastCompleted || []), newCompletionLog];
 
         const optimisticCompletedTask: CompletedTask = {
             id: task.id,
@@ -262,7 +264,7 @@ export default function RecurringTasksPage() {
         };
         setCompletedTasks(prev => [optimisticCompletedTask, ...prev].sort((a,b) => b.completedAt.getTime() - a.completedAt.getTime()));
 
-        const updatedOptimisticTask = { ...task, lastCompleted: updatedLastCompleted, completedBy: user.uid };
+        const updatedOptimisticTask = { ...task, lastCompleted: updatedLastCompleted };
         setAllTasks(prev => prev.map(t => t.id === task.id ? updatedOptimisticTask : t));
     }
   };
@@ -278,7 +280,8 @@ export default function RecurringTasksPage() {
     const isTaskOverdue = (task.frequency === 'Weekly' || task.frequency === 'Monthly') &&
       isPast(nextDueDate) && !isSameDay(startOfDay(nextDueDate), startOfDay(new Date()));
 
-    const lastCompletionDate = task.lastCompleted && task.lastCompleted.length > 0 ? toDate(task.lastCompleted[task.lastCompleted.length - 1]) : null;
+    const lastCompletionTimestamp = task.lastCompleted && task.lastCompleted.length > 0 ? Math.max(...task.lastCompleted.map(log => toDate(log.completedAt).getTime())) : null;
+    const lastCompletionDate = lastCompletionTimestamp ? new Date(lastCompletionTimestamp) : null;
     const missedYesterday = task.frequency === 'Daily' && isToday(nextDueDate) && (!lastCompletionDate || !isSameDay(lastCompletionDate, subDays(new Date(), 1)));
 
 

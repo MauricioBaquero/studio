@@ -93,14 +93,20 @@ export const ticketSchema = z.object({
 });
 export type Ticket = z.infer<typeof ticketSchema>;
 
+export const completionLogSchema = z.object({
+  completedAt: timestampSchema,
+  completedBy: z.string(),
+});
+export type CompletionLog = z.infer<typeof completionLogSchema>;
+
+
 export const recurringTaskSchema = z.object({
   id: z.string(),
   title: z.string(),
   categoryId: z.string(),
   locationId: z.string(),
   frequency: z.enum(RECURRING_FREQUENCIES),
-  lastCompleted: z.array(timestampSchema),
-  completedBy: z.string().optional(),
+  lastCompleted: z.array(completionLogSchema).optional(),
   assignedToId: z.string().optional().nullable(),
   dayOfWeek: z.number().optional(),
   weekOfMonth: z.number().optional(),
@@ -138,7 +144,7 @@ export const getNextDueDate = (task: RecurringTask): Date => {
   const today = startOfDay(new Date());
 
   const mostRecentCompletion = task.lastCompleted && task.lastCompleted.length > 0
-    ? new Date(Math.max(...task.lastCompleted.map(d => toDate(d).getTime())))
+    ? new Date(Math.max(...task.lastCompleted.map(d => toDate(d.completedAt).getTime())))
     : null;
 
   const lastCompleted = mostRecentCompletion ? startOfDay(mostRecentCompletion) : null;

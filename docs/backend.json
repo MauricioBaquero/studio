@@ -1,5 +1,4 @@
 
-
 {
   "entities": {
     "Team": {
@@ -190,10 +189,21 @@
         },
         "lastCompleted": {
           "type": "array",
-          "description": "A log of all completion dates for this task.",
+          "description": "A log of all completions for this task, including who completed it and when.",
           "items": {
-            "type": "string",
-            "format": "date-time"
+            "type": "object",
+            "properties": {
+              "completedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "The timestamp of the completion."
+              },
+              "completedBy": {
+                "type": "string",
+                "description": "The UID of the user who completed the task."
+              }
+            },
+            "required": ["completedAt", "completedBy"]
           }
         },
         "assignedToId": {
