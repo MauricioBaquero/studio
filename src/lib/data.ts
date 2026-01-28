@@ -198,3 +198,22 @@ export const getNextDueDate = (task: RecurringTask): Date => {
       return new Date();
   }
 };
+
+export const generateAbbreviation = (name: string): string => {
+  if (!name) return 'XXX';
+
+  const cleanedName = name.replace(/[^a-zA-Z\s]/g, ''); // Remove special characters, keep spaces
+  const words = cleanedName.trim().split(/\s+/).filter(Boolean);
+
+  let abbreviation = '';
+
+  if (words.length >= 3) {
+    abbreviation = words.slice(0, 3).map(word => word[0]).join('');
+  } else if (words.length === 2) {
+    abbreviation = words[0].substring(0, 2) + words[1].substring(0, 1);
+  } else if (words.length === 1) {
+    abbreviation = words[0].substring(0, 3);
+  }
+
+  return abbreviation.toUpperCase().padEnd(3, 'X');
+};

@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { addDays } from "date-fns";
-import { Category, Location } from "@/lib/data";
+import { Category, Location, generateAbbreviation } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import {
@@ -84,12 +84,6 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emlFileInputRef = useRef<HTMLInputElement>(null);
-  const ticketIdRef = useRef<string>(doc(collection(firestore, 'dummy')).id); // Generate ID upfront
-
-  useEffect(() => {
-    // Generate a new ID whenever the component mounts for a new form
-    ticketIdRef.current = doc(collection(firestore, 'dummy')).id;
-  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -162,7 +156,23 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
 
     setIsSubmitting(true);
     
-    const ticketId = ticketIdRef.current;
+    const parentCat = parentCategories.find(p => p.id === values.categoryId);
+    const subCat = parentCat?.subcategories.find(s => s.id === values.subcategoryId);
+
+    if (!parentCat || !subCat) {
+        toast({
+            title: "Error",
+            description: "Invalid category selected.",
+            variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return;
+    }
+
+    const catAbbr = generateAbbreviation(parentCat.name);
+    const subCatAbbr = generateAbbreviation(subCat.name);
+    const timestamp = Date.now();
+    const ticketId = `T-${catAbbr}-${subCatAbbr}-${timestamp}`;
     
     const locationName = locations.find(l => l.id === values.locationId)?.name;
 
