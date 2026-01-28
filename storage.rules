@@ -4,10 +4,10 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Helper function to check if the user is an Admin or Staff
-    function isStaffOrAdmin(userId) {
+    // Helper function to check if the user has write permissions
+    function canWrite(userId) {
       let userRole = get(/databases/(default)/documents/users/$(userId)).data.role;
-      return userRole == 'Admin' || userRole == 'Staff';
+      return userRole == 'Admin' || userRole == 'Coordinator' || userRole == 'Staff';
     }
 
     // Apply rules to all files in the bucket
@@ -15,8 +15,10 @@ service firebase.storage {
       // Allow read access to any authenticated user with a user profile
       allow read: if request.auth != null && exists(/databases/(default)/documents/users/$(request.auth.uid));
 
-      // Allow write access (create, update, delete) only to Staff and Admin roles
-      allow write: if request.auth != null && isStaffOrAdmin(request.auth.uid);
+      // Allow write access (create, update, delete) to authorized roles
+      allow write: if request.auth != null && canWrite(request.auth.uid);
     }
   }
 }
+
+    

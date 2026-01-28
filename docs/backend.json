@@ -122,6 +122,33 @@
             "required": ["url", "path", "createdAt"]
           }
         },
+        "emlAttachments": {
+            "type": "array",
+            "description": "A list of EML files associated with the task.",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Name of the EML file."
+                    },
+                    "url": {
+                        "type": "string",
+                        "description": "Public URL of the EML file."
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "Storage path of the EML file."
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date the EML file was uploaded."
+                    }
+                },
+                "required": ["name", "url", "path", "createdAt"]
+            }
+        },
         "creatorId": {
             "type": "string",
             "description": "The UID of the user who created the task."
@@ -386,4 +413,6 @@
     ]
   }
 }
+    
+
     

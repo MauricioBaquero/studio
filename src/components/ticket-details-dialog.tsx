@@ -368,7 +368,7 @@ export function TicketDetailsDialog({
                       variant="outline"
                       className="border-2 border-dashed hover:border-solid hover:bg-accent"
                       onClick={() => photoFileInputRef.current?.click()}
-                      disabled={isSaving}
+                      disabled={isSaving || !canInteractWithForm}
                   >
                       <Upload className="mr-2 h-4 w-4" />
                       Upload Photo
@@ -377,7 +377,7 @@ export function TicketDetailsDialog({
                       variant="outline"
                       className="border-2 border-dashed hover:border-solid hover:bg-accent"
                       onClick={() => emlFileInputRef.current?.click()}
-                      disabled={isSaving}
+                      disabled={isSaving || !canInteractWithForm}
                   >
                       <Upload className="mr-2 h-4 w-4" />
                       Upload EML
@@ -613,3 +613,5 @@ export function TicketDetailsDialog({
     </>
   );
 }
+
+    
