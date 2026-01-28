@@ -30,9 +30,7 @@ const chartColors = [
 ];
 
 export function OpenTasksByLocationChart({ tickets, locations }: OpenTasksByLocationChartProps) {
-    const openTickets = tickets.filter(t => t.status !== 'Completed');
-
-    const tasksByLocation = openTickets.reduce((acc, ticket) => {
+    const tasksByLocation = tickets.reduce((acc, ticket) => {
         const location = locations.find(l => l.id === ticket.locationId);
         const locationName = location ? location.name : 'Unknown';
         acc[locationName] = (acc[locationName] || 0) + 1;
@@ -50,8 +48,8 @@ export function OpenTasksByLocationChart({ tickets, locations }: OpenTasksByLoca
   return (
     <Card className="flex flex-col h-full">
       <CardHeader>
-        <CardTitle>Open Tasks by Location</CardTitle>
-        <CardDescription>Breakdown of active tickets by facility location.</CardDescription>
+        <CardTitle>Tasks by Location</CardTitle>
+        <CardDescription>Breakdown of all tickets by facility location.</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <ChartContainer config={{}} className="h-[550px] w-full">
@@ -89,5 +87,3 @@ export function OpenTasksByLocationChart({ tickets, locations }: OpenTasksByLoca
     </Card>
   );
 }
-
-    
