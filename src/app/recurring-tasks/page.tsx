@@ -275,9 +275,9 @@ export default function RecurringTasksPage() {
   const isLoading = isLoadingRecurringTasks || isLoadingCategories || isLoadingUsers || isLoadingLocations;
 
   const renderTaskRow = (task: RecurringTask, isCompleted: boolean, isUpcoming: boolean) => {
-    const subCategoryInfo = findSubCategory(task.categoryId);
     const location = getLocationById(task.locationId);
     const nextDueDate = getNextDueDate(task);
+    const assignedUser = getUserById(task.assignedToId || null);
     
     // Overdue logic only for Weekly and Monthly
     const isTaskOverdue = (task.frequency !== 'Daily') &&
@@ -335,11 +335,7 @@ export default function RecurringTasksPage() {
           {task.title}
         </TableCell>
         <TableCell>
-          {subCategoryInfo ? (
-            <Badge color={subCategoryInfo.color as any}>{subCategoryInfo.name}</Badge>
-          ) : (
-            '-'
-          )}
+          {assignedUser ? assignedUser.name : <span className="text-muted-foreground italic">Unassigned</span>}
         </TableCell>
         <TableCell>
           {location?.name || '-'}
@@ -397,7 +393,7 @@ export default function RecurringTasksPage() {
                 <TableRow>
                   <TableHead className="w-[50px]"></TableHead>
                   <TableHead>Task</TableHead>
-                  <TableHead>Category</TableHead>
+                  <TableHead>Assigned To</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Next Due Date</TableHead>
                 </TableRow>
@@ -495,3 +491,5 @@ export default function RecurringTasksPage() {
     </div>
   );
 }
+
+    
