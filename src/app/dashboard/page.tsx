@@ -7,7 +7,7 @@ import { TaskTypeChart } from '@/components/task-type-chart';
 import { TasksByAssigneeChart } from '@/components/tasks-by-assignee-chart';
 import { OpenTasksByLocationChart } from '@/components/open-tasks-by-location-chart';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import { RecurringTasksSummaryChart } from '@/components/recurring-tasks-summary-chart';
 import { useMemo } from 'react';
 import { ApprovalStatusSummary } from '@/components/approval-status-summary';
@@ -47,8 +47,8 @@ export default function DashboardPage() {
     useCollection<RecurringTask>(recurringTasksQuery);
   
   const locationsQuery = useMemoFirebase(
-    () => (firestore && teamId ? query(collection(firestore, `locations`), where('teamId', '==', teamId)) : null),
-    [firestore, teamId]
+    () => (firestore ? query(collection(firestore, `locations`)) : null),
+    [firestore]
     );
   const { data: locations, isLoading: isLoadingLocations } =
     useCollection<Location>(locationsQuery);
