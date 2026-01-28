@@ -175,7 +175,10 @@
           "enum": [
             "Daily",
             "Weekly",
-            "Monthly"
+            "Bi-Weekly",
+            "Monthly",
+            "3 Months",
+            "6 Months"
           ],
           "description": "The frequency of the task."
         },

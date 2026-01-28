@@ -123,7 +123,7 @@ export default function RecurringTasksPage() {
         if (task.lastCompleted && task.lastCompleted.length > 0) {
             task.lastCompleted.forEach(completion => {
                 if (!completion) return;
-                const completionDate = toDate(completion.completedAt || completion);
+                const completionDate = toDate(completion.completedAt);
                 const completedByUser = getUserById(completion.completedBy);
                 const location = getLocationById(task.locationId);
 
@@ -202,7 +202,7 @@ export default function RecurringTasksPage() {
         
       if (task.frequency === 'Daily') {
         isEarly = isTomorrow(nextDueDate);
-      } else if (task.frequency === 'Weekly' || task.frequency === 'Monthly') {
+      } else if (task.frequency !== 'Daily') {
         isEarly = daysUntilDue > advanceCompletionDays;
       }
 
@@ -280,7 +280,7 @@ export default function RecurringTasksPage() {
     const nextDueDate = getNextDueDate(task);
     
     // Overdue logic only for Weekly and Monthly
-    const isTaskOverdue = (task.frequency === 'Weekly' || task.frequency === 'Monthly') &&
+    const isTaskOverdue = (task.frequency !== 'Daily') &&
       isPast(nextDueDate) && !isSameDay(startOfDay(nextDueDate), startOfDay(new Date()));
 
     const lastCompletionTimestamp = task.lastCompleted && task.lastCompleted.length > 0 ? Math.max(...task.lastCompleted.filter(Boolean).map(log => toDate(log.completedAt || log).getTime())) : null;
@@ -294,7 +294,7 @@ export default function RecurringTasksPage() {
     let isEarly = false;
     if (task.frequency === 'Daily') {
         isEarly = isTomorrow(nextDueDate);
-    } else if (task.frequency === 'Weekly' || task.frequency === 'Monthly') {
+    } else if (task.frequency !== 'Daily') {
         isEarly = daysUntilDue > advanceCompletionDays;
     }
     const isCompletable = !isCompleted && !isEarly;

@@ -4,7 +4,7 @@ import { z } from "zod";
 
 export const USER_ROLES = ["Admin", "Coordinator", "Staff", "Viewer"] as const;
 export const TICKET_STATUSES = ["Not Started", "In Progress", "Pending Review", "Completed"] as const;
-export const RECURRING_FREQUENCIES = ["Daily", "Weekly", "Monthly"] as const;
+export const RECURRING_FREQUENCIES = ["Daily", "Weekly", "Bi-Weekly", "Monthly", "3 Months", "6 Months"] as const;
 export const CATEGORY_COLORS = ["red", "orange", "yellow", "green", "blue", "purple", "pink", "teal", "indigo", "cyan"] as const;
 
 export type UserRole = (typeof USER_ROLES)[number];
@@ -122,6 +122,7 @@ export type AppSettings = z.infer<typeof settingsSchema>;
 
 // Data Accessor Functions
 export const toDate = (date: Date | Timestamp): Date => {
+    if (!date) return new Date();
     if (date instanceof Date) {
         return date;
     }
@@ -156,8 +157,14 @@ export const getNextDueDate = (task: RecurringTask): Date => {
         return addDays(today, 1);
       case "Weekly":
         return addWeeks(today, 1);
+      case "Bi-Weekly":
+        return addWeeks(today, 2);
       case "Monthly":
         return addMonths(today, 1);
+      case "3 Months":
+        return addMonths(today, 3);
+      case "6 Months":
+        return addMonths(today, 6);
     }
   }
 
@@ -171,6 +178,9 @@ export const getNextDueDate = (task: RecurringTask): Date => {
       const nextOccurrence = nextDay(baseDate, task.dayOfWeek as any);
       return isAfter(nextOccurrence, baseDate) ? nextOccurrence : addWeeks(nextOccurrence, 1);
     }
+
+    case 'Bi-Weekly':
+      return addWeeks(baseDate, 2);
     
     case 'Monthly': {
       if (task.weekOfMonth && task.dayOfWeek !== undefined) {
@@ -200,6 +210,13 @@ export const getNextDueDate = (task: RecurringTask): Date => {
       }
       return addMonths(baseDate, 1); // Fallback for simple monthly
     }
+
+    case '3 Months':
+      return addMonths(baseDate, 3);
+    
+    case '6 Months':
+      return addMonths(baseDate, 6);
+
     default:
       return new Date();
   }
@@ -223,4 +240,3 @@ export const generateAbbreviation = (name: string): string => {
 
   return abbreviation.toUpperCase().padEnd(3, 'X');
 };
-
