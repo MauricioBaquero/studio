@@ -219,11 +219,11 @@ export default function ScheduledMaintenancePage() {
   };
 
   const getFrequencyDetails = (task: RecurringTask) => {
-    if (task.frequency === 'Weekly' && task.dayOfWeek !== undefined) {
+    if ((task.frequency === 'Weekly' || task.frequency === 'Bi-Weekly') && task.dayOfWeek !== undefined) {
       return `(${WEEK_DAYS[task.dayOfWeek]})`;
     }
     if (
-      task.frequency === 'Monthly' &&
+      (task.frequency === 'Monthly' || task.frequency === '3 Months' || task.frequency === '6 Months') &&
       task.weekOfMonth !== undefined &&
       task.dayOfWeek !== undefined
     ) {

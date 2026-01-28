@@ -168,9 +168,9 @@ export function AddTaskForm({
         taskData.lastCompleted = [];
     }
 
-    if (data.frequency === 'Weekly') {
+    if (['Weekly', 'Bi-Weekly'].includes(data.frequency)) {
       taskData.dayOfWeek = data.dayOfWeek;
-    } else if (data.frequency === 'Monthly') {
+    } else if (['Monthly', '3 Months', '6 Months'].includes(data.frequency)) {
       taskData.dayOfWeek = data.dayOfWeek;
       taskData.weekOfMonth = data.weekOfMonth;
     }
@@ -387,7 +387,7 @@ export function AddTaskForm({
                 </FormItem>
               )}
             />
-            {frequency === 'Weekly' && (
+            {(frequency === 'Weekly' || frequency === 'Bi-Weekly') && (
               <FormField
                 control={form.control}
                 name="dayOfWeek"
@@ -417,7 +417,7 @@ export function AddTaskForm({
                 )}
               />
             )}
-            {frequency === 'Monthly' && (
+            {['Monthly', '3 Months', '6 Months'].includes(frequency) && (
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
