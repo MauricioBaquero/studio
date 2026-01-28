@@ -144,7 +144,7 @@ export const getNextDueDate = (task: RecurringTask): Date => {
   const today = startOfDay(new Date());
 
   const mostRecentCompletion = task.lastCompleted && task.lastCompleted.length > 0
-    ? new Date(Math.max(...task.lastCompleted.map(d => toDate(d.completedAt).getTime())))
+    ? new Date(Math.max(...task.lastCompleted.filter(Boolean).map(d => toDate(d.completedAt || d).getTime())))
     : null;
 
   const lastCompleted = mostRecentCompletion ? startOfDay(mostRecentCompletion) : null;
@@ -223,3 +223,4 @@ export const generateAbbreviation = (name: string): string => {
 
   return abbreviation.toUpperCase().padEnd(3, 'X');
 };
+

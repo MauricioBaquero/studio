@@ -122,14 +122,17 @@ export default function RecurringTasksPage() {
       visibleTasks.forEach(task => {
         if (task.lastCompleted && task.lastCompleted.length > 0) {
             task.lastCompleted.forEach(completion => {
-                const latestCompletion = toDate(completion.completedAt);
+                if (!completion) return;
+                const completionDate = toDate(completion.completedAt || completion);
                 const completedByUser = getUserById(completion.completedBy);
                 const location = getLocationById(task.locationId);
+
+                // Only add to completed log if we know who completed it.
                 if (completedByUser) {
                     allCompleted.push({
                         id: task.id,
                         title: task.title,
-                        completedAt: latestCompletion,
+                        completedAt: completionDate,
                         completedBy: completedByUser,
                         locationName: location?.name || 'N/A',
                         categoryId: task.categoryId,
@@ -188,7 +191,7 @@ export default function RecurringTasksPage() {
     sortedTasks.forEach(task => {
       const lastCompletionTimestamp =
         task.lastCompleted && task.lastCompleted.length > 0
-          ? Math.max(...task.lastCompleted.map(log => toDate(log.completedAt).getTime()))
+          ? Math.max(...task.lastCompleted.filter(Boolean).map(log => toDate(log.completedAt || log).getTime()))
           : null;
       const lastCompletion = lastCompletionTimestamp ? new Date(lastCompletionTimestamp) : null;
 
@@ -280,7 +283,7 @@ export default function RecurringTasksPage() {
     const isTaskOverdue = (task.frequency === 'Weekly' || task.frequency === 'Monthly') &&
       isPast(nextDueDate) && !isSameDay(startOfDay(nextDueDate), startOfDay(new Date()));
 
-    const lastCompletionTimestamp = task.lastCompleted && task.lastCompleted.length > 0 ? Math.max(...task.lastCompleted.map(log => toDate(log.completedAt).getTime())) : null;
+    const lastCompletionTimestamp = task.lastCompleted && task.lastCompleted.length > 0 ? Math.max(...task.lastCompleted.filter(Boolean).map(log => toDate(log.completedAt || log).getTime())) : null;
     const lastCompletionDate = lastCompletionTimestamp ? new Date(lastCompletionTimestamp) : null;
     const missedYesterday = task.frequency === 'Daily' && isToday(nextDueDate) && (!lastCompletionDate || !isSameDay(lastCompletionDate, subDays(new Date(), 1)));
 
