@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
@@ -31,6 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Trash2, X, Upload, Check, FileText } from 'lucide-react';
 import { useFirestore, useUser, useStorage, deleteDocumentNonBlocking } from '@/firebase';
@@ -81,6 +81,7 @@ export function TicketDetailsDialog({
   const [isSaving, setIsSaving] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<TicketStatus>(ticket.status);
   const [assignedToIds, setAssignedToIds] = useState<string[]>([]);
+  const [resolution, setResolution] = useState<string>('');
   
   const [currentPhotos, setCurrentPhotos] = useState<Photo[]>([]);
   const [newPhotoFiles, setNewPhotoFiles] = useState<File[]>([]);
@@ -111,6 +112,7 @@ export function TicketDetailsDialog({
     if (open) {
       setCurrentStatus(ticket.status);
       setAssignedToIds(ticket.assignedToIds || []);
+      setResolution(ticket.resolution || '');
       setCurrentPhotos(ticket.photos || []);
       setCurrentEmlAttachments(ticket.emlAttachments || []);
       setNewPhotoFiles([]);
@@ -165,6 +167,7 @@ export function TicketDetailsDialog({
       const dataForDb: any = {
         status: finalStatus,
         assignedToIds: assignedToIds,
+        resolution: resolution,
       };
 
       if (uploadedPhotos.length > 0) {
@@ -359,6 +362,18 @@ export function TicketDetailsDialog({
                 <p className="text-sm text-muted-foreground p-4 border rounded-md bg-muted/50">
                     {ticket.description}
                 </p>
+            </div>
+
+            <div className="space-y-2">
+                <Label htmlFor="resolution">Resolution</Label>
+                <Textarea
+                    id="resolution"
+                    placeholder="Enter resolution details or work performed..."
+                    value={resolution}
+                    onChange={(e) => setResolution(e.target.value)}
+                    disabled={isSaving || !canInteractWithForm}
+                    className="min-h-[100px] resize-y"
+                />
             </div>
 
             <div className="space-y-2">
@@ -613,5 +628,3 @@ export function TicketDetailsDialog({
     </>
   );
 }
-
-    

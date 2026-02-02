@@ -90,6 +90,7 @@ export const ticketSchema = z.object({
   photos: z.array(photoSchema).optional(),
   emlAttachments: z.array(emlAttachmentSchema).optional(),
   unableToComplete: z.boolean().optional(),
+  resolution: z.string().optional(),
 });
 export type Ticket = z.infer<typeof ticketSchema>;
 
