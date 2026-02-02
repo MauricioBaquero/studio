@@ -21,7 +21,9 @@ export function RecurringTasksSummaryChart({ recurringTasks }: RecurringTasksSum
   recurringTasks.forEach(task => {
     const nextDueDate = startOfDay(getNextDueDate(task));
     
-    const isCompletedToday = (task.lastCompleted || []).some(d => isToday(toDate(d)));
+    // The 'd' can be a CompletionLog object or a raw Timestamp from older data.
+    // This handles both cases by checking for `completedAt` first.
+    const isCompletedToday = (task.lastCompleted || []).some(d => isToday(toDate((d as any).completedAt || d)));
 
     if (isCompletedToday) {
       completedTodayCount++;
