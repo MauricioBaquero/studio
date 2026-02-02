@@ -9,20 +9,13 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, Cell, LabelList } from 'recharts';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 
 interface TasksByAssigneeChartProps {
   tickets: Ticket[];
   users: User[];
 }
-
-const primaryColor = 'hsl(var(--primary))';
-const grayColor = 'hsl(var(--muted-foreground))';
 
 export function TasksByAssigneeChart({
   tickets,
@@ -30,86 +23,53 @@ export function TasksByAssigneeChart({
 }: TasksByAssigneeChartProps) {
     // Each user gets credit for every task they are assigned to, including multi-assigned tasks.
     const tasksByAssignee = users.map(user => ({
-        name: user.name.split(' ')[0], // Use first name for brevity
+        name: user.name,
         value: tickets.filter(ticket => (ticket.assignedToIds || []).includes(user.uid)).length,
-        fill: primaryColor,
     }));
 
   const unassignedTasks = tickets.filter(
     ticket => !ticket.assignedToIds || ticket.assignedToIds.length === 0
   ).length;
 
-  let unassignedData = null;
+  const listData = tasksByAssignee.filter(d => d.value > 0);
+  
   if (unassignedTasks > 0) {
-    unassignedData = { name: 'Unassigned', value: unassignedTasks, fill: grayColor };
+    listData.push({ name: 'Unassigned', value: unassignedTasks });
   }
 
-  // Filter out users with 0 tasks before sorting
-  const sortedAssigned = tasksByAssignee
-    .filter(d => d.value > 0)
-    .sort((a, b) => b.value - a.value);
-
-  // Add "Unassigned" to the end if it exists
-  const chartData = unassignedData
-    ? [...sortedAssigned, unassignedData]
-    : sortedAssigned;
+  // Sort by count descending
+  const sortedData = listData.sort((a, b) => b.value - a.value);
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col h-full">
       <CardHeader>
         <CardTitle>Tasks by Assignee</CardTitle>
         <CardDescription>
           Current workload distribution across the team.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 pb-0">
-        <ChartContainer config={{}} className="h-[250px] w-full">
-          <BarChart
-            accessibilityLayer
-            data={chartData}
-            layout="vertical"
-            margin={{
-              left: 0,
-              right: 40,
-            }}
-          >
-            <XAxis 
-              type="number" 
-              hide={false} 
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} 
-            />
-            <YAxis
-              dataKey="name"
-              type="category"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={10}
-              width={80}
-              tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
-              tickFormatter={(value) =>
-                value.length > 10 ? `${value.substring(0, 10)}...` : value
-              }
-            />
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel />}
-            />
-            <Bar dataKey="value" radius={5}>
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} />
-              ))}
-              <LabelList 
-                dataKey="value" 
-                position="right" 
-                offset={8} 
-                className="fill-foreground" 
-                fontSize={12} 
-              />
-            </Bar>
-          </BarChart>
-        </ChartContainer>
+      <CardContent className="flex-1 overflow-hidden">
+        <ScrollArea className="h-[300px] pr-4">
+          <div className="space-y-3">
+            {sortedData.length > 0 ? (
+              sortedData.map((item, index) => (
+                <div key={item.name}>
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-sm font-medium truncate pr-4">{item.name}</span>
+                    <span className="text-sm font-bold bg-secondary text-secondary-foreground px-2.5 py-0.5 rounded-full shrink-0">
+                      {item.value} {item.value === 1 ? 'Task' : 'Tasks'}
+                    </span>
+                  </div>
+                  {index < sortedData.length - 1 && <Separator className="mt-2 opacity-50" />}
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No active tasks found.
+              </p>
+            )}
+          </div>
+        </ScrollArea>
       </CardContent>
     </Card>
   );
