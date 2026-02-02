@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Ticket, User } from '@/lib/data';
@@ -49,7 +48,7 @@ export function TasksByAssigneeChart({
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 overflow-hidden">
-        <ScrollArea className="h-[300px] pr-4">
+        <ScrollArea className="h-[550px] pr-4">
           <div className="space-y-3">
             {sortedData.length > 0 ? (
               sortedData.map((item, index) => (

@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Ticket, User, Category, RecurringTask, Location } from '@/lib/data';
@@ -91,7 +90,9 @@ export default function DashboardPage() {
         <TaskStatusChart tickets={chartTickets} />
         <ApprovalStatusSummary tickets={chartTickets} users={allAppUsers} />
         <RecurringTasksSummaryChart recurringTasks={chartRecurringTasks} />
-        <TasksByAssigneeChart tickets={chartTickets} users={chartUsers} />
+        <div className="lg:row-span-2">
+            <TasksByAssigneeChart tickets={chartTickets} users={chartUsers} />
+        </div>
         <div className="lg:row-span-2">
             <TaskTypeChart tickets={chartTickets} categories={chartCategories} />
         </div>
