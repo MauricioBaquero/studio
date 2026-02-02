@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Ticket, Location } from "@/lib/data";
@@ -71,6 +70,9 @@ export function OpenTasksByLocationChart({ tickets, locations }: OpenTasksByLoca
               tickMargin={10}
               width={150}
               tick={{ fill: "hsl(var(--foreground))" }}
+              tickFormatter={(value) =>
+                value.length > 20 ? `${value.substring(0, 20)}...` : value
+              }
             />
             <ChartTooltip
               cursor={false}
