@@ -9,30 +9,14 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, Cell, LabelList } from 'recharts';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 
 interface TaskTypeChartProps {
   tickets: Ticket[];
   categories: Category[];
 }
-
-const colorMap: { [key: string]: string } = {
-    blue: 'hsl(var(--chart-1))',
-    green: 'hsl(var(--chart-2))',
-    orange: 'hsl(var(--chart-3))',
-    purple: 'hsl(var(--chart-4))',
-    yellow: 'hsl(var(--chart-5))',
-    red: 'hsl(var(--destructive))',
-    pink: 'hsl(var(--chart-1))',
-    teal: 'hsl(var(--chart-2))',
-    indigo: 'hsl(var(--chart-4))',
-    cyan: 'hsl(var(--chart-5))',
-};
 
 export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
   const findSubCategory = (subcategoryId: string) => {
@@ -46,26 +30,26 @@ export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
     return null;
   }
 
-
   const tasksByCategory = tickets.reduce(
     (acc, ticket) => {
       const subCategoryInfo = findSubCategory(ticket.categoryId);
       
       if (subCategoryInfo) {
+        const name = `${subCategoryInfo.parentName} > ${subCategoryInfo.name}`;
         const color = subCategoryInfo?.color || 'blue';
 
-        if (!acc[subCategoryInfo.name]) {
-          acc[subCategoryInfo.name] = { value: 0, color: color };
+        if (!acc[name]) {
+          acc[name] = { value: 0, color: color };
         }
-        acc[subCategoryInfo.name].value += 1;
+        acc[name].value += 1;
       }
       return acc;
     },
     {} as { [key: string]: { value: number, color: string } }
   );
 
-  const chartData = Object.entries(tasksByCategory)
-    .map(([name, { value, color }]) => ({ name, value, color: colorMap[color] || colorMap.blue }))
+  const listData = Object.entries(tasksByCategory)
+    .map(([name, { value, color }]) => ({ name, value, color }))
     .sort((a, b) => b.value - a.value);
 
   return (
@@ -76,54 +60,28 @@ export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
           Breakdown of tasks by specific sub-category.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 pb-0">
-        <ChartContainer config={{}} className="h-[550px] w-full">
-          <BarChart
-            accessibilityLayer
-            data={chartData}
-            layout="vertical"
-            margin={{
-              left: 0,
-              right: 40,
-            }}
-          >
-            <XAxis 
-              type="number" 
-              hide={false} 
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} 
-            />
-            <YAxis
-              dataKey="name"
-              type="category"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={10}
-              width={120}
-              tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
-              tickFormatter={(value) =>
-                value.length > 15 ? `${value.substring(0, 15)}...` : value
-              }
-            />
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel />}
-            />
-            <Bar dataKey="value" radius={5}>
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
-              ))}
-              <LabelList 
-                dataKey="value" 
-                position="right" 
-                offset={8} 
-                className="fill-foreground" 
-                fontSize={12} 
-              />
-            </Bar>
-          </BarChart>
-        </ChartContainer>
+      <CardContent className="flex-1 overflow-hidden">
+        <ScrollArea className="h-[550px] pr-4">
+          <div className="space-y-3">
+            {listData.length > 0 ? (
+              listData.map((item, index) => (
+                <div key={item.name}>
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-sm font-medium truncate pr-4">{item.name}</span>
+                    <Badge color={item.color as any} className="shrink-0 font-bold">
+                      {item.value} {item.value === 1 ? 'Task' : 'Tasks'}
+                    </Badge>
+                  </div>
+                  {index < listData.length - 1 && <Separator className="mt-2 opacity-50" />}
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No tasks found.
+              </p>
+            )}
+          </div>
+        </ScrollArea>
       </CardContent>
     </Card>
   );
