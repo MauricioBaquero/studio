@@ -80,7 +80,6 @@ export function TasksByAssigneeChart({
               tickLine={false}
               axisLine={false}
               tickMargin={10}
-              width={80}
               tick={{ fill: 'hsl(var(--foreground))' }}
               tickFormatter={(value) =>
                 value.length > 10 ? `${value.substring(0, 10)}...` : value
