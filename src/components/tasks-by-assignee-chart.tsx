@@ -14,7 +14,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Cell, LabelList } from 'recharts';
 
 interface TasksByAssigneeChartProps {
   tickets: Ticket[];
@@ -69,18 +69,25 @@ export function TasksByAssigneeChart({
             data={chartData}
             layout="vertical"
             margin={{
-              left: 20,
-              right: 20,
+              left: 0,
+              right: 40,
             }}
           >
-            <XAxis type="number" hide />
+            <XAxis 
+              type="number" 
+              hide={false} 
+              axisLine={false} 
+              tickLine={false} 
+              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} 
+            />
             <YAxis
               dataKey="name"
               type="category"
               tickLine={false}
               axisLine={false}
               tickMargin={10}
-              tick={{ fill: 'hsl(var(--foreground))' }}
+              width={80}
+              tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
               tickFormatter={(value) =>
                 value.length > 10 ? `${value.substring(0, 10)}...` : value
               }
@@ -93,6 +100,13 @@ export function TasksByAssigneeChart({
               {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.fill} />
               ))}
+              <LabelList 
+                dataKey="value" 
+                position="right" 
+                offset={8} 
+                className="fill-foreground" 
+                fontSize={12} 
+              />
             </Bar>
           </BarChart>
         </ChartContainer>
