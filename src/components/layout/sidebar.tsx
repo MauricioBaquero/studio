@@ -13,6 +13,7 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarMenuBadge,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { UserNav } from "../user-nav";
 import { ThemeToggle } from "../theme-toggle";
@@ -107,8 +108,9 @@ export default function AppSidebar() {
         <div className="p-2 flex justify-center group-data-[collapsible=icon]:-ml-2">
             <UserNav />
         </div>
-        <div className="p-2 flex justify-center group-data-[collapsible=icon]:-ml-2">
+        <div className="p-2 flex justify-center items-center gap-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:-ml-2">
           <ThemeToggle />
+          <SidebarTrigger variant="outline" className="hidden md:flex" />
         </div>
         <div className="p-4 text-center text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
           Designed with ❤️ 2025 WeAreFTL
