@@ -1,9 +1,8 @@
-
 'use client';
 
 import { Ticket, User, toDate } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Eye, CheckCircle, UserCircle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import { useMemo } from 'react';
 import { format } from 'date-fns';
 import { ScrollArea } from './ui/scroll-area';
@@ -14,10 +13,8 @@ interface ApprovalStatusSummaryProps {
 }
 
 export function ApprovalStatusSummary({ tickets, users }: ApprovalStatusSummaryProps) {
-  const { pendingReviewCount, recentlyApproved } = useMemo(() => {
-    const pending = tickets.filter(t => t.status === 'Pending Review');
-    
-    const approved = tickets
+  const recentlyApproved = useMemo(() => {
+    return tickets
       .filter(t => t.status === 'Completed' && t.approvedBy && t.actualCompletionDate)
       .map(ticket => {
         const approver = users.find(u => u.uid === ticket.approvedBy);
@@ -29,11 +26,6 @@ export function ApprovalStatusSummary({ tickets, users }: ApprovalStatusSummaryP
       })
       .sort((a, b) => b.approvalDate.getTime() - a.approvalDate.getTime())
       .slice(0, 5); // Limit to 5 most recent
-
-    return {
-      pendingReviewCount: pending.length,
-      recentlyApproved: approved,
-    };
   }, [tickets, users]);
 
 
@@ -41,28 +33,18 @@ export function ApprovalStatusSummary({ tickets, users }: ApprovalStatusSummaryP
     <Card className="flex flex-col h-full">
       <CardHeader>
         <CardTitle>Approval Status</CardTitle>
-        <CardDescription>Tasks pending review and recently approved.</CardDescription>
+        <CardDescription>Tasks recently approved.</CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col justify-center gap-4">
-        <div className="flex items-center gap-4">
-            <div className="p-3 bg-yellow-100 dark:bg-yellow-900/50 rounded-full">
-                <Eye className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
-            </div>
-            <div>
-                <p className="text-2xl font-bold">{pendingReviewCount}</p>
-                <p className="text-sm text-muted-foreground">Pending Review</p>
-            </div>
-        </div>
-
+      <CardContent className="flex-1 flex flex-col justify-center">
         <div className="space-y-2">
             <div className="flex items-center gap-4">
                  <div className="p-3 bg-green-100 dark:bg-green-900/50 rounded-full">
                     <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
                 </div>
-                <p className="text-sm text-muted-foreground">Recently Approved</p>
+                <p className="text-sm text-muted-foreground font-medium">Recently Approved</p>
             </div>
             {recentlyApproved.length > 0 ? (
-                 <ScrollArea className="h-24 pr-4">
+                 <ScrollArea className="h-32 pr-4 mt-2">
                     <ul className="space-y-2 ml-4">
                         {recentlyApproved.map(ticket => (
                         <li key={ticket.id} className="text-xs text-muted-foreground flex justify-between items-center">
@@ -75,7 +57,7 @@ export function ApprovalStatusSummary({ tickets, users }: ApprovalStatusSummaryP
                     </ul>
                  </ScrollArea>
             ) : (
-                <p className="text-xs text-muted-foreground text-center py-4">No tasks approved recently.</p>
+                <p className="text-xs text-muted-foreground text-center py-8">No tasks approved recently.</p>
             )}
         </div>
       </CardContent>
