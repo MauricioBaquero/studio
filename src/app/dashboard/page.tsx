@@ -1,6 +1,8 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import type { Ticket, User, Category, RecurringTask, Location } from '@/lib/data';
+import { toDate } from '@/lib/data';
 import { TaskStatusChart } from '@/components/task-status-chart';
 import { TaskTypeChart } from '@/components/task-type-chart';
 import { TasksByAssigneeChart } from '@/components/tasks-by-assignee-chart';
@@ -8,13 +10,40 @@ import { OpenTasksByLocationChart } from '@/components/open-tasks-by-location-ch
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import { RecurringTasksSummaryChart } from '@/components/recurring-tasks-summary-chart';
-import { useMemo } from 'react';
 import { ApprovalStatusSummary } from '@/components/approval-status-summary';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 export default function DashboardPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const teamId = user?.teamId;
+
+  // Filter State
+  const [reportType, setReportType] = useState<'yearly' | 'monthly'>('monthly');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+
+  const years = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const arr = [];
+    for (let y = currentYear; y >= 2020; y--) {
+      arr.push(y);
+    }
+    return arr;
+  }, []);
+
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
 
   const ticketsQuery = useMemoFirebase(() => {
     if (!firestore || !teamId || teamId === 'allTeams') return null;
@@ -56,9 +85,27 @@ export default function DashboardPage() {
     if (teamId === 'allTeams') {
       return users;
     }
-    // Only show users belonging to the specific team, plus any Admins/Coordinators
     return users.filter(u => u.teamId === teamId || u.role === 'Admin' || u.role === 'Coordinator');
   }, [users, teamId]);
+
+  const filteredTickets = useMemo(() => {
+    if (!tickets) return [];
+    return tickets.filter(ticket => {
+      // Use actual completion date for completed tasks, requested date for others
+      const date = ticket.actualCompletionDate 
+        ? toDate(ticket.actualCompletionDate) 
+        : toDate(ticket.requestedCompletionDate);
+      
+      const ticketYear = date.getFullYear();
+      const ticketMonth = date.getMonth();
+
+      if (reportType === 'yearly') {
+        return ticketYear === selectedYear;
+      } else {
+        return ticketYear === selectedYear && ticketMonth === selectedMonth;
+      }
+    });
+  }, [tickets, reportType, selectedYear, selectedMonth]);
 
   const isLoading =
     isLoadingTickets ||
@@ -76,7 +123,7 @@ export default function DashboardPage() {
     );
   }
 
-  const chartTickets = tickets || [];
+  const chartTickets = filteredTickets;
   const chartUsers = teamUsers || [];
   const allAppUsers = users || [];
   const chartCategories = categories || [];
@@ -85,9 +132,55 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-3xl font-bold font-headline">Dashboard</h1>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <h1 className="text-3xl font-bold font-headline">Dashboard</h1>
+        
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-card p-3 rounded-lg border border-border shadow-sm">
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Report View</Label>
+            <Tabs value={reportType} onValueChange={(v) => setReportType(v as 'yearly' | 'monthly')} className="w-[200px]">
+              <TabsList className="grid w-full grid-cols-2 h-9">
+                <TabsTrigger value="yearly" className="text-xs">Yearly</TabsTrigger>
+                <TabsTrigger value="monthly" className="text-xs">Monthly</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="year-select" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Year</Label>
+              <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
+                <SelectTrigger id="year-select" className="w-[100px] h-9 text-xs">
+                  <SelectValue placeholder="Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map(y => (
+                    <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {reportType === 'monthly' && (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="month-select" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Month</Label>
+                <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
+                  <SelectTrigger id="month-select" className="w-[130px] h-9 text-xs">
+                    <SelectValue placeholder="Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {months.map((m, i) => (
+                      <SelectItem key={m} value={i.toString()}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 [grid-auto-flow:dense]">
-        {/* Combine Status and Approval into one column slot to make them half-width relative to others */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:col-span-2 xl:col-span-1">
             <TaskStatusChart tickets={chartTickets} />
             <ApprovalStatusSummary tickets={chartTickets} users={allAppUsers} />
