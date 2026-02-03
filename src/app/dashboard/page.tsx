@@ -96,13 +96,13 @@ export default function DashboardPage() {
         <RecurringTasksSummaryChart recurringTasks={chartRecurringTasks} />
         
         <div className="lg:row-span-2">
-            <TasksByAssigneeChart tickets={chartTickets} users={chartUsers} />
+            <OpenTasksByLocationChart tickets={chartTickets} locations={chartLocations} />
         </div>
         <div className="lg:row-span-2">
             <TaskTypeChart tickets={chartTickets} categories={chartCategories} />
         </div>
         <div className="lg:row-span-2">
-            <OpenTasksByLocationChart tickets={chartTickets} locations={chartLocations} />
+            <TasksByAssigneeChart tickets={chartTickets} users={chartUsers} />
         </div>
       </div>
     </div>
