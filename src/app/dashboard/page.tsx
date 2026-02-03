@@ -87,9 +87,14 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-6">
       <h1 className="text-3xl font-bold font-headline">Dashboard</h1>
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 [grid-auto-flow:dense]">
-        <TaskStatusChart tickets={chartTickets} />
-        <ApprovalStatusSummary tickets={chartTickets} users={allAppUsers} />
+        {/* Combine Status and Approval into one column slot to make them half-width relative to others */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:col-span-2 xl:col-span-1">
+            <TaskStatusChart tickets={chartTickets} />
+            <ApprovalStatusSummary tickets={chartTickets} users={allAppUsers} />
+        </div>
+        
         <RecurringTasksSummaryChart recurringTasks={chartRecurringTasks} />
+        
         <div className="lg:row-span-2">
             <TasksByAssigneeChart tickets={chartTickets} users={chartUsers} />
         </div>
