@@ -38,11 +38,11 @@ export function ApprovalStatusSummary({ tickets, users }: ApprovalStatusSummaryP
         <div className="space-y-2">
             {recentlyApproved.length > 0 ? (
                  <ScrollArea className="h-48 pr-4">
-                    <ul className="space-y-3">
+                    <ul className="space-y-5">
                         {recentlyApproved.map(ticket => (
-                        <li key={ticket.id} className="text-xs text-muted-foreground border-b pb-2 last:border-0">
-                           <div className="truncate">
-                                <p className="font-semibold text-foreground truncate">{ticket.title}</p>
+                        <li key={ticket.id} className="text-xs text-muted-foreground border-b pb-4 last:border-0">
+                           <div className="w-full">
+                                <p className="font-semibold text-foreground mb-1">{ticket.title}</p>
                                 <span>Approved by {ticket.approverName} on {format(ticket.approvalDate, 'MM/dd/yyyy')}</span>
                            </div>
                         </li>
