@@ -31,26 +31,33 @@ export default function DashboardPage() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
 
-  const years = useMemo(() => {
-    const currentYear = new Date().getFullYear();
-    const arr = [];
-    for (let y = currentYear; y >= 2020; y--) {
-      arr.push(y);
-    }
-    return arr;
-  }, []);
-
-  const months = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ];
-
   const ticketsQuery = useMemoFirebase(() => {
     if (!firestore || !teamId || teamId === 'allTeams') return null;
     return query(collection(firestore, `teams/${teamId}/tasks`));
   }, [firestore, teamId]);
   const { data: tickets, isLoading: isLoadingTickets } =
     useCollection<Ticket>(ticketsQuery);
+
+  const years = useMemo(() => {
+    const yearSet = new Set<number>();
+    yearSet.add(new Date().getFullYear()); // Always include current year
+
+    if (tickets) {
+      tickets.forEach(ticket => {
+        const date = ticket.actualCompletionDate 
+          ? toDate(ticket.actualCompletionDate) 
+          : toDate(ticket.requestedCompletionDate);
+        yearSet.add(date.getFullYear());
+      });
+    }
+
+    return Array.from(yearSet).sort((a, b) => b - a);
+  }, [tickets]);
+
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
 
   const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
