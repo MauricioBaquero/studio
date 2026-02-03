@@ -24,7 +24,7 @@ export function ApprovalStatusSummary({ tickets, users }: ApprovalStatusSummaryP
         };
       })
       .sort((a, b) => b.approvalDate.getTime() - a.approvalDate.getTime())
-      .slice(0, 10); // Show more since we removed the header
+      .slice(0, 10);
   }, [tickets, users]);
 
 
@@ -42,7 +42,7 @@ export function ApprovalStatusSummary({ tickets, users }: ApprovalStatusSummaryP
                         {recentlyApproved.map(ticket => (
                         <li key={ticket.id} className="text-xs text-muted-foreground border-b pb-4 last:border-0">
                            <div className="w-full">
-                                <p className="font-semibold text-foreground mb-1">{ticket.title}</p>
+                                <p className="font-semibold text-foreground mb-1">{ticket.id}</p>
                                 <span>Approved by {ticket.approverName} on {format(ticket.approvalDate, 'MM/dd/yyyy')}</span>
                            </div>
                         </li>
