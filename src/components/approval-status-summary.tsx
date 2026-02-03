@@ -2,7 +2,6 @@
 
 import { Ticket, User, toDate } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CheckCircle } from 'lucide-react';
 import { useMemo } from 'react';
 import { format } from 'date-fns';
 import { ScrollArea } from './ui/scroll-area';
@@ -25,7 +24,7 @@ export function ApprovalStatusSummary({ tickets, users }: ApprovalStatusSummaryP
         };
       })
       .sort((a, b) => b.approvalDate.getTime() - a.approvalDate.getTime())
-      .slice(0, 5); // Limit to 5 most recent
+      .slice(0, 10); // Show more since we removed the header
   }, [tickets, users]);
 
 
@@ -35,22 +34,16 @@ export function ApprovalStatusSummary({ tickets, users }: ApprovalStatusSummaryP
         <CardTitle>Approval Status</CardTitle>
         <CardDescription>Tasks recently approved.</CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col justify-center">
+      <CardContent className="flex-1">
         <div className="space-y-2">
-            <div className="flex items-center gap-4">
-                 <div className="p-3 bg-green-100 dark:bg-green-900/50 rounded-full">
-                    <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
-                </div>
-                <p className="text-sm text-muted-foreground font-medium">Recently Approved</p>
-            </div>
             {recentlyApproved.length > 0 ? (
-                 <ScrollArea className="h-32 pr-4 mt-2">
-                    <ul className="space-y-2 ml-4">
+                 <ScrollArea className="h-48 pr-4">
+                    <ul className="space-y-3">
                         {recentlyApproved.map(ticket => (
-                        <li key={ticket.id} className="text-xs text-muted-foreground flex justify-between items-center">
-                           <div className="truncate pr-2">
+                        <li key={ticket.id} className="text-xs text-muted-foreground border-b pb-2 last:border-0">
+                           <div className="truncate">
                                 <p className="font-semibold text-foreground truncate">{ticket.title}</p>
-                                <span>by {ticket.approverName} on {format(ticket.approvalDate, 'MM/dd')}</span>
+                                <span>Approved by {ticket.approverName} on {format(ticket.approvalDate, 'MM/dd/yyyy')}</span>
                            </div>
                         </li>
                         ))}
