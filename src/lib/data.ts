@@ -221,7 +221,7 @@ export const getNextDueDate = (task: RecurringTask): Date => {
           candidateDate = addMonths(baseDate, 1);
           candidateDate = setDate(candidateDate, 1); // Start of next month
           firstDayOfWeekInMonth = setDay(candidateDate, task.dayOfWeek, { weekStartsOn: 0 });
-            if (isAfter(candidateDate, firstDayOfMonth)) {
+            if (isAfter(candidateDate, firstDayOfWeekInMonth)) {
                 firstDayOfWeekInMonth = addWeeks(firstDayOfWeekInMonth, 1);
             }
           dayOfMonth = firstDayOfWeekInMonth.getDate() + (task.weekOfMonth - 1) * 7;
