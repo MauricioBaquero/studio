@@ -35,6 +35,7 @@ import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { RecurringTaskFilters, FilterValues } from '@/components/recurring-task-filters';
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 
 type CompletedTask = {
@@ -59,6 +60,13 @@ export default function RecurringTasksPage() {
     category: 'all',
     frequency: 'all',
     dateRange: { from: undefined, to: undefined },
+  });
+
+  // Sorting state
+  const [maintenanceSort, setMaintenanceSort] = useState<{ field: string; direction: 'asc' | 'desc' } | null>(null);
+  const [completedSort, setCompletedSort] = useState<{ field: keyof CompletedTask; direction: 'asc' | 'desc' }>({ 
+    field: 'completedAt', 
+    direction: 'desc' 
   });
 
 
@@ -143,7 +151,7 @@ export default function RecurringTasksPage() {
             })
         }
       });
-      setCompletedTasks(allCompleted.sort((a,b) => b.completedAt.getTime() - a.completedAt.getTime()));
+      setCompletedTasks(allCompleted);
     }
   }, [recurringTasks, users, locations, currentUser]);
   
@@ -180,9 +188,37 @@ export default function RecurringTasksPage() {
         return true;
     });
 
-    const sortedTasks = filtered.sort(
-      (a, b) => getNextDueDate(a).getTime() - getNextDueDate(b).getTime()
-    );
+    const sortedTasks = [...filtered].sort((a, b) => {
+      if (maintenanceSort) {
+        let valA: any = '';
+        let valB: any = '';
+
+        switch (maintenanceSort.field) {
+          case 'title':
+            valA = a.title.toLowerCase();
+            valB = b.title.toLowerCase();
+            break;
+          case 'assignedTo':
+            valA = (getUserById(a.assignedToId || null)?.name || 'unassigned').toLowerCase();
+            valB = (getUserById(b.assignedToId || null)?.name || 'unassigned').toLowerCase();
+            break;
+          case 'location':
+            valA = (getLocationById(a.locationId)?.name || '').toLowerCase();
+            valB = (getLocationById(b.locationId)?.name || '').toLowerCase();
+            break;
+          case 'nextDueDate':
+            valA = getNextDueDate(a).getTime();
+            valB = getNextDueDate(b).getTime();
+            break;
+        }
+
+        if (valA < valB) return maintenanceSort.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return maintenanceSort.direction === 'asc' ? 1 : -1;
+      }
+      
+      // Secondary sort by date
+      return getNextDueDate(a).getTime() - getNextDueDate(b).getTime();
+    });
 
     const due: RecurringTask[] = [];
     const completed: RecurringTask[] = [];
@@ -217,10 +253,10 @@ export default function RecurringTasksPage() {
     });
 
     return { dueTasks: due, completedTodayTasks: completed, upcomingTasks: upcoming };
-  }, [allTasks, filters, categories, settings]);
+  }, [allTasks, filters, categories, settings, maintenanceSort]);
   
   const filteredCompletedTasks = useMemo(() => {
-    return completedTasks.filter(task => {
+    const filtered = completedTasks.filter(task => {
         if (filters.location !== 'all' && task.locationId !== filters.location) return false;
         if (filters.frequency !== 'all' && task.frequency !== filters.frequency) return false;
         
@@ -234,7 +270,27 @@ export default function RecurringTasksPage() {
         }
         return true;
     });
-  }, [completedTasks, filters, categories]);
+
+    return [...filtered].sort((a, b) => {
+      let aValue: any = a[completedSort.field];
+      let bValue: any = b[completedSort.field];
+
+      if (completedSort.field === 'completedBy') {
+        aValue = a.completedBy?.name?.toLowerCase() || '';
+        bValue = b.completedBy?.name?.toLowerCase() || '';
+      } else if (typeof aValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      } else if (aValue instanceof Date) {
+        aValue = aValue.getTime();
+        bValue = bValue.getTime();
+      }
+
+      if (aValue < bValue) return completedSort.direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return completedSort.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [completedTasks, filters, categories, completedSort]);
 
 
   
@@ -265,11 +321,30 @@ export default function RecurringTasksPage() {
             locationId: task.locationId,
             frequency: task.frequency,
         };
-        setCompletedTasks(prev => [optimisticCompletedTask, ...prev].sort((a,b) => b.completedAt.getTime() - a.completedAt.getTime()));
+        setCompletedTasks(prev => [optimisticCompletedTask, ...prev]);
 
         const updatedOptimisticTask = { ...task, lastCompleted: updatedLastCompleted };
         setAllTasks(prev => prev.map(t => t.id === task.id ? updatedOptimisticTask : t));
     }
+  };
+
+  const handleMaintenanceSort = (field: string) => {
+    setMaintenanceSort(prev => ({
+      field,
+      direction: prev?.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const handleCompletedSort = (field: keyof CompletedTask) => {
+    setCompletedSort(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const SortIcon = ({ field, currentSort }: { field: string, currentSort: { field: string, direction: 'asc' | 'desc' } | null }) => {
+    if (currentSort?.field !== field) return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
+    return currentSort.direction === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
   };
 
   const isLoading = isLoadingRecurringTasks || isLoadingCategories || isLoadingUsers || isLoadingLocations;
@@ -392,10 +467,18 @@ export default function RecurringTasksPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[50px]"></TableHead>
-                  <TableHead>Task</TableHead>
-                  <TableHead>Assigned To</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Next Due Date</TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleMaintenanceSort('title')}>
+                    <div className="flex items-center">Task <SortIcon field="title" currentSort={maintenanceSort} /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleMaintenanceSort('assignedTo')}>
+                    <div className="flex items-center">Assigned To <SortIcon field="assignedTo" currentSort={maintenanceSort} /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleMaintenanceSort('location')}>
+                    <div className="flex items-center">Location <SortIcon field="location" currentSort={maintenanceSort} /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleMaintenanceSort('nextDueDate')}>
+                    <div className="flex items-center">Next Due Date <SortIcon field="nextDueDate" currentSort={maintenanceSort} /></div>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -450,11 +533,21 @@ export default function RecurringTasksPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Task</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Frequency</TableHead>
-                  <TableHead>Completed By</TableHead>
-                  <TableHead>Completed At</TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleCompletedSort('title')}>
+                    <div className="flex items-center">Task <SortIcon field="title" currentSort={completedSort} /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleCompletedSort('locationName')}>
+                    <div className="flex items-center">Location <SortIcon field="locationName" currentSort={completedSort} /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleCompletedSort('frequency')}>
+                    <div className="flex items-center">Frequency <SortIcon field="frequency" currentSort={completedSort} /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleCompletedSort('completedBy')}>
+                    <div className="flex items-center">Completed By <SortIcon field="completedBy" currentSort={completedSort} /></div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleCompletedSort('completedAt')}>
+                    <div className="flex items-center">Completed At <SortIcon field="completedAt" currentSort={completedSort} /></div>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -491,5 +584,3 @@ export default function RecurringTasksPage() {
     </div>
   );
 }
-
-    
