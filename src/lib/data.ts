@@ -109,6 +109,7 @@ export const recurringTaskSchema = z.object({
   frequency: z.enum(RECURRING_FREQUENCIES),
   lastCompleted: z.array(completionLogSchema).optional(),
   assignedToId: z.string().optional().nullable(),
+  assignedToIds: z.array(z.string()).optional(),
   dayOfWeek: z.number().optional(),
   weekOfMonth: z.number().optional(),
 });

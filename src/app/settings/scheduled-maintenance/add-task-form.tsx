@@ -47,6 +47,11 @@ import {
   useMemoFirebase,
 } from '@/firebase';
 import { collection, doc, query, where } from 'firebase/firestore';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 const recurringTaskSchema = z.object({
   title: z.string().min(3, 'Title is required'),
@@ -55,6 +60,7 @@ const recurringTaskSchema = z.object({
   locationId: z.string().min(1, 'Location is required'),
   frequency: z.enum(RECURRING_FREQUENCIES),
   assignedToId: z.string().optional(),
+  assignedToIds: z.array(z.string()).optional(),
   dayOfWeek: z.coerce.number().optional(),
   weekOfMonth: z.coerce.number().optional(),
 });
@@ -103,6 +109,8 @@ export function AddTaskForm({
       : null
   );
 
+  const [multiSelectOpen, setMultiSelectOpen] = useState(false);
+
   const form = useForm<RecurringTaskFormValues>({
     resolver: zodResolver(recurringTaskSchema),
     defaultValues: {
@@ -112,6 +120,7 @@ export function AddTaskForm({
       locationId: '',
       frequency: 'Daily',
       assignedToId: 'unassigned',
+      assignedToIds: [],
       dayOfWeek: undefined,
       weekOfMonth: undefined,
     },
@@ -127,6 +136,7 @@ export function AddTaskForm({
         locationId: editingTask.locationId,
         frequency: editingTask.frequency,
         assignedToId: editingTask.assignedToId || 'unassigned',
+        assignedToIds: editingTask.assignedToIds || [],
         dayOfWeek: editingTask.dayOfWeek,
         weekOfMonth: editingTask.weekOfMonth,
       });
@@ -139,6 +149,7 @@ export function AddTaskForm({
         locationId: '',
         frequency: 'Daily',
         assignedToId: 'unassigned',
+        assignedToIds: [],
         dayOfWeek: undefined,
         weekOfMonth: undefined,
       });
@@ -161,6 +172,7 @@ export function AddTaskForm({
       locationId: data.locationId,
       frequency: data.frequency,
       assignedToId: data.assignedToId === 'unassigned' ? null : data.assignedToId,
+      assignedToIds: data.assignedToIds || [],
     };
     
     if (!isEditMode) {
@@ -215,9 +227,13 @@ export function AddTaskForm({
     });
   }, [users, teamId]);
 
+  const nonAdminAssignableUsers = useMemo(() => {
+    return assignableUsers.filter(u => u.role !== 'Admin');
+  }, [assignableUsers]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {isEditMode ? 'Edit' : 'Add New'} Recurring Task
@@ -307,7 +323,7 @@ export function AddTaskForm({
               )}
             />
             </div>
-             <div className="grid grid-cols-2 gap-4">
+             <div className="grid grid-cols-1 gap-4">
                 <FormField
                 control={form.control}
                 name="locationId"
@@ -335,34 +351,106 @@ export function AddTaskForm({
                     </FormItem>
                 )}
                 />
-                <FormField
-                    control={form.control}
-                    name="assignedToId"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Assigned To</FormLabel>
-                        <Select
-                            onValueChange={field.onChange}
-                            value={field.value || 'unassigned'}
-                        >
-                            <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Unassigned" />
-                            </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                <SelectItem value="unassigned">Unassigned</SelectItem>
-                                {assignableUsers.map(user => (
-                                    <SelectItem key={user.uid} value={user.uid}>
-                                        {user.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="assignedToId"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Assigned To</FormLabel>
+                            <Select
+                                onValueChange={field.onChange}
+                                value={field.value || 'unassigned'}
+                            >
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Unassigned" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                                    {assignableUsers.map(user => (
+                                        <SelectItem key={user.uid} value={user.uid}>
+                                            {user.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
+                        name="assignedToIds"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Assigned To v2</FormLabel>
+                                <Popover open={multiSelectOpen} onOpenChange={setMultiSelectOpen}>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                aria-expanded={multiSelectOpen}
+                                                className="w-full justify-between h-auto min-h-[40px]"
+                                            >
+                                                <div className="flex flex-wrap gap-1 text-left">
+                                                    {field.value && field.value.length > 0 ? (
+                                                        field.value.map(uid => {
+                                                            const user = nonAdminAssignableUsers.find(u => u.uid === uid);
+                                                            return (
+                                                                <Badge key={uid} variant="secondary" className="mr-1">
+                                                                    {user?.name || uid}
+                                                                </Badge>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        <span className="text-muted-foreground">Select users...</span>
+                                                    )}
+                                                </div>
+                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-full p-0" align="start">
+                                        <Command>
+                                            <CommandInput placeholder="Search staff..." />
+                                            <CommandList>
+                                                <CommandEmpty>No staff found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {nonAdminAssignableUsers.map(user => (
+                                                        <CommandItem
+                                                            key={user.uid}
+                                                            onSelect={() => {
+                                                                const currentIds = field.value || [];
+                                                                const newIds = currentIds.includes(user.uid)
+                                                                    ? currentIds.filter(id => id !== user.uid)
+                                                                    : [...currentIds, user.uid];
+                                                                field.onChange(newIds);
+                                                            }}
+                                                        >
+                                                            <Check
+                                                                className={cn(
+                                                                    "mr-2 h-4 w-4",
+                                                                    field.value?.includes(user.uid) ? "opacity-100" : "opacity-0"
+                                                                )}
+                                                            />
+                                                            {user.name} ({user.role})
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
             </div>
 
             <FormField
