@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -184,6 +185,19 @@ export default function ScheduledMaintenancePage() {
           counts[user.uid].count++;
         }
       }
+      
+      // Also count V2 assignments
+      if (task.assignedToIds && task.assignedToIds.length > 0) {
+        task.assignedToIds.forEach(id => {
+          const user = getUserById(id);
+          if (user) {
+            if (!counts[user.uid]) {
+              counts[user.uid] = { name: user.name, count: 0 };
+            }
+            counts[user.uid].count++;
+          }
+        });
+      }
     }
 
     return Object.values(counts).sort((a, b) => a.name.localeCompare(b.name));
@@ -290,6 +304,7 @@ export default function ScheduledMaintenancePage() {
                   <TableHead>Location</TableHead>
                   <TableHead>Frequency</TableHead>
                   <TableHead>Assigned To</TableHead>
+                  <TableHead>Assigned To v2</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -297,7 +312,9 @@ export default function ScheduledMaintenancePage() {
                 {tasks?.map(task => {
                   const subCategoryInfo = findSubCategory(task.categoryId);
                   const location = getLocationById(task.locationId);
-                  const assignedUser = task.assignedToId ? getUserById(task.assignedToId) : null;
+                  const assignedUserV1 = task.assignedToId ? getUserById(task.assignedToId) : null;
+                  const assignedUsersV2 = (task.assignedToIds || []).map(id => getUserById(id)).filter(Boolean) as User[];
+                  
                   return (
                     <TableRow key={task.id}>
                       <TableCell className="font-medium">{task.title}</TableCell>
@@ -316,7 +333,18 @@ export default function ScheduledMaintenancePage() {
                         </span>
                       </TableCell>
                        <TableCell>
-                        {assignedUser ? assignedUser.name : <span className="text-muted-foreground italic">Unassigned</span>}
+                        {assignedUserV1 ? assignedUserV1.name : <span className="text-muted-foreground italic">Unassigned</span>}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {assignedUsersV2.length > 0 ? (
+                            assignedUsersV2.map(u => (
+                              <Badge key={u.uid} variant="secondary">{u.name}</Badge>
+                            ))
+                          ) : (
+                            <span className="text-muted-foreground italic">Unassigned</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
