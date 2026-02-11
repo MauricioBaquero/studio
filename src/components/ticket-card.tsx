@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -151,7 +150,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
     <>
       <Card 
         className={cn(
-            "relative transition-shadow flex flex-col",
+            "relative transition-shadow flex flex-col min-h-[22rem]",
             canInteract ? "hover:shadow-md cursor-pointer" : "opacity-70 cursor-not-allowed"
           )}
         onClick={handleOpenDialog}
@@ -173,7 +172,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
           <CardTitle className="text-base font-bold truncate pr-8">
             {ticket.id}
           </CardTitle>
-          <CardDescription className="line-clamp-4 h-[5rem]">{ticket.description}</CardDescription>
+          <CardDescription className="line-clamp-6 h-[7.5rem]">{ticket.description}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm flex-1">
           <div className="flex items-center gap-2 text-muted-foreground">
