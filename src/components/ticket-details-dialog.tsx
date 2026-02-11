@@ -61,6 +61,7 @@ interface TicketDetailsDialogProps {
   ticket: Ticket;
   users: User[];
   categories: Category[];
+  readOnly?: boolean;
 }
 
 export function TicketDetailsDialog({
@@ -69,6 +70,7 @@ export function TicketDetailsDialog({
   ticket,
   users,
   categories,
+  readOnly = false,
 }: TicketDetailsDialogProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -351,6 +353,7 @@ export function TicketDetailsDialog({
         <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Ticket Details</DialogTitle>
+            <DialogTitle className="sr-only">Detailed Ticket Information</DialogTitle>
             <DialogDescription>ID: {ticket.id}</DialogDescription>
             <div className="text-sm text-muted-foreground pt-1">
                 Created By: {creator?.name || 'Unknown'}
@@ -371,39 +374,41 @@ export function TicketDetailsDialog({
                     placeholder="Enter resolution details or work performed..."
                     value={resolution}
                     onChange={(e) => setResolution(e.target.value)}
-                    disabled={isSaving || !canInteractWithForm}
+                    disabled={isSaving || !canInteractWithForm || readOnly}
                     className="min-h-[100px] resize-y"
                 />
             </div>
 
             <div className="space-y-2">
               <Label>Attachments</Label>
-              <div className="flex items-center gap-4">
-                  <Button
-                      variant="outline"
-                      className="border-2 border-dashed hover:border-solid hover:bg-accent"
-                      onClick={() => photoFileInputRef.current?.click()}
-                      disabled={isSaving || !canInteractWithForm}
-                  >
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload Photo
-                  </Button>
-                   <Button
-                      variant="outline"
-                      className="border-2 border-dashed hover:border-solid hover:bg-accent"
-                      onClick={() => emlFileInputRef.current?.click()}
-                      disabled={isSaving || !canInteractWithForm}
-                  >
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload EML
-                  </Button>
-              </div>
+              {!readOnly && (
+                <div className="flex items-center gap-4">
+                    <Button
+                        variant="outline"
+                        className="border-2 border-dashed hover:border-solid hover:bg-accent"
+                        onClick={() => photoFileInputRef.current?.click()}
+                        disabled={isSaving || !canInteractWithForm}
+                    >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload Photo
+                    </Button>
+                    <Button
+                        variant="outline"
+                        className="border-2 border-dashed hover:border-solid hover:bg-accent"
+                        onClick={() => emlFileInputRef.current?.click()}
+                        disabled={isSaving || !canInteractWithForm}
+                    >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload EML
+                    </Button>
+                </div>
+              )}
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                   {currentPhotos.map((photo, index) => (
                       <div key={index} onClick={() => handlePhotoClick(photo)} className="cursor-pointer">
                           <div className="relative group aspect-square">
                               <Image src={photo.url} alt={`Ticket photo ${index + 1}`} fill className="object-cover rounded-md border" />
-                              {isAdminOrCoordinator && (
+                              {isAdminOrCoordinator && !readOnly && (
                                 <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => handleDeletePhoto(photo, e)}>
                                     <X className="h-4 w-4" />
                                 </Button>
@@ -430,7 +435,7 @@ export function TicketDetailsDialog({
                             <FileText className="h-4 w-4" />
                             {eml.name}
                           </a>
-                          {isAdminOrCoordinator && (
+                          {isAdminOrCoordinator && !readOnly && (
                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => handleDeleteEml(eml, e)}>
                                 <X className="h-4 w-4" />
                             </Button>
@@ -478,7 +483,7 @@ export function TicketDetailsDialog({
               </div>
               <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">Assigned To</p>
-                  {isAdminOrCoordinator ? (
+                  {isAdminOrCoordinator && !readOnly ? (
                     <Popover open={multiSelectOpen} onOpenChange={setMultiSelectOpen}>
                         <PopoverTrigger asChild>
                             <Button
@@ -548,7 +553,7 @@ export function TicketDetailsDialog({
                   <Select 
                       value={currentStatus} 
                       onValueChange={(value) => setCurrentStatus(value as TicketStatus)}
-                      disabled={isSaving || !isAdminOrCoordinator }
+                      disabled={isSaving || !isAdminOrCoordinator || readOnly }
                   >
                       <SelectTrigger className="w-full">
                           <SelectValue placeholder="Set status" />
@@ -573,7 +578,7 @@ export function TicketDetailsDialog({
           </div>
           <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-between pt-4 border-t">
             <div className="w-full sm:w-auto">
-              {isAdminOrCoordinator && (
+              {isAdminOrCoordinator && !readOnly && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" disabled={isSaving} className="w-full sm:w-auto">
@@ -597,24 +602,26 @@ export function TicketDetailsDialog({
             </div>
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
-                Cancel
+                {readOnly ? "Close" : "Cancel"}
               </Button>
-              {isAdminOrCoordinator && isPendingReview ? (
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Button onClick={() => handleUpdate('In Progress')} disabled={isSaving} variant="secondary">
-                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Reject
-                  </Button>
-                  <Button onClick={() => handleUpdate('Completed')} disabled={isSaving}>
+              {!readOnly && (
+                isAdminOrCoordinator && isPendingReview ? (
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button onClick={() => handleUpdate('In Progress')} disabled={isSaving} variant="secondary">
+                      {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                      Reject
+                    </Button>
+                    <Button onClick={() => handleUpdate('Completed')} disabled={isSaving}>
+                      {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Approve
+                    </Button>
+                  </div>
+                ) : (
+                  <Button onClick={() => handleUpdate()} disabled={isSaving || !canInteractWithForm}>
                     {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Approve
+                    {isSaving ? "Saving..." : "Save Changes"}
                   </Button>
-                </div>
-              ) : (
-                <Button onClick={() => handleUpdate()} disabled={isSaving || !canInteractWithForm}>
-                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isSaving ? "Saving..." : "Save Changes"}
-                </Button>
+                )
               )}
             </div>
           </DialogFooter>

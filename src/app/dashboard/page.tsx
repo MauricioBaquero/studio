@@ -190,7 +190,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 [grid-auto-flow:dense]">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:col-span-2 xl:col-span-1">
             <TaskStatusChart tickets={chartTickets} />
-            <ApprovalStatusSummary tickets={chartTickets} users={allAppUsers} />
+            <ApprovalStatusSummary tickets={chartTickets} users={allAppUsers} categories={chartCategories} />
         </div>
         
         <RecurringTasksSummaryChart recurringTasks={chartRecurringTasks} />
