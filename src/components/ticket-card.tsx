@@ -148,8 +148,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
     <>
       <Card 
         className={cn(
-            "relative transition-shadow flex flex-col",
-            ticket.status !== 'Pending Review' && "min-h-[22rem]",
+            "relative transition-shadow flex flex-col h-full",
             canInteract ? "hover:shadow-md cursor-pointer" : "opacity-70 cursor-not-allowed"
           )}
         onClick={handleOpenDialog}
@@ -168,28 +167,26 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
             )}
         </div>
         <CardHeader>
-          <CardTitle className="text-base font-bold truncate pr-8">
+          <CardTitle className="text-base font-bold pr-8">
             {ticket.id}
           </CardTitle>
-          {ticket.status !== 'Pending Review' && (
-            <CardDescription className="line-clamp-6 h-[7.5rem]">
-              {ticket.status === 'Completed' 
-                ? (ticket.resolution || ticket.description) 
-                : ticket.description}
-            </CardDescription>
-          )}
+          <CardDescription className="text-xs">
+            {ticket.status === 'Completed' 
+              ? (ticket.resolution || ticket.description) 
+              : ticket.description}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm flex-1">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Tag className="h-4 w-4" />
+          <div className="flex items-start gap-2 text-muted-foreground">
+            <Tag className="h-4 w-4 mt-0.5" />
             <div className="flex flex-wrap gap-1">
               {subCategoryInfo?.parentName && <Badge color={subCategoryInfo.color as any}>{subCategoryInfo.parentName}</Badge>}
               {subCategoryInfo?.name && <Badge color={subCategoryInfo.color as any}>{subCategoryInfo.name}</Badge>}
             </div>
           </div>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <MapPin className="h-4 w-4" />
-            <span className="truncate">{ticket.location}</span>
+          <div className="flex items-start gap-2 text-muted-foreground">
+            <MapPin className="h-4 w-4 mt-0.5" />
+            <span className="text-xs">{ticket.location}</span>
           </div>
           <div className="flex items-start gap-2 text-muted-foreground">
             <Calendar className="h-4 w-4 mt-0.5" />
@@ -212,14 +209,14 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
                             {assignedUsers.length > 1 ? (
                                 <div className="flex items-center">
                                     <Users className="h-6 w-6" />
-                                    <span className="ml-2 text-sm text-muted-foreground truncate">{assignedUsers.length} users</span>
+                                    <span className="ml-2 text-sm text-muted-foreground">{assignedUsers.length} users</span>
                                 </div>
                             ) : (
                                 <>
                                     <Avatar className="h-6 w-6">
                                         <AvatarFallback>{assignedUsers[0]?.name.charAt(0)}</AvatarFallback>
                                     </Avatar>
-                                    <div className="text-sm text-muted-foreground truncate">
+                                    <div className="text-sm text-muted-foreground">
                                         <span>{assignedUsers[0]?.name}</span>
                                     </div>
                                 </>
@@ -236,7 +233,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
                 
                 <div className="text-right">
                     {ticket.status === 'Completed' && (
-                        <div className="text-xs text-muted-foreground whitespace-nowrap">
+                        <div className="text-xs text-muted-foreground">
                             {approver && !ticket.unableToComplete && (
                                 <div>
                                     Approved by<br />
@@ -257,7 +254,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
             </div>
             
              {ticket.status === 'In Progress' && canMarkForReview && (
-                <div className="flex w-full gap-2 pt-2 border-t mt-2">
+                <div className="flex w-full flex-col sm:flex-row gap-2 pt-2 border-t mt-2">
                     <Button variant="destructive" size="sm" className="flex-1" onClick={handleUnableToComplete}>
                         Unable to Complete
                     </Button>
