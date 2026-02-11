@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -38,7 +37,6 @@ const claimSayings = [
   'Sign me up!',
   'I claim this one',
   "This one's mine.",
-  "Challenge accepted.",
   "Let's do this.",
   "Got it.",
   "My turn.",
@@ -173,7 +171,11 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
             {ticket.id}
           </CardTitle>
           <CardDescription className="line-clamp-6 h-[7.5rem]">
-            {ticket.status === 'Completed' ? (ticket.resolution || ticket.description) : ticket.description}
+            {ticket.status === 'Completed' 
+              ? (ticket.resolution || ticket.description) 
+              : ticket.status === 'Pending Review' 
+                ? '' 
+                : ticket.description}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm flex-1">
