@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -220,7 +219,12 @@ export default function ScheduledMaintenancePage() {
 
   const getFrequencyDetails = (task: RecurringTask) => {
     if ((task.frequency === 'Weekly' || task.frequency === 'Bi-Weekly') && task.dayOfWeek !== undefined) {
-      return `(${WEEK_DAYS[task.dayOfWeek]})`;
+      const dayName = WEEK_DAYS[task.dayOfWeek];
+      if (task.frequency === 'Bi-Weekly' && task.weekOfMonth !== undefined) {
+        const cycle = task.weekOfMonth === 1 ? '1st & 3rd' : '2nd & 4th';
+        return `(${cycle} ${dayName})`;
+      }
+      return `(${dayName})`;
     }
     if (
       (task.frequency === 'Monthly' || task.frequency === '3 Months' || task.frequency === '6 Months') &&

@@ -158,8 +158,6 @@ export const getNextDueDate = (task: RecurringTask): Date => {
         return addDays(today, 1);
       case "Weekly":
         return addWeeks(today, 1);
-      case "Bi-Weekly":
-        return addWeeks(today, 2);
       case "Monthly":
         return addMonths(today, 1);
       case "3 Months":
@@ -180,8 +178,29 @@ export const getNextDueDate = (task: RecurringTask): Date => {
       return isAfter(nextOccurrence, baseDate) ? nextOccurrence : addWeeks(nextOccurrence, 1);
     }
 
-    case 'Bi-Weekly':
+    case 'Bi-Weekly': {
+      if (task.weekOfMonth && task.dayOfWeek !== undefined) {
+        // weekOfMonth 1 = Odds (1, 3, 5), 2 = Evens (2, 4)
+        const targetCycle = task.weekOfMonth;
+        let current = baseDate;
+        
+        // Find next day matching cycle
+        for (let i = 1; i <= 90; i++) {
+          const d = addDays(current, i);
+          if (d.getDay() === task.dayOfWeek) {
+            const dom = d.getDate();
+            // nth occurrence of that day in the month
+            const occurrence = Math.floor((dom - 1) / 7) + 1;
+            
+            const isMatch = (targetCycle === 1 && occurrence % 2 !== 0) || (targetCycle === 2 && occurrence % 2 === 0);
+            if (isMatch) {
+              return d;
+            }
+          }
+        }
+      }
       return addWeeks(baseDate, 2);
+    }
     
     case 'Monthly': {
       if (task.weekOfMonth && task.dayOfWeek !== undefined) {
@@ -201,7 +220,7 @@ export const getNextDueDate = (task: RecurringTask): Date => {
           candidateDate = addMonths(baseDate, 1);
           candidateDate = setDate(candidateDate, 1); // Start of next month
           firstDayOfWeekInMonth = setDay(candidateDate, task.dayOfWeek, { weekStartsOn: 0 });
-            if (isAfter(candidateDate, firstDayOfWeekInMonth)) {
+            if (isAfter(candidateDate, firstDayOfMonth)) {
                 firstDayOfWeekInMonth = addWeeks(firstDayOfWeekInMonth, 1);
             }
           dayOfMonth = firstDayOfWeekInMonth.getDate() + (task.weekOfMonth - 1) * 7;

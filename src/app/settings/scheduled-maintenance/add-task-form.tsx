@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -168,8 +167,11 @@ export function AddTaskForm({
         taskData.lastCompleted = [];
     }
 
-    if (['Weekly', 'Bi-Weekly'].includes(data.frequency)) {
+    if (data.frequency === 'Weekly') {
       taskData.dayOfWeek = data.dayOfWeek;
+    } else if (data.frequency === 'Bi-Weekly') {
+      taskData.dayOfWeek = data.dayOfWeek;
+      taskData.weekOfMonth = data.weekOfMonth;
     } else if (['Monthly', '3 Months', '6 Months'].includes(data.frequency)) {
       taskData.dayOfWeek = data.dayOfWeek;
       taskData.weekOfMonth = data.weekOfMonth;
@@ -387,7 +389,7 @@ export function AddTaskForm({
                 </FormItem>
               )}
             />
-            {(frequency === 'Weekly' || frequency === 'Bi-Weekly') && (
+            {frequency === 'Weekly' && (
               <FormField
                 control={form.control}
                 name="dayOfWeek"
@@ -416,6 +418,61 @@ export function AddTaskForm({
                   </FormItem>
                 )}
               />
+            )}
+            {frequency === 'Bi-Weekly' && (
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="weekOfMonth"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Week of Month</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select cycle" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="1">1st & 3rd Weeks</SelectItem>
+                          <SelectItem value="2">2nd & 4th Weeks</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="dayOfWeek"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Day of Week</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select day" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="1">Monday</SelectItem>
+                          <SelectItem value="2">Tuesday</SelectItem>
+                          <SelectItem value="3">Wednesday</SelectItem>
+                          <SelectItem value="4">Thursday</SelectItem>
+                          <SelectItem value="5">Friday</SelectItem>
+                          <SelectItem value="6">Saturday</SelectItem>
+                          <SelectItem value="0">Sunday</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+              </div>
             )}
             {['Monthly', '3 Months', '6 Months'].includes(frequency) && (
               <div className="grid grid-cols-2 gap-4">
