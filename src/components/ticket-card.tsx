@@ -6,7 +6,6 @@ import {
   User,
   Category,
   toDate,
-  getCategoryColor,
 } from '@/lib/data';
 import {
   Card,
@@ -26,7 +25,6 @@ import { TicketDetailsDialog } from './ticket-details-dialog';
 import { cn } from '@/lib/utils';
 import { useFirestore, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import { Timestamp } from 'firebase/firestore';
 
 const claimSayings = [
   "I'll take this one!",
@@ -75,7 +73,6 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
   }
 
   const assignedUsers = (ticket.assignedToIds || []).map(id => getUserById(id)).filter(Boolean) as User[];
-  const creator = getUserById(ticket.creatorId || null);
   const approver = getUserById(ticket.approvedBy || null);
   const subCategoryInfo = findSubCategory(ticket.categoryId);
 
@@ -148,7 +145,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
     <>
       <Card 
         className={cn(
-            "relative transition-shadow flex flex-col h-full",
+            "relative transition-shadow flex flex-col h-auto",
             canInteract ? "hover:shadow-md cursor-pointer" : "opacity-70 cursor-not-allowed"
           )}
         onClick={handleOpenDialog}
@@ -166,15 +163,17 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
                     : <CheckCircle className="h-5 w-5 text-green-500" />
             )}
         </div>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <CardTitle className="text-base font-bold pr-8">
             {ticket.id}
           </CardTitle>
-          <CardDescription className="text-xs">
-            {ticket.status === 'Completed' 
-              ? (ticket.resolution || ticket.description) 
-              : ticket.description}
-          </CardDescription>
+          {ticket.status !== 'Pending Review' && (
+            <CardDescription className="text-xs">
+              {ticket.status === 'Completed' 
+                ? (ticket.resolution || ticket.description) 
+                : ticket.description}
+            </CardDescription>
+          )}
         </CardHeader>
         <CardContent className="space-y-3 text-sm flex-1">
           <div className="flex items-start gap-2 text-muted-foreground">
@@ -201,7 +200,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex flex-col items-start gap-2">
+        <CardFooter className="flex flex-col items-start gap-2 pt-0">
             <div className="w-full flex items-center justify-between gap-2">
                 <div className="min-w-0">
                     {assignedUsers.length > 0 ? (
@@ -217,7 +216,7 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
                                         <AvatarFallback>{assignedUsers[0]?.name.charAt(0)}</AvatarFallback>
                                     </Avatar>
                                     <div className="text-sm text-muted-foreground">
-                                        <span>{assignedUsers[0]?.name}</span>
+                                        <span className="truncate block max-w-[100px]">{assignedUsers[0]?.name}</span>
                                     </div>
                                 </>
                             )}
@@ -254,11 +253,11 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
             </div>
             
              {ticket.status === 'In Progress' && canMarkForReview && (
-                <div className="flex w-full flex-col sm:flex-row gap-2 pt-2 border-t mt-2">
-                    <Button variant="destructive" size="sm" className="flex-1" onClick={handleUnableToComplete}>
+                <div className="flex w-full flex-col gap-2 pt-2 border-t mt-2">
+                    <Button variant="destructive" size="sm" className="w-full" onClick={handleUnableToComplete}>
                         Unable to Complete
                     </Button>
-                    <Button variant="success" size="sm" className="flex-1" onClick={handleReadyForReview}>
+                    <Button variant="success" size="sm" className="w-full" onClick={handleReadyForReview}>
                         Ready for Review
                     </Button>
                 </div>
