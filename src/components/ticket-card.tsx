@@ -97,6 +97,17 @@ export default function TicketCard({ ticket, users, categories }: TicketCardProp
 
   const handleReadyForReview = () => {
     if (!firestore || !teamId || teamId === 'allTeams') return;
+
+    // Requirement: Resolution must be present
+    if (!ticket.resolution || ticket.resolution.trim() === '') {
+      toast({
+        title: "Resolution Required",
+        description: "Please open the ticket and provide a resolution before submitting for review.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticket.id);
     const updatedTicketData = {
       status: 'Pending Review' as const,

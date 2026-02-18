@@ -127,10 +127,22 @@ export function TicketDetailsDialog({
 
   const handleUpdate = async (newStatus?: TicketStatus) => {
     if (!firestore || !currentUser || !storage || !teamId || teamId === 'allTeams') return;
+    
+    let finalStatus = newStatus || currentStatus;
+
+    // Requirement: Resolution must be provided if submitting for review or marking as completed
+    if ((finalStatus === 'Pending Review' || (finalStatus === 'Completed' && !ticket.unableToComplete)) && !resolution.trim()) {
+      toast({
+        title: "Resolution Required",
+        description: "Please provide details on how the task was resolved before submitting.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsSaving(true);
     
     try {
-      let finalStatus = newStatus || currentStatus;
       const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticket.id);
 
       // Automatically set status to "In Progress" if users are assigned and status is "Not Started"
@@ -183,6 +195,10 @@ export function TicketDetailsDialog({
         dataForDb.approvedBy = currentUser.uid;
         dataForDb.actualCompletionDate = new Date();
         dataForDb.unableToComplete = false;
+      }
+
+      if (finalStatus === 'Pending Review' && ticket.status !== 'Pending Review') {
+        dataForDb.submitToReviewDate = new Date();
       }
       
       if (finalStatus !== 'Completed') {
@@ -624,10 +640,18 @@ export function TicketDetailsDialog({
                     </Button>
                   </div>
                 ) : (
-                  <Button onClick={() => handleUpdate()} disabled={isSaving || !canInteractWithForm}>
-                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isSaving ? "Saving..." : "Save Changes"}
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button onClick={() => handleUpdate()} disabled={isSaving || !canInteractWithForm} variant="outline">
+                      {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {isSaving ? "Saving..." : "Save Changes"}
+                    </Button>
+                    {(isStaff || isAdminOrCoordinator) && isAssignedToCurrentUser && currentStatus === 'In Progress' && (
+                      <Button onClick={() => handleUpdate('Pending Review')} disabled={isSaving} className="bg-green-600 hover:bg-green-700 text-white">
+                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Ready for Review
+                      </Button>
+                    )}
+                  </div>
                 )
               )}
             </div>
