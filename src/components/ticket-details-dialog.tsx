@@ -346,6 +346,7 @@ export function TicketDetailsDialog({
     });
   }, [assignableUsers, assignedToIds]);
 
+  const isResolutionEditable = !readOnly && canInteractWithForm && currentStatus !== 'Pending Review' && currentStatus !== 'Completed';
 
   return (
     <>
@@ -362,21 +363,27 @@ export function TicketDetailsDialog({
           <div className="flex-1 overflow-y-auto p-1 grid gap-6 py-4">
             <div className="space-y-2">
                 <Label>Description</Label>
-                <p className="text-sm text-muted-foreground p-4 border rounded-md bg-muted/50">
+                <p className="text-sm text-muted-foreground p-4 border rounded-md bg-muted/50 whitespace-pre-wrap">
                     {ticket.description}
                 </p>
             </div>
 
             <div className="space-y-2">
                 <Label htmlFor="resolution">Resolution</Label>
-                <Textarea
-                    id="resolution"
-                    placeholder="Enter resolution details or work performed..."
-                    value={resolution}
-                    onChange={(e) => setResolution(e.target.value)}
-                    disabled={isSaving || !canInteractWithForm || readOnly || currentStatus === 'Pending Review' || currentStatus === 'Completed'}
-                    className="min-h-[100px] resize-y"
-                />
+                {isResolutionEditable ? (
+                    <Textarea
+                        id="resolution"
+                        placeholder="Enter resolution details or work performed..."
+                        value={resolution}
+                        onChange={(e) => setResolution(e.target.value)}
+                        disabled={isSaving}
+                        className="min-h-[100px] resize-y"
+                    />
+                ) : (
+                    <p className="text-sm text-muted-foreground p-4 border rounded-md bg-muted/50 whitespace-pre-wrap min-h-[100px]">
+                        {resolution || "No resolution details provided."}
+                    </p>
+                )}
             </div>
 
             <div className="space-y-2">
