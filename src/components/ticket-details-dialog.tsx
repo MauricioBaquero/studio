@@ -374,7 +374,7 @@ export function TicketDetailsDialog({
                     placeholder="Enter resolution details or work performed..."
                     value={resolution}
                     onChange={(e) => setResolution(e.target.value)}
-                    disabled={isSaving || !canInteractWithForm || readOnly}
+                    disabled={isSaving || !canInteractWithForm || readOnly || currentStatus === 'Pending Review' || currentStatus === 'Completed'}
                     className="min-h-[100px] resize-y"
                 />
             </div>
