@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect } from 'react';
@@ -65,7 +64,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <div className="flex flex-1">
         <AppSidebar />
         <div className="flex flex-1 flex-col">
-          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
+          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 lg:hidden">
             <SidebarTrigger />
           </header>
           <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">

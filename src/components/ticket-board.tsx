@@ -96,7 +96,7 @@ export default function TicketBoard({ tickets, users, categories }: TicketBoardP
   }
 
   return (
-    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="flex-1 grid grid-cols-2 xl:grid-cols-4 gap-4">
       {TICKET_STATUSES.map((status) => (
         <TicketBoardColumn
           key={status}

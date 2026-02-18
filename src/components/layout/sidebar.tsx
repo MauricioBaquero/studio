@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -110,7 +109,7 @@ export default function AppSidebar() {
         </div>
         <div className="p-2 flex justify-center items-center gap-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:-ml-2">
           <ThemeToggle />
-          <SidebarTrigger variant="outline" className="hidden md:flex" />
+          <SidebarTrigger variant="outline" className="hidden lg:flex" />
         </div>
         <div className="p-4 text-center text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
           Designed with ❤️ 2025 WeAreFTL
