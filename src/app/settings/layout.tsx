@@ -16,6 +16,7 @@ import {
 
 const ALL_TABS = [
   { value: "general", label: "General", href: "/settings", roles: ['Admin', 'Coordinator'] },
+  { value: "ticket-search", label: "Ticket Search", href: "/settings/ticket-search", roles: ['Admin', 'Coordinator'] },
   { value: "categories", label: "Categories", href: "/settings/categories", roles: ['Admin', 'Coordinator'] },
   { value: "scheduled-maintenance", label: "Scheduled Maintenance", href: "/settings/scheduled-maintenance", roles: ['Admin', 'Coordinator'] },
   { value: "locations", label: "Locations", href: "/settings/locations", roles: ['Admin', 'Coordinator'] },
