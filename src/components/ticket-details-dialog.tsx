@@ -32,7 +32,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Trash2, X, Upload, Check, FileText } from 'lucide-react';
+import { Loader2, Trash2, X, Upload, Check, FileText, CalendarDays } from 'lucide-react';
 import { useFirestore, useUser, useStorage, deleteDocumentNonBlocking } from '@/firebase';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -326,6 +326,7 @@ export function TicketDetailsDialog({
   const assignedUsers = assignedToIds.map(id => getUserById(id)).filter(Boolean) as User[];
   const subCategoryInfo = findSubCategory(ticket.categoryId);
   const creator = getUserById(ticket.creatorId);
+  const approver = getUserById(ticket.approvedBy || null);
 
   const isAdminOrCoordinator = currentUser?.role === 'Admin' || currentUser?.role === 'Coordinator';
   const isPendingReview = ticket.status === 'Pending Review';
@@ -369,23 +370,25 @@ export function TicketDetailsDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Ticket Details</DialogTitle>
-            <DialogTitle className="sr-only">Detailed Ticket Information</DialogTitle>
-            <DialogDescription>ID: {ticket.id}</DialogDescription>
-            <div className="text-sm text-muted-foreground pt-1">
-                Created By: {creator?.name || 'Unknown'}
+            <div className="flex flex-col gap-1">
+              <DialogTitle className="text-xl">Ticket Details</DialogTitle>
+              <DialogDescription className="font-mono text-xs">ID: {ticket.id}</DialogDescription>
+            </div>
+            <div className="text-sm text-muted-foreground pt-1 flex items-center gap-2">
+                <span className="font-medium">Created By:</span> {creator?.name || 'Unknown'} 
+                <span className="text-xs opacity-70">on {format(toDate(ticket.createdAt), 'PPP')}</span>
             </div>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-1 grid gap-6 py-4">
             <div className="space-y-2">
-                <Label>Description</Label>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Description</Label>
                 <p className="text-sm text-muted-foreground p-4 border rounded-md bg-muted/50 whitespace-pre-wrap">
                     {ticket.description}
                 </p>
             </div>
 
             <div className="space-y-2">
-                <Label htmlFor="resolution">Resolution</Label>
+                <Label htmlFor="resolution" className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Resolution</Label>
                 {isResolutionEditable ? (
                     <Textarea
                         id="resolution"
@@ -402,12 +405,41 @@ export function TicketDetailsDialog({
                 )}
             </div>
 
+            {(ticket.submitToReviewDate || ticket.actualCompletionDate) && (
+              <div className="bg-card border rounded-lg p-4 flex flex-col sm:flex-row gap-6">
+                {ticket.submitToReviewDate && (
+                  <div className="space-y-1 flex-1">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      <CalendarDays className="h-3 w-3" />
+                      Work Completed
+                    </div>
+                    <p className="text-sm font-medium">{format(toDate(ticket.submitToReviewDate), 'PPP')}</p>
+                  </div>
+                )}
+                {ticket.actualCompletionDate && ticket.status === 'Completed' && (
+                  <div className="space-y-1 flex-1 border-t sm:border-t-0 sm:border-l sm:pl-6 pt-4 sm:pt-0">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      <Check className="h-3 w-3 text-green-500" />
+                      Approved By
+                    </div>
+                    <p className="text-sm font-medium">
+                      {approver ? approver.name : 'Unknown Approver'} 
+                      <span className="block text-xs font-normal text-muted-foreground mt-0.5">
+                        on {format(toDate(ticket.actualCompletionDate), 'PPP')}
+                      </span>
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="space-y-2">
-              <Label>Attachments</Label>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Attachments</Label>
               {!readOnly && (
                 <div className="flex items-center gap-4">
                     <Button
                         variant="outline"
+                        size="sm"
                         className="border-2 border-dashed hover:border-solid hover:bg-accent"
                         onClick={() => photoFileInputRef.current?.click()}
                         disabled={isSaving || !canInteractWithForm}
@@ -417,6 +449,7 @@ export function TicketDetailsDialog({
                     </Button>
                     <Button
                         variant="outline"
+                        size="sm"
                         className="border-2 border-dashed hover:border-solid hover:bg-accent"
                         onClick={() => emlFileInputRef.current?.click()}
                         disabled={isSaving || !canInteractWithForm}
@@ -437,7 +470,7 @@ export function TicketDetailsDialog({
                                 </Button>
                               )}
                           </div>
-                          <p className="text-xs text-muted-foreground text-center mt-1">{format(toDate(photo.createdAt), 'MM/dd/yyyy')}</p>
+                          <p className="text-[10px] text-muted-foreground text-center mt-1">{format(toDate(photo.createdAt), 'MM/dd/yyyy')}</p>
                       </div>
                   ))}
                   {newPhotoPreviews.map((url, index) => (
@@ -495,17 +528,17 @@ export function TicketDetailsDialog({
             </div>
 
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-6 pt-4 border-t">
               <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Category</p>
-                  <p className="text-sm">{subCategoryInfo?.name}</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Category</p>
+                  <p className="text-sm font-medium">{subCategoryInfo?.name || 'N/A'}</p>
               </div>
               <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Location</p>
-                  <p className="text-sm">{ticket.location}</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Location</p>
+                  <p className="text-sm font-medium">{ticket.location}</p>
               </div>
               <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Assigned To</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Assigned To</p>
                   {isAdminOrCoordinator && !readOnly ? (
                     <Popover open={multiSelectOpen} onOpenChange={setMultiSelectOpen}>
                         <PopoverTrigger asChild>
@@ -572,7 +605,7 @@ export function TicketDetailsDialog({
                   )}
               </div>
               <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Status</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</p>
                   <Select 
                       value={currentStatus} 
                       onValueChange={(value) => setCurrentStatus(value as TicketStatus)}
@@ -604,7 +637,7 @@ export function TicketDetailsDialog({
               {isAdminOrCoordinator && !readOnly && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" disabled={isSaving} className="w-full sm:w-auto">
+                    <Button variant="destructive" size="sm" disabled={isSaving} className="w-full sm:w-auto">
                       <Trash2 className="mr-2 h-4 w-4" /> Delete Ticket
                     </Button>
                   </AlertDialogTrigger>
@@ -624,29 +657,29 @@ export function TicketDetailsDialog({
               )}
             </div>
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
+              <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={isSaving}>
                 {readOnly ? "Close" : "Cancel"}
               </Button>
               {!readOnly && (
                 isAdminOrCoordinator && isPendingReview ? (
                   <div className="flex flex-col sm:flex-row gap-2">
-                    <Button onClick={() => handleUpdate('In Progress')} disabled={isSaving} variant="secondary">
+                    <Button onClick={() => handleUpdate('In Progress')} disabled={isSaving} variant="secondary" size="sm">
                       {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                       Reject
                     </Button>
-                    <Button onClick={() => handleUpdate('Completed')} disabled={isSaving}>
+                    <Button onClick={() => handleUpdate('Completed')} disabled={isSaving} size="sm">
                       {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Approve
                     </Button>
                   </div>
                 ) : (
                   <div className="flex flex-col sm:flex-row gap-2">
-                    <Button onClick={() => handleUpdate()} disabled={isSaving || !canInteractWithForm} variant="outline">
+                    <Button onClick={() => handleUpdate()} disabled={isSaving || !canInteractWithForm} variant="outline" size="sm">
                       {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       {isSaving ? "Saving..." : "Save Changes"}
                     </Button>
                     {(isStaff || isAdminOrCoordinator) && isAssignedToCurrentUser && currentStatus === 'In Progress' && (
-                      <Button onClick={() => handleUpdate('Pending Review')} disabled={isSaving} className="bg-green-600 hover:bg-green-700 text-white">
+                      <Button onClick={() => handleUpdate('Pending Review')} disabled={isSaving} size="sm" className="bg-green-600 hover:bg-green-700 text-white">
                         {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Ready for Review
                       </Button>
