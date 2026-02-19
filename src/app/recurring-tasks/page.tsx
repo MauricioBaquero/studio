@@ -213,6 +213,20 @@ export default function RecurringTasksPage() {
             valA = (getUserById(a.assignedToId || null)?.name || 'unassigned').toLowerCase();
             valB = (getUserById(b.assignedToId || null)?.name || 'unassigned').toLowerCase();
             break;
+          case 'assignedToV2':
+            valA = (a.assignedToIds || [])
+              .map(id => getUserById(id)?.name || '')
+              .filter(Boolean)
+              .sort()
+              .join(', ')
+              .toLowerCase();
+            valB = (b.assignedToIds || [])
+              .map(id => getUserById(id)?.name || '')
+              .filter(Boolean)
+              .sort()
+              .join(', ')
+              .toLowerCase();
+            break;
           case 'location':
             valA = (getLocationById(a.locationId)?.name || '').toLowerCase();
             valB = (getLocationById(b.locationId)?.name || '').toLowerCase();
@@ -496,8 +510,8 @@ export default function RecurringTasksPage() {
                   <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleMaintenanceSort('assignedTo')}>
                     <div className="flex items-center">Assigned To <SortIcon field="assignedTo" currentSort={maintenanceSort} /></div>
                   </TableHead>
-                  <TableHead>
-                    Assigned To v2
+                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleMaintenanceSort('assignedToV2')}>
+                    <div className="flex items-center">Assigned To v2 <SortIcon field="assignedToV2" currentSort={maintenanceSort} /></div>
                   </TableHead>
                   <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleMaintenanceSort('location')}>
                     <div className="flex items-center">Location <SortIcon field="location" currentSort={maintenanceSort} /></div>

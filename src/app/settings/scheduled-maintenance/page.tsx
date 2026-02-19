@@ -297,10 +297,18 @@ export default function ScheduledMaintenancePage() {
           bVal = (getUserById(b.assignedToId || '')?.name || '').toLowerCase();
           break;
         case 'assignedToV2':
-          const aUsers = (a.assignedToIds || []).map(id => getUserById(id)).filter(Boolean);
-          const bUsers = (b.assignedToIds || []).map(id => getUserById(id)).filter(Boolean);
-          aVal = (aUsers[0]?.name || '').toLowerCase();
-          bVal = (bUsers[0]?.name || '').toLowerCase();
+          const aNames = (a.assignedToIds || [])
+            .map(id => getUserById(id)?.name || '')
+            .filter(Boolean)
+            .sort()
+            .join(', ');
+          const bNames = (b.assignedToIds || [])
+            .map(id => getUserById(id)?.name || '')
+            .filter(Boolean)
+            .sort()
+            .join(', ');
+          aVal = aNames.toLowerCase();
+          bVal = bNames.toLowerCase();
           break;
       }
 
