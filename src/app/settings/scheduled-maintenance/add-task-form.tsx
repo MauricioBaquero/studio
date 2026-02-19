@@ -39,14 +39,13 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import {
   useFirestore,
-  addDocumentNonBlocking,
   updateDocumentNonBlocking,
   useUser,
   setDocumentNonBlocking,
   useCollection,
   useMemoFirebase,
 } from '@/firebase';
-import { collection, doc, query, where } from 'firebase/firestore';
+import { collection, doc, query } from 'firebase/firestore';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Check, ChevronsUpDown } from 'lucide-react';
@@ -121,8 +120,8 @@ export function AddTaskForm({
       frequency: 'Daily',
       assignedToId: 'unassigned',
       assignedToIds: [],
-      dayOfWeek: undefined,
-      weekOfMonth: undefined,
+      dayOfWeek: 0,
+      weekOfMonth: 1,
     },
   });
 
@@ -137,8 +136,8 @@ export function AddTaskForm({
         frequency: editingTask.frequency,
         assignedToId: editingTask.assignedToId || 'unassigned',
         assignedToIds: editingTask.assignedToIds || [],
-        dayOfWeek: editingTask.dayOfWeek,
-        weekOfMonth: editingTask.weekOfMonth,
+        dayOfWeek: editingTask.dayOfWeek ?? 0,
+        weekOfMonth: editingTask.weekOfMonth ?? 1,
       });
       setSelectedParent(parentId);
     } else {
@@ -150,8 +149,8 @@ export function AddTaskForm({
         frequency: 'Daily',
         assignedToId: 'unassigned',
         assignedToIds: [],
-        dayOfWeek: undefined,
-        weekOfMonth: undefined,
+        dayOfWeek: 0,
+        weekOfMonth: 1,
       });
       setSelectedParent(null);
     }
@@ -166,12 +165,13 @@ export function AddTaskForm({
   const onSubmit = (data: RecurringTaskFormValues) => {
     if (!firestore || !teamId) return;
 
+    // Build the data object cleanly to avoid 'undefined' values which Firestore rejects
     const taskData: any = {
       title: data.title,
       categoryId: data.subcategoryId,
       locationId: data.locationId,
       frequency: data.frequency,
-      assignedToId: data.assignedToId === 'unassigned' ? null : data.assignedToId,
+      assignedToId: data.assignedToId === 'unassigned' ? null : (data.assignedToId || null),
       assignedToIds: data.assignedToIds || [],
     };
     
@@ -179,14 +179,15 @@ export function AddTaskForm({
         taskData.lastCompleted = [];
     }
 
+    // Explicitly set or remove scheduling fields based on frequency to prevent 'undefined' errors
     if (data.frequency === 'Weekly') {
-      taskData.dayOfWeek = data.dayOfWeek;
+      taskData.dayOfWeek = data.dayOfWeek !== undefined ? Number(data.dayOfWeek) : 0;
     } else if (data.frequency === 'Bi-Weekly') {
-      taskData.dayOfWeek = data.dayOfWeek;
-      taskData.weekOfMonth = data.weekOfMonth;
+      taskData.dayOfWeek = data.dayOfWeek !== undefined ? Number(data.dayOfWeek) : 0;
+      taskData.weekOfMonth = data.weekOfMonth !== undefined ? Number(data.weekOfMonth) : 1;
     } else if (['Monthly', '3 Months', '6 Months'].includes(data.frequency)) {
-      taskData.dayOfWeek = data.dayOfWeek;
-      taskData.weekOfMonth = data.weekOfMonth;
+      taskData.dayOfWeek = data.dayOfWeek !== undefined ? Number(data.dayOfWeek) : 0;
+      taskData.weekOfMonth = data.weekOfMonth !== undefined ? Number(data.weekOfMonth) : 1;
     }
 
     if (isEditMode && editingTask) {
@@ -239,9 +240,7 @@ export function AddTaskForm({
             {isEditMode ? 'Edit' : 'Add New'} Recurring Task
           </DialogTitle>
           <DialogDescription>
-            Fill out the form below to{' '}
-            {isEditMode ? 'update the' : 'create a new'} scheduled maintenance
-            task.
+            Fill out the form below to {isEditMode ? 'update the' : 'create a new'} scheduled maintenance task.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

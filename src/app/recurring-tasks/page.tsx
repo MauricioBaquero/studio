@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -28,8 +27,6 @@ import {
   query,
   doc,
   arrayUnion,
-  Timestamp,
-  where,
 } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -124,7 +121,7 @@ export default function RecurringTasksPage() {
         // Check Assigned To v1
         if (task.assignedToId && task.assignedToId === currentUser.uid) return true;
         
-        // Check Assigned To v2 (multiple)
+        // Check Assigned To v2 (multiple) - This handles both visibility and interaction permissions
         if (task.assignedToIds && task.assignedToIds.includes(currentUser.uid)) return true;
 
         // Unassigned tasks are visible to everyone
