@@ -35,7 +35,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,6 +75,9 @@ export default function ScheduledMaintenancePage() {
   const [editingTask, setEditingTask] = useState<RecurringTask | null>(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
+  
+  // Sorting state
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
   const tasksQuery = useMemoFirebase(
     () => (firestore && teamId && teamId !== 'allTeams' ? query(collection(firestore, `teams/${teamId}/recurringTasks`)) : null),
@@ -250,6 +253,63 @@ export default function ScheduledMaintenancePage() {
     return '';
   };
 
+  const handleSort = (key: string) => {
+    setSortConfig(prev => {
+      if (prev?.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const renderSortIcon = (key: string) => {
+    if (sortConfig?.key !== key) return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
+    return sortConfig.direction === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
+  };
+
+  const processedTasks = useMemo(() => {
+    if (!tasks) return [];
+    if (!sortConfig) return tasks;
+
+    return [...tasks].sort((a, b) => {
+      let aVal: any = '';
+      let bVal: any = '';
+
+      switch (sortConfig.key) {
+        case 'title':
+          aVal = a.title.toLowerCase();
+          bVal = b.title.toLowerCase();
+          break;
+        case 'category':
+          aVal = (findSubCategory(a.categoryId)?.name || '').toLowerCase();
+          bVal = (findSubCategory(b.categoryId)?.name || '').toLowerCase();
+          break;
+        case 'location':
+          aVal = (getLocationById(a.locationId)?.name || '').toLowerCase();
+          bVal = (getLocationById(b.locationId)?.name || '').toLowerCase();
+          break;
+        case 'frequency':
+          aVal = a.frequency.toLowerCase();
+          bVal = b.frequency.toLowerCase();
+          break;
+        case 'assignedTo':
+          aVal = (getUserById(a.assignedToId || '')?.name || '').toLowerCase();
+          bVal = (getUserById(b.assignedToId || '')?.name || '').toLowerCase();
+          break;
+        case 'assignedToV2':
+          const aUsers = (a.assignedToIds || []).map(id => getUserById(id)).filter(Boolean);
+          const bUsers = (b.assignedToIds || []).map(id => getUserById(id)).filter(Boolean);
+          aVal = (aUsers[0]?.name || '').toLowerCase();
+          bVal = (bUsers[0]?.name || '').toLowerCase();
+          break;
+      }
+
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [tasks, sortConfig, categories, locations, users]);
+
 
   const isLoading = isLoadingTasks || isLoadingCategories || isLoadingLocations || isLoadingTeams || isLoadingUsers;
 
@@ -299,17 +359,29 @@ export default function ScheduledMaintenancePage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Task</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Frequency</TableHead>
-                  <TableHead>Assigned To</TableHead>
-                  <TableHead>Assigned To v2</TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('title')}>
+                    <div className="flex items-center">Task {renderSortIcon('title')}</div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('category')}>
+                    <div className="flex items-center">Category {renderSortIcon('category')}</div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('location')}>
+                    <div className="flex items-center">Location {renderSortIcon('location')}</div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('frequency')}>
+                    <div className="flex items-center">Frequency {renderSortIcon('frequency')}</div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('assignedTo')}>
+                    <div className="flex items-center">Assigned To {renderSortIcon('assignedTo')}</div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('assignedToV2')}>
+                    <div className="flex items-center">Assigned To v2 {renderSortIcon('assignedToV2')}</div>
+                  </TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tasks?.map(task => {
+                {processedTasks?.map(task => {
                   const subCategoryInfo = findSubCategory(task.categoryId);
                   const location = getLocationById(task.locationId);
                   const assignedUserV1 = task.assignedToId ? getUserById(task.assignedToId) : null;
