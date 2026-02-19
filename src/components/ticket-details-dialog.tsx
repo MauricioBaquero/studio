@@ -32,7 +32,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Trash2, X, Upload, Check, FileText, CalendarDays, Download } from 'lucide-react';
+import { Loader2, Trash2, X, Upload, Check, FileText, CalendarDays, Printer } from 'lucide-react';
 import { useFirestore, useUser, useStorage, deleteDocumentNonBlocking } from '@/firebase';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -45,7 +45,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ImageViewerDialog } from './image-viewer-dialog';
 import { format } from 'date-fns';
@@ -130,7 +129,6 @@ export function TicketDetailsDialog({
     
     let finalStatus = newStatus || currentStatus;
 
-    // Requirement: Resolution must be provided if submitting for review or marking as completed
     if ((finalStatus === 'Pending Review' || (finalStatus === 'Completed' && !ticket.unableToComplete)) && !resolution.trim()) {
       toast({
         title: "Resolution Required",
@@ -145,12 +143,10 @@ export function TicketDetailsDialog({
     try {
       const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticket.id);
 
-      // Automatically set status to "In Progress" if users are assigned and status is "Not Started"
       if (assignedToIds.length > 0 && finalStatus === 'Not Started') {
         finalStatus = 'In Progress';
       }
 
-      // 1. Upload new photos
       const newPhotoUploads = newPhotoFiles.map(async file => {
         const photoId = uuidv4();
         const fileExtension = file.name.split('.').pop();
@@ -161,7 +157,6 @@ export function TicketDetailsDialog({
         return { url: downloadURL, path: storagePath, createdAt: new Date() };
       });
       
-       // Upload new EML files
         const newEmlUploads = newEmlFiles.map(async file => {
             const emlId = uuidv4();
             const storagePath = `eml/${ticket.id}/${emlId}-${file.name}`;
@@ -177,7 +172,6 @@ export function TicketDetailsDialog({
       ]);
 
 
-      // 2. Prepare data for Firestore update
       const dataForDb: any = {
         status: finalStatus,
         assignedToIds: assignedToIds,
@@ -206,7 +200,6 @@ export function TicketDetailsDialog({
       }
 
 
-      // 3. Update Firestore
       await updateDoc(ticketRef, dataForDb);
 
       toast({ title: "Ticket Updated", description: "Your changes have been saved successfully." });
@@ -227,11 +220,9 @@ export function TicketDetailsDialog({
     toast({ title: "Deleting Photo...", description: "Please wait." });
     
     try {
-        // Delete from Storage
         const photoRef = ref(storage, photo.path);
         await deleteObject(photoRef);
         
-        // Remove from Firestore
         const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticket.id);
         await updateDoc(ticketRef, {
             photos: arrayRemove(photo)
@@ -322,38 +313,115 @@ export function TicketDetailsDialog({
     setIsImageViewerOpen(true);
   };
 
-  const handleExport = () => {
+  const handlePrint = () => {
     const subInfo = findSubCategory(ticket.categoryId);
-    const creator = getUserById(ticket.creatorId);
-    const approver = getUserById(ticket.approvedBy || null);
+    const creatorUser = getUserById(ticket.creatorId);
+    const approverUser = getUserById(ticket.approvedBy || null);
 
-    const headers = ['Field', 'Value'];
-    const rows = [
-      ['Ticket ID', ticket.id],
-      ['Title', ticket.title],
-      ['Status', ticket.status],
-      ['Category', subInfo?.name || 'N/A'],
-      ['Location', ticket.location],
-      ['Description', ticket.description.replace(/,/g, ';').replace(/\n/g, ' ')],
-      ['Resolution', (ticket.resolution || 'N/A').replace(/,/g, ';').replace(/\n/g, ' ')],
-      ['Created By', creator?.name || 'Unknown'],
-      ['Created At', format(toDate(ticket.createdAt), 'PPP p')],
-      ['Work Completed', ticket.submitToReviewDate ? format(toDate(ticket.submitToReviewDate), 'PPP p') : 'N/A'],
-      ['Approved By', approver?.name || 'N/A'],
-      ['Approved At', ticket.actualCompletionDate ? format(toDate(ticket.actualCompletionDate), 'PPP p') : 'N/A'],
-    ];
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
 
-    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `ticket-${ticket.id}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast({ title: "Export Successful", description: `Ticket ${ticket.id} data has been exported.` });
+    const photosHtml = currentPhotos.map(p => `
+      <div style="margin-bottom: 20px; page-break-inside: avoid; text-align: center;">
+        <img src="${p.url}" style="max-width: 100%; max-height: 400px; border-radius: 8px; border: 1px solid #ddd; object-fit: contain;" />
+        <p style="font-size: 10px; color: #666; margin-top: 5px;">Uploaded: ${format(toDate(p.createdAt), 'PPP')}</p>
+      </div>
+    `).join('');
+
+    const emlHtml = currentEmlAttachments.length > 0 ? `
+      <div class="section">
+        <span class="label">Email Attachments</span>
+        <ul style="font-size: 12px; color: #444;">
+          ${currentEmlAttachments.map(e => `<li>${e.name}</li>`).join('')}
+        </ul>
+      </div>
+    ` : '';
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Ticket ${ticket.id}</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 40px; color: #333; line-height: 1.6; }
+            h1 { margin-top: 0; margin-bottom: 5px; color: #000; font-size: 24px; }
+            .meta { font-size: 12px; color: #666; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+            .section { margin-bottom: 25px; }
+            .label { font-weight: bold; text-transform: uppercase; font-size: 10px; color: #888; display: block; margin-bottom: 6px; letter-spacing: 0.05em; }
+            .content { padding: 15px; background: #fcfcfc; border-radius: 6px; border: 1px solid #efefef; white-space: pre-wrap; font-size: 14px; color: #222; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+            .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px; }
+            @media print {
+              body { padding: 0; }
+              .content { background: white; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Ticket Report</h1>
+          <div class="meta">
+            <strong>Ticket ID: ${ticket.id}</strong><br/>
+            Created By: ${creatorUser?.name || 'Unknown'} on ${format(toDate(ticket.createdAt), 'PPP p')}
+          </div>
+
+          <div class="section">
+            <span class="label">Description</span>
+            <div class="content">${ticket.description}</div>
+          </div>
+
+          <div class="section">
+            <span class="label">Resolution</span>
+            <div class="content">${resolution || 'No resolution details provided.'}</div>
+          </div>
+
+          <div class="grid section">
+            <div>
+              <span class="label">Category</span>
+              <p style="margin: 0; font-size: 14px;">${subInfo?.parentName ? subInfo.parentName + ' > ' : ''}${subInfo?.name || 'N/A'}</p>
+            </div>
+            <div>
+              <span class="label">Location</span>
+              <p style="margin: 0; font-size: 14px;">${ticket.location}</p>
+            </div>
+            <div>
+              <span class="label">Status</span>
+              <p style="margin: 0; font-size: 14px;"><strong>${currentStatus}</strong></p>
+            </div>
+            <div>
+              <span class="label">Work Completed Date</span>
+              <p style="margin: 0; font-size: 14px;">${ticket.submitToReviewDate ? format(toDate(ticket.submitToReviewDate), 'PPP') : 'N/A'}</p>
+            </div>
+          </div>
+
+          ${ticket.actualCompletionDate && ticket.status === 'Completed' ? `
+            <div class="section" style="border-top: 1px solid #eee; padding-top: 15px;">
+              <span class="label">Approval Details</span>
+              <p style="margin: 0; font-size: 14px;">Approved by <strong>${approverUser?.name || 'Unknown'}</strong> on ${format(toDate(ticket.actualCompletionDate), 'PPP p')}</p>
+            </div>
+          ` : ''}
+
+          ${photosHtml ? `
+            <div class="section" style="page-break-before: auto;">
+              <span class="label">Photos</span>
+              <div class="photo-grid">
+                ${photosHtml}
+              </div>
+            </div>
+          ` : ''}
+
+          ${emlHtml}
+
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+                window.onafterprint = function() { window.close(); };
+              }, 500);
+            }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
   
   const assignedUsers = assignedToIds.map(id => getUserById(id)).filter(Boolean) as User[];
@@ -370,7 +438,6 @@ export function TicketDetailsDialog({
   const assignableUsers = useMemo(() => {
     if (!users || !teamId) return [];
     
-    // Admin, Coordinator, and Staff roles can be assigned tasks.
     const assignableRoles = ['Admin', 'Coordinator', 'Staff'];
 
     if (teamId === 'allTeams') {
@@ -380,7 +447,6 @@ export function TicketDetailsDialog({
     return users.filter(u => {
       if (!assignableRoles.includes(u.role)) return false;
       const belongsToTeam = u.teamId === teamId;
-      // Admins and Coordinators are assignable even if their current teamId doesn't match, as they can switch.
       const isPrivileged = u.role === 'Admin' || u.role === 'Coordinator';
       return belongsToTeam || isPrivileged;
     });
@@ -690,8 +756,8 @@ export function TicketDetailsDialog({
               )}
             </div>
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={handleExport} className="w-full sm:w-auto">
-                <Download className="mr-2 h-4 w-4" /> Export
+              <Button variant="outline" size="sm" onClick={handlePrint} className="w-full sm:w-auto">
+                <Printer className="mr-2 h-4 w-4" /> Print
               </Button>
               <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={isSaving}>
                 {readOnly ? "Close" : "Cancel"}
