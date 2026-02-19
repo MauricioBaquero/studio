@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Ticket, User, Category, Location } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
@@ -23,6 +23,15 @@ export default function TaskBoardPage() {
     category: 'all',
     dateRange: { from: undefined, to: undefined },
   });
+
+  // Set default filter based on role when the user is first loaded
+  useEffect(() => {
+    if (currentUser?.role === 'Staff') {
+      setFilters(prev => ({ ...prev, assignee: 'me-unassigned' }));
+    } else if (currentUser?.role) {
+      setFilters(prev => ({ ...prev, assignee: 'all' }));
+    }
+  }, [currentUser?.role]);
 
   const ticketsQuery = useMemoFirebase(() => {
     if (!firestore || !teamId || teamId === 'allTeams') return null;

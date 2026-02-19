@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -37,6 +36,15 @@ export function TicketFilters({
   const [location, setLocation] = useState('all');
   const [category, setCategory] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+
+  // Set default filter based on role when the user is first loaded
+  useEffect(() => {
+    if (currentUser?.role === 'Staff') {
+      setAssignee('me-unassigned');
+    } else if (currentUser?.role) {
+      setAssignee('all');
+    }
+  }, [currentUser?.role]);
 
   useEffect(() => {
     onFilterChange({
