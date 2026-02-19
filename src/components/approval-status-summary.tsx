@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { ScrollArea } from './ui/scroll-area';
 import { TicketDetailsDialog } from './ticket-details-dialog';
+import { Badge } from './ui/badge';
 
 interface ApprovalStatusSummaryProps {
   tickets: Ticket[];
@@ -22,7 +23,7 @@ export function ApprovalStatusSummary({ tickets, users, categories }: ApprovalSt
       for (const parent of categories) {
           const sub = parent.subcategories?.find(s => s.id === subcategoryId);
           if (sub) {
-              return { name: sub.name, parentName: parent.name };
+              return { name: sub.name, parentName: parent.name, color: parent.color };
           }
       }
       return null;
@@ -38,7 +39,8 @@ export function ApprovalStatusSummary({ tickets, users, categories }: ApprovalSt
           approverName: approver?.name || 'Unknown',
           approvalDate: toDate(ticket.actualCompletionDate!),
           categoryName: subInfo?.parentName || 'N/A',
-          subCategoryName: subInfo?.name || 'N/A'
+          subCategoryName: subInfo?.name || 'N/A',
+          color: subInfo?.color || 'blue'
         };
       })
       .sort((a, b) => b.approvalDate.getTime() - a.approvalDate.getTime())
@@ -65,9 +67,14 @@ export function ApprovalStatusSummary({ tickets, users, categories }: ApprovalSt
                         >
                            <div className="w-full">
                                 <p className="font-semibold text-foreground mb-0.5">{ticket.id}</p>
-                                <p className="text-[10px] uppercase font-bold text-primary mb-1">
-                                    {ticket.categoryName} &rsaquo; {ticket.subCategoryName}
-                                </p>
+                                <div className="flex flex-wrap gap-1 mb-1">
+                                    <Badge color={ticket.color as any} variant="default" className="text-[9px] uppercase font-bold px-1.5 py-0">
+                                        {ticket.categoryName}
+                                    </Badge>
+                                    <Badge color={ticket.color as any} variant="outline" className="text-[9px] uppercase font-bold px-1.5 py-0">
+                                        {ticket.subCategoryName}
+                                    </Badge>
+                                </div>
                                 <span>Approved by {ticket.approverName} on {format(ticket.approvalDate, 'MM/dd/yyyy')}</span>
                            </div>
                         </li>
