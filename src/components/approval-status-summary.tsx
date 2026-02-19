@@ -17,19 +17,33 @@ export function ApprovalStatusSummary({ tickets, users, categories }: ApprovalSt
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
 
   const recentlyApproved = useMemo(() => {
+    const findSubCategory = (subcategoryId: string) => {
+      if (!categories) return null;
+      for (const parent of categories) {
+          const sub = parent.subcategories?.find(s => s.id === subcategoryId);
+          if (sub) {
+              return { name: sub.name, parentName: parent.name };
+          }
+      }
+      return null;
+    }
+
     return tickets
       .filter(t => t.status === 'Completed' && t.approvedBy && t.actualCompletionDate)
       .map(ticket => {
         const approver = users.find(u => u.uid === ticket.approvedBy);
+        const subInfo = findSubCategory(ticket.categoryId);
         return {
           ...ticket,
           approverName: approver?.name || 'Unknown',
-          approvalDate: toDate(ticket.actualCompletionDate!)
+          approvalDate: toDate(ticket.actualCompletionDate!),
+          categoryName: subInfo?.parentName || 'N/A',
+          subCategoryName: subInfo?.name || 'N/A'
         };
       })
       .sort((a, b) => b.approvalDate.getTime() - a.approvalDate.getTime())
       .slice(0, 10);
-  }, [tickets, users]);
+  }, [tickets, users, categories]);
 
 
   return (
@@ -50,7 +64,10 @@ export function ApprovalStatusSummary({ tickets, users, categories }: ApprovalSt
                           onClick={() => setSelectedTicket(ticket)}
                         >
                            <div className="w-full">
-                                <p className="font-semibold text-foreground mb-1">{ticket.id}</p>
+                                <p className="font-semibold text-foreground mb-0.5">{ticket.id}</p>
+                                <p className="text-[10px] uppercase font-bold text-primary mb-1">
+                                    {ticket.categoryName} &rsaquo; {ticket.subCategoryName}
+                                </p>
                                 <span>Approved by {ticket.approverName} on {format(ticket.approvalDate, 'MM/dd/yyyy')}</span>
                            </div>
                         </li>
