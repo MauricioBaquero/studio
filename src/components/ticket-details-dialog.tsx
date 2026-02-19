@@ -32,7 +32,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Trash2, X, Upload, Check, FileText, CalendarDays } from 'lucide-react';
+import { Loader2, Trash2, X, Upload, Check, FileText, CalendarDays, Download } from 'lucide-react';
 import { useFirestore, useUser, useStorage, deleteDocumentNonBlocking } from '@/firebase';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -237,7 +237,6 @@ export function TicketDetailsDialog({
             photos: arrayRemove(photo)
         });
 
-        // Update local state
         setCurrentPhotos(currentPhotos.filter(p => p.path !== photo.path));
         
         toast({ title: "Photo Deleted", description: "The photo has been removed." });
@@ -321,6 +320,40 @@ export function TicketDetailsDialog({
   const handlePhotoClick = (photo: Photo) => {
     setSelectedImage(photo);
     setIsImageViewerOpen(true);
+  };
+
+  const handleExport = () => {
+    const subInfo = findSubCategory(ticket.categoryId);
+    const creator = getUserById(ticket.creatorId);
+    const approver = getUserById(ticket.approvedBy || null);
+
+    const headers = ['Field', 'Value'];
+    const rows = [
+      ['Ticket ID', ticket.id],
+      ['Title', ticket.title],
+      ['Status', ticket.status],
+      ['Category', subInfo?.name || 'N/A'],
+      ['Location', ticket.location],
+      ['Description', ticket.description.replace(/,/g, ';').replace(/\n/g, ' ')],
+      ['Resolution', (ticket.resolution || 'N/A').replace(/,/g, ';').replace(/\n/g, ' ')],
+      ['Created By', creator?.name || 'Unknown'],
+      ['Created At', format(toDate(ticket.createdAt), 'PPP p')],
+      ['Work Completed', ticket.submitToReviewDate ? format(toDate(ticket.submitToReviewDate), 'PPP p') : 'N/A'],
+      ['Approved By', approver?.name || 'N/A'],
+      ['Approved At', ticket.actualCompletionDate ? format(toDate(ticket.actualCompletionDate), 'PPP p') : 'N/A'],
+    ];
+
+    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `ticket-${ticket.id}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({ title: "Export Successful", description: `Ticket ${ticket.id} data has been exported.` });
   };
   
   const assignedUsers = assignedToIds.map(id => getUserById(id)).filter(Boolean) as User[];
@@ -657,6 +690,9 @@ export function TicketDetailsDialog({
               )}
             </div>
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={handleExport} className="w-full sm:w-auto">
+                <Download className="mr-2 h-4 w-4" /> Export
+              </Button>
               <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={isSaving}>
                 {readOnly ? "Close" : "Cancel"}
               </Button>
