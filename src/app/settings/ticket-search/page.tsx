@@ -173,6 +173,7 @@ export default function TicketSearchPage() {
           users={users}
           categories={categories}
           readOnly={true}
+          showPrint={true}
         />
       )}
     </div>

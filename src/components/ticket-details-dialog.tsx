@@ -62,6 +62,7 @@ interface TicketDetailsDialogProps {
   users: User[];
   categories: Category[];
   readOnly?: boolean;
+  showPrint?: boolean;
 }
 
 export function TicketDetailsDialog({
@@ -71,6 +72,7 @@ export function TicketDetailsDialog({
   users,
   categories,
   readOnly = false,
+  showPrint = false,
 }: TicketDetailsDialogProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -757,9 +759,11 @@ export function TicketDetailsDialog({
               )}
             </div>
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={handlePrint} className="w-full sm:w-auto">
-                <Printer className="mr-2 h-4 w-4" /> Print
-              </Button>
+              {showPrint && (
+                <Button variant="outline" size="sm" onClick={handlePrint} className="w-full sm:w-auto">
+                  <Printer className="mr-2 h-4 w-4" /> Print
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={isSaving}>
                 {readOnly ? "Close" : "Cancel"}
               </Button>
