@@ -1,3 +1,4 @@
+
 import { addDays, addWeeks, addMonths, setDay, setDate, nextDay, startOfDay, isAfter, isSameDay, toDate as fnsToDate } from "date-fns";
 import type { Timestamp } from 'firebase/firestore';
 import { z } from "zod";
@@ -108,7 +109,6 @@ export const recurringTaskSchema = z.object({
   locationId: z.string(),
   frequency: z.enum(RECURRING_FREQUENCIES),
   lastCompleted: z.array(completionLogSchema).optional(),
-  assignedToId: z.string().optional().nullable(),
   assignedToIds: z.array(z.string()).optional(),
   dayOfWeek: z.number().optional(),
   weekOfMonth: z.number().optional(),

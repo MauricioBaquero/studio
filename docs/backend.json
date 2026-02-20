@@ -167,6 +167,10 @@
         "unableToComplete": {
             "type": "boolean",
             "description": "Indicates if the task was marked as unable to be completed."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Details on how the task was resolved."
         }
       },
       "required": [
@@ -236,9 +240,12 @@
             "required": ["completedAt", "completedBy"]
           }
         },
-        "assignedToId": {
-            "type": "string",
-            "description": "The UID of the user this task is assigned to. Can be empty."
+        "assignedToIds": {
+            "type": "array",
+            "description": "A list of user IDs assigned to the task.",
+            "items": {
+                "type": "string"
+            }
         }
       },
       "required": [

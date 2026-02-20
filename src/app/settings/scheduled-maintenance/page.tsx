@@ -179,17 +179,7 @@ export default function ScheduledMaintenancePage() {
     const counts: { [userId: string]: { name: string; count: number } } = {};
 
     for (const task of tasks) {
-      if (task.assignedToId) {
-        const user = getUserById(task.assignedToId);
-        if (user) {
-          if (!counts[user.uid]) {
-            counts[user.uid] = { name: user.name, count: 0 };
-          }
-          counts[user.uid].count++;
-        }
-      }
-      
-      // Also count V2 assignments
+      // Use multi-assignee array
       if (task.assignedToIds && task.assignedToIds.length > 0) {
         task.assignedToIds.forEach(id => {
           const user = getUserById(id);
@@ -293,10 +283,6 @@ export default function ScheduledMaintenancePage() {
           bVal = b.frequency.toLowerCase();
           break;
         case 'assignedTo':
-          aVal = (getUserById(a.assignedToId || '')?.name || '').toLowerCase();
-          bVal = (getUserById(b.assignedToId || '')?.name || '').toLowerCase();
-          break;
-        case 'assignedToV2':
           const aNames = (a.assignedToIds || [])
             .map(id => getUserById(id)?.name || '')
             .filter(Boolean)
@@ -382,9 +368,6 @@ export default function ScheduledMaintenancePage() {
                   <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('assignedTo')}>
                     <div className="flex items-center">Assigned To {renderSortIcon('assignedTo')}</div>
                   </TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('assignedToV2')}>
-                    <div className="flex items-center">Assigned To v2 {renderSortIcon('assignedToV2')}</div>
-                  </TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -392,8 +375,7 @@ export default function ScheduledMaintenancePage() {
                 {processedTasks?.map(task => {
                   const subCategoryInfo = findSubCategory(task.categoryId);
                   const location = getLocationById(task.locationId);
-                  const assignedUserV1 = task.assignedToId ? getUserById(task.assignedToId) : null;
-                  const assignedUsersV2 = (task.assignedToIds || []).map(id => getUserById(id)).filter(Boolean) as User[];
+                  const assignedUsers = (task.assignedToIds || []).map(id => getUserById(id)).filter(Boolean) as User[];
                   
                   return (
                     <TableRow key={task.id}>
@@ -412,13 +394,10 @@ export default function ScheduledMaintenancePage() {
                           {getFrequencyDetails(task)}
                         </span>
                       </TableCell>
-                       <TableCell>
-                        {assignedUserV1 ? assignedUserV1.name : <span className="text-muted-foreground italic">Unassigned</span>}
-                      </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          {assignedUsersV2.length > 0 ? (
-                            assignedUsersV2.map(u => (
+                          {assignedUsers.length > 0 ? (
+                            assignedUsers.map(u => (
                               <Badge key={u.uid} variant="secondary">{u.name}</Badge>
                             ))
                           ) : (

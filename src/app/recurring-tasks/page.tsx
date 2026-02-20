@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -118,16 +119,12 @@ export default function RecurringTasksPage() {
       const visibleTasks = recurringTasks.filter(task => {
         if (isAdminOrCoordinator) return true; // Admins/Coordinators see all
         
-        // Check Assigned To v1
-        if (task.assignedToId && task.assignedToId === currentUser.uid) return true;
-        
-        // Check Assigned To v2 (multiple) - This handles both visibility and interaction permissions
+        // Check Assigned To list (multi-assignee)
         if (task.assignedToIds && task.assignedToIds.includes(currentUser.uid)) return true;
 
         // Unassigned tasks are visible to everyone
-        const isUnassignedV1 = !task.assignedToId;
-        const isUnassignedV2 = !task.assignedToIds || task.assignedToIds.length === 0;
-        if (isUnassignedV1 && isUnassignedV2) return true;
+        const isUnassigned = !task.assignedToIds || task.assignedToIds.length === 0;
+        if (isUnassigned) return true;
 
         return false;
       });
@@ -207,10 +204,6 @@ export default function RecurringTasksPage() {
             valB = b.title.toLowerCase();
             break;
           case 'assignedTo':
-            valA = (getUserById(a.assignedToId || null)?.name || 'unassigned').toLowerCase();
-            valB = (getUserById(b.assignedToId || null)?.name || 'unassigned').toLowerCase();
-            break;
-          case 'assignedToV2':
             valA = (a.assignedToIds || [])
               .map(id => getUserById(id)?.name || '')
               .filter(Boolean)
@@ -374,8 +367,7 @@ export default function RecurringTasksPage() {
   const renderTaskRow = (task: RecurringTask, isCompleted: boolean, isUpcoming: boolean) => {
     const location = getLocationById(task.locationId);
     const nextDueDate = getNextDueDate(task);
-    const assignedUserV1 = getUserById(task.assignedToId || null);
-    const assignedUsersV2 = (task.assignedToIds || []).map(id => getUserById(id)).filter(Boolean) as User[];
+    const assignedUsers = (task.assignedToIds || []).map(id => getUserById(id)).filter(Boolean) as User[];
     
     // Overdue logic only for Weekly and Monthly
     const isTaskOverdue = (task.frequency !== 'Daily') &&
@@ -433,12 +425,9 @@ export default function RecurringTasksPage() {
           {task.title}
         </TableCell>
         <TableCell>
-          {assignedUserV1 ? assignedUserV1.name : <span className="text-muted-foreground italic text-xs">None</span>}
-        </TableCell>
-        <TableCell>
           <div className="flex flex-wrap gap-1">
-            {assignedUsersV2.length > 0 ? (
-              assignedUsersV2.map(u => (
+            {assignedUsers.length > 0 ? (
+              assignedUsers.map(u => (
                 <Badge key={u.uid} variant="secondary" className="text-[10px] px-1 py-0">{u.name}</Badge>
               ))
             ) : (
@@ -507,9 +496,6 @@ export default function RecurringTasksPage() {
                   <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleMaintenanceSort('assignedTo')}>
                     <div className="flex items-center">Assigned To <SortIcon field="assignedTo" currentSort={maintenanceSort} /></div>
                   </TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleMaintenanceSort('assignedToV2')}>
-                    <div className="flex items-center">Assigned To v2 <SortIcon field="assignedToV2" currentSort={maintenanceSort} /></div>
-                  </TableHead>
                   <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleMaintenanceSort('location')}>
                     <div className="flex items-center">Location <SortIcon field="location" currentSort={maintenanceSort} /></div>
                   </TableHead>
@@ -521,7 +507,7 @@ export default function RecurringTasksPage() {
               <TableBody>
                 {dueTasks.length === 0 && completedTodayTasks.length === 0 && upcomingTasks.length === 0 ? (
                    <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
+                    <TableCell colSpan={5} className="h-24 text-center">
                       No scheduled maintenance tasks found.
                     </TableCell>
                   </TableRow>
@@ -531,7 +517,7 @@ export default function RecurringTasksPage() {
                     
                     {dueTasks.length > 0 && completedTodayTasks.length > 0 && (
                        <TableRow>
-                        <TableCell colSpan={6} className="!p-0">
+                        <TableCell colSpan={5} className="!p-0">
                           <div className="flex items-center gap-4 py-2 px-4">
                             <Separator className="flex-1" />
                             <span className="text-xs text-muted-foreground whitespace-nowrap">Already completed today</span>
@@ -545,7 +531,7 @@ export default function RecurringTasksPage() {
                     
                     {upcomingTasks.length > 0 && (dueTasks.length > 0 || completedTodayTasks.length > 0) && (
                        <TableRow>
-                        <TableCell colSpan={6} className="!p-0">
+                        <TableCell colSpan={5} className="!p-0">
                           <div className="flex items-center gap-4 py-2 px-4">
                             <Separator className="flex-1" />
                             <span className="text-xs text-muted-foreground whitespace-nowrap">Upcoming</span>
