@@ -316,10 +316,13 @@ export function TicketDetailsDialog({
     setIsImageViewerOpen(true);
   };
 
+  const assignedUsers = assignedToIds.map(id => getUserById(id)).filter(Boolean) as User[];
+
   const handlePrint = () => {
     const subInfo = findSubCategory(ticket.categoryId);
     const creatorUser = getUserById(ticket.creatorId);
     const approverUser = getUserById(ticket.approvedBy || null);
+    const assignedUserNames = assignedUsers.map(u => u.name).join(', ') || 'Unassigned';
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
@@ -393,6 +396,10 @@ export function TicketDetailsDialog({
               <span class="label">Work Completed Date</span>
               <p style="margin: 0; font-size: 14px;">${ticket.submitToReviewDate ? format(toDate(ticket.submitToReviewDate), 'PPP') : 'N/A'}</p>
             </div>
+            <div style="grid-column: span 2;">
+              <span class="label">Assigned To</span>
+              <p style="margin: 0; font-size: 14px;">${assignedUserNames}</p>
+            </div>
           </div>
 
           ${ticket.actualCompletionDate && ticket.status === 'Completed' ? `
@@ -427,7 +434,6 @@ export function TicketDetailsDialog({
     printWindow.document.close();
   };
   
-  const assignedUsers = assignedToIds.map(id => getUserById(id)).filter(Boolean) as User[];
   const subCategoryInfo = findSubCategory(ticket.categoryId);
   const creator = getUserById(ticket.creatorId);
   const approver = getUserById(ticket.approvedBy || null);
