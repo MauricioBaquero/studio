@@ -39,9 +39,10 @@ export default function TaskBoardPage() {
   }, [firestore, teamId]);
 
   const usersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'users'));
-  }, [firestore]);
+    if (!firestore || !teamId) return null;
+    // For separation, only show users belonging to this team or global coordinators/admins
+    return query(collection(firestore, 'users'), where('teamId', 'in', [teamId, 'allTeams']));
+  }, [firestore, teamId]);
   
   const categoriesQuery = useMemoFirebase(() => {
     if (!firestore || !teamId || teamId === 'allTeams') return null;
@@ -49,9 +50,10 @@ export default function TaskBoardPage() {
   }, [firestore, teamId]);
 
   const locationsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'locations'));
-  }, [firestore]);
+    if (!firestore || !teamId) return null;
+    if (teamId === 'allTeams') return query(collection(firestore, 'locations'));
+    return query(collection(firestore, 'locations'), where('teamId', '==', teamId));
+  }, [firestore, teamId]);
   
   const { data: tickets, isLoading: isLoadingTickets } = useCollection<Ticket>(ticketsQuery);
   const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
@@ -110,10 +112,9 @@ export default function TaskBoardPage() {
   const isLoading = isLoadingTickets || isLoadingUsers || isLoadingCategories || isLoadingLocations;
 
   const assignableUsers = useMemo(() => {
-    if (!users || !teamId) return [];
-    if (teamId === 'allTeams') return users.filter(u => u.role === 'Admin' || u.role === 'Coordinator' || u.role === 'Staff');
-    return users.filter(u => u.teamId === teamId && (u.role === 'Admin' || u.role === 'Coordinator' || u.role === 'Staff'));
-  }, [users, teamId]);
+    if (!users) return [];
+    return users.filter(u => u.role === 'Admin' || u.role === 'Coordinator' || u.role === 'Staff');
+  }, [users]);
 
   return (
     <div className="flex flex-col h-full gap-6">

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -8,7 +9,7 @@ import { TaskTypeChart } from '@/components/task-type-chart';
 import { TasksByAssigneeChart } from '@/components/tasks-by-assignee-chart';
 import { OpenTasksByLocationChart } from '@/components/open-tasks-by-location-chart';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { RecurringTasksSummaryChart } from '@/components/recurring-tasks-summary-chart';
 import { ApprovalStatusSummary } from '@/components/approval-status-summary';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -60,9 +61,9 @@ export default function DashboardPage() {
   ];
 
   const usersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, `users`));
-  }, [firestore]);
+    if (!firestore || !teamId) return null;
+    return query(collection(firestore, 'users'), where('teamId', 'in', [teamId, 'allTeams']));
+  }, [firestore, teamId]);
   const { data: users, isLoading: isLoadingUsers } =
     useCollection<User>(usersQuery);
 
@@ -81,24 +82,24 @@ export default function DashboardPage() {
     useCollection<RecurringTask>(recurringTasksQuery);
   
   const locationsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, `locations`)) : null),
-    [firestore]
+    () => {
+        if (!firestore || !teamId) return null;
+        if (teamId === 'allTeams') return query(collection(firestore, 'locations'));
+        return query(collection(firestore, 'locations'), where('teamId', '==', teamId));
+    },
+    [firestore, teamId]
     );
   const { data: locations, isLoading: isLoadingLocations } =
     useCollection<Location>(locationsQuery);
 
   const teamUsers = useMemo(() => {
-    if (!users || !teamId) return [];
-    if (teamId === 'allTeams') {
-      return users;
-    }
-    return users.filter(u => u.teamId === teamId || u.role === 'Admin' || u.role === 'Coordinator');
-  }, [users, teamId]);
+    if (!users) return [];
+    return users; // usersQuery is already filtered
+  }, [users]);
 
   const filteredTickets = useMemo(() => {
     if (!tickets) return [];
     return tickets.filter(ticket => {
-      // Use actual completion date for completed tasks, requested date for others
       const date = ticket.actualCompletionDate 
         ? toDate(ticket.actualCompletionDate) 
         : toDate(ticket.requestedCompletionDate);

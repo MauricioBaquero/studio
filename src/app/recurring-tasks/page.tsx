@@ -28,6 +28,7 @@ import {
   query,
   doc,
   arrayUnion,
+  where,
 } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -89,18 +90,22 @@ export default function RecurringTasksPage() {
     useCollection<Category>(categoriesQuery);
 
   const usersQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'users')) : null),
-    [firestore]
+    () => {
+        if (!firestore || !teamId) return null;
+        return query(collection(firestore, 'users'), where('teamId', 'in', [teamId, 'allTeams']));
+    },
+    [firestore, teamId]
   );
   const { data: users, isLoading: isLoadingUsers } =
     useCollection<User>(usersQuery);
 
   const locationsQuery = useMemoFirebase(
     () => {
-        if (!firestore) return null;
-        return query(collection(firestore, `locations`));
+        if (!firestore || !teamId) return null;
+        if (teamId === 'allTeams') return query(collection(firestore, 'locations'));
+        return query(collection(firestore, `locations`), where('teamId', '==', teamId));
     },
-    [firestore]
+    [firestore, teamId]
   );
   const { data: locations, isLoading: isLoadingLocations } =
     useCollection<Location>(locationsQuery);
@@ -467,6 +472,15 @@ export default function RecurringTasksPage() {
     );
   }
   
+  if (teamId === 'allTeams') {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-center p-8 border-2 border-dashed rounded-lg">
+        <h2 className="text-xl font-semibold mb-2">Please select a team</h2>
+        <p className="text-muted-foreground mb-4">You must select a specific team using the switcher in the sidebar to view recurring tasks.</p>
+      </div>
+    );
+  }
+
   const parentCategories = categories || [];
 
 

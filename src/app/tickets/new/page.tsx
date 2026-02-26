@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useMemo, useEffect } from 'react';
@@ -36,10 +35,11 @@ export default function NewTicketPage() {
 
   const locationsQuery = useMemoFirebase(
     () => {
-        if (!firestore) return null;
-        return query(collection(firestore, `locations`));
+        if (!firestore || !teamId) return null;
+        if (teamId === 'allTeams') return query(collection(firestore, 'locations'));
+        return query(collection(firestore, `locations`), where('teamId', '==', teamId));
     },
-    [firestore]
+    [firestore, teamId]
   );
   const { data: locations, isLoading: isLoadingLocations } =
     useCollection<Location>(locationsQuery);
@@ -59,6 +59,15 @@ export default function NewTicketPage() {
   
   if (isUserLoading || (user && user.role === 'Viewer')) {
     return <p>Loading or unauthorized...</p>
+  }
+
+  if (teamId === 'allTeams') {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-center p-8 border-2 border-dashed rounded-lg">
+        <h2 className="text-xl font-semibold mb-2">Please select a team</h2>
+        <p className="text-muted-foreground mb-4">You must select a specific team using the switcher in the sidebar to create a ticket.</p>
+      </div>
+    );
   }
 
   return (

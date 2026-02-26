@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -60,14 +61,15 @@ export default function LocationsPage() {
 
   const locationsQuery = useMemoFirebase(() => {
     if (!firestore || !teamId) return null;
-    if (currentUser?.role === 'Admin') {
-      return query(collection(firestore, `locations`));
+    // Admins should also only see locations for their active team to ensure separation
+    if (teamId === 'allTeams') {
+        return query(collection(firestore, `locations`));
     }
     return query(
       collection(firestore, `locations`),
       where('teamId', '==', teamId)
     );
-  }, [firestore, teamId, currentUser?.role]);
+  }, [firestore, teamId]);
 
   const { data: locations, isLoading } = useCollection<Location>(locationsQuery);
 
@@ -119,6 +121,17 @@ export default function LocationsPage() {
     );
   }
 
+  if (teamId === 'allTeams') {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Location Management</CardTitle>
+          <CardDescription>Please select a specific team using the switcher to manage locations.</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
   return (
     <>
       <Card>
@@ -126,10 +139,10 @@ export default function LocationsPage() {
           <div className="space-y-2">
             <CardTitle>Location Management</CardTitle>
             <CardDescription>
-              Add, edit, or remove facility locations.
+              Add, edit, or remove facility locations for your team.
               <ul className="list-disc pl-5 mt-2 space-y-1">
-                <li><strong>Field Site Location:</strong> A specific parking area, lot, or zone within Fort Lauderdale where parking infrastructure exists.</li>
-                <li><strong>Off-Site Location:</strong> A location outside the primary service area or a parking area without active monitoring infrastructure.</li>
+                <li><strong>Field Site Location:</strong> A specific area or lot where parking infrastructure exists.</li>
+                <li><strong>Off-Site Location:</strong> A location outside the primary service area.</li>
               </ul>
             </CardDescription>
           </div>
@@ -207,5 +220,3 @@ export default function LocationsPage() {
     </>
   );
 }
-
-    
