@@ -7,6 +7,7 @@ import {
   useFirestore,
   useMemoFirebase,
   deleteDocumentNonBlocking,
+  updateDocumentNonBlocking,
   useUser,
 } from '@/firebase';
 import { collection, query, doc } from 'firebase/firestore';
@@ -27,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, AlertTriangle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +46,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 
@@ -59,6 +68,7 @@ export default function LocationsPage() {
   const [deletingLocationId, setDeletingLocationId] = useState<string | null>(
     null
   );
+  const [replacementLocationId, setReplacementLocationId] = useState<string>('');
 
   const locationsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -113,22 +123,61 @@ export default function LocationsPage() {
 
   const confirmDelete = (locationId: string) => {
     setDeletingLocationId(locationId);
+    setReplacementLocationId('');
     setIsAlertOpen(true);
   };
 
   const handleDelete = () => {
     if (!firestore || !deletingLocationId) return;
+    
+    const count = ticketCounts[deletingLocationId] || 0;
+    
+    // If usage exists, we must have a replacement selected
+    if (count > 0 && !replacementLocationId) {
+        toast({
+            title: "Replacement Required",
+            description: "Please select a replacement location for existing tickets.",
+            variant: "destructive"
+        });
+        return;
+    }
+
+    // 1. Re-map tickets if needed
+    if (count > 0 && replacementLocationId && teamId && teamId !== 'allTeams') {
+        const replacementLoc = locations?.find(l => l.id === replacementLocationId);
+        const ticketsToMove = tickets?.filter(t => t.locationId === deletingLocationId) || [];
+        
+        ticketsToMove.forEach(ticket => {
+            const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticket.id);
+            updateDocumentNonBlocking(ticketRef, {
+                locationId: replacementLocationId,
+                location: replacementLoc?.name || 'Updated Location'
+            });
+        });
+    }
+
+    // 2. Delete the location
     const locationRef = doc(firestore, `locations`, deletingLocationId);
     deleteDocumentNonBlocking(locationRef);
+    
     toast({
-      title: 'Location Deleted',
-      description: 'The location has been successfully deleted.',
+      title: 'Location Removed',
+      description: count > 0 
+        ? `Location deleted and ${count} tickets were re-mapped.`
+        : 'The location has been successfully deleted.',
     });
+    
     setIsAlertOpen(false);
     setDeletingLocationId(null);
+    setReplacementLocationId('');
   };
 
   const isLoading = isLoadingLocations || isLoadingTickets;
+
+  const usageCount = deletingLocationId ? ticketCounts[deletingLocationId] || 0 : 0;
+  const otherLocations = useMemo(() => {
+    return sortedLocations.filter(l => l.id !== deletingLocationId);
+  }, [sortedLocations, deletingLocationId]);
 
   if (isLoading) {
     return (
@@ -228,23 +277,63 @@ export default function LocationsPage() {
           </Table>
         </CardContent>
       </Card>
+      
       <LocationForm
         open={isFormOpen}
         onOpenChange={handleCloseForm}
         location={editingLocation}
       />
-      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-        <AlertDialogContent>
+
+      <AlertDialog open={isAlertOpen} onOpenChange={(open) => {
+          if (!open) {
+              setDeletingLocationId(null);
+              setReplacementLocationId('');
+          }
+          setIsAlertOpen(open);
+      }}>
+        <AlertDialogContent className="sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              location.
+            <AlertDialogDescription className="space-y-4">
+              <span>This action cannot be undone. This will permanently delete the location.</span>
+              
+              {usageCount > 0 && (
+                <div className="bg-destructive/10 p-4 rounded-md border border-destructive/20 text-destructive">
+                    <div className="flex items-center gap-2 font-bold mb-2">
+                        <AlertTriangle className="h-4 w-4" />
+                        Usage Detected
+                    </div>
+                    <p className="text-sm">
+                        This location is tied to <strong>{usageCount}</strong> active tickets for the {currentTeam?.name} team. 
+                        You must select a replacement location to move these tickets to before deleting.
+                    </p>
+                    
+                    <div className="mt-4 space-y-2 text-foreground">
+                        <Label htmlFor="replacement-location" className="text-xs font-bold uppercase">Replacement Location</Label>
+                        <Select value={replacementLocationId} onValueChange={setReplacementLocationId}>
+                            <SelectTrigger id="replacement-location" className="bg-background">
+                                <SelectValue placeholder="Select a location..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {otherLocations.map(loc => (
+                                    <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            <AlertDialogAction 
+                onClick={handleDelete}
+                disabled={usageCount > 0 && !replacementLocationId}
+                className={usageCount > 0 ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+            >
+              {usageCount > 0 ? "Re-map & Delete" : "Delete"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
