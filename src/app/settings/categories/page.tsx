@@ -9,7 +9,7 @@ import {
   useUser,
 } from '@/firebase';
 import { collection, query, doc } from 'firebase/firestore';
-import { Category, Team } from '@/lib/data';
+import { Category, Team, Ticket } from '@/lib/data';
 import {
   Card,
   CardContent,
@@ -58,6 +58,12 @@ export default function CategoriesPage() {
   );
   const { data: categories, isLoading: isLoadingCategories } = useCollection<Category>(categoriesQuery);
 
+  const ticketsQuery = useMemoFirebase(
+    () => (firestore && teamId && teamId !== 'allTeams' ? query(collection(firestore, `teams/${teamId}/tasks`)) : null),
+    [firestore, teamId]
+  );
+  const { data: tickets, isLoading: isLoadingTickets } = useCollection<Ticket>(ticketsQuery);
+
   const teamsQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, 'teams')) : null),
     [firestore]
@@ -74,6 +80,18 @@ export default function CategoriesPage() {
     () => categories || [],
     [categories]
   );
+
+  const ticketCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    if (!tickets || !categories) return counts;
+
+    categories.forEach(cat => {
+      const subIds = cat.subcategories.map(s => s.id);
+      counts[cat.id] = tickets.filter(t => subIds.includes(t.categoryId)).length;
+    });
+
+    return counts;
+  }, [tickets, categories]);
 
   const handleOpenForm = (category: Category | null) => {
     setEditingCategory(category);
@@ -102,7 +120,7 @@ export default function CategoriesPage() {
     setDeletingCategoryId(null);
   };
   
-  const isLoading = isLoadingCategories || isLoadingTeams;
+  const isLoading = isLoadingCategories || isLoadingTeams || isLoadingTickets;
 
   if (isLoading) {
     return (
@@ -142,6 +160,7 @@ export default function CategoriesPage() {
           <Accordion type="multiple" className="w-full">
             {parentCategories.map(pCat => {
               const color = pCat.color || 'gray';
+              const count = ticketCounts[pCat.id] || 0;
               return (
                 <AccordionItem value={pCat.id} key={pCat.id}>
                   <div className="flex items-center group">
@@ -154,6 +173,9 @@ export default function CategoriesPage() {
                           )}
                         ></span>
                         <span>{pCat.name}</span>
+                        <Badge variant="secondary" className="text-[10px] py-0 ml-2">
+                          {count} {count === 1 ? 'Ticket' : 'Tickets'}
+                        </Badge>
                       </div>
                     </AccordionTrigger>
                     <div className="flex items-center gap-2 pr-4 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -177,14 +199,21 @@ export default function CategoriesPage() {
                   </div>
                   <AccordionContent>
                     <ul className="space-y-2 pl-8 pt-2">
-                      {pCat.subcategories?.map(sCat => (
-                        <li
-                          key={sCat.id}
-                          className="group flex items-center justify-between p-2 rounded-md"
-                        >
-                          <span>{sCat.name}</span>
-                        </li>
-                      ))}
+                      {pCat.subcategories?.map(sCat => {
+                        const subCount = tickets?.filter(t => t.categoryId === sCat.id).length || 0;
+                        return (
+                          <li
+                            key={sCat.id}
+                            className="group flex items-center justify-between p-2 rounded-md hover:bg-muted/50"
+                          >
+                            <span className="text-sm">{sCat.name}</span>
+                            <div className="flex items-center gap-3">
+                               <span className="text-[10px] text-muted-foreground bg-muted px-1.5 rounded-sm font-mono">ID: {sCat.id}</span>
+                               <span className="text-xs text-muted-foreground font-medium">{subCount} {subCount === 1 ? 'ticket' : 'tickets'}</span>
+                            </div>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </AccordionContent>
                 </AccordionItem>
