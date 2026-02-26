@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -9,16 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, AlertCircle, Filter, X, User as UserIcon } from 'lucide-react';
+import { Edit, AlertCircle, Search, X, User as UserIcon } from 'lucide-react';
 import { EditTicketDialog } from './edit-dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 export default function TicketManagementPage() {
   const firestore = useFirestore();
@@ -26,9 +18,8 @@ export default function TicketManagementPage() {
   const teamId = currentUser?.teamId;
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
 
-  // Filter state
-  const [locationFilter, setLocationFilter] = useState<string>('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  // Search state
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   const ticketsQuery = useMemoFirebase(() => {
     if (!firestore || !teamId || teamId === 'allTeams') return null;
@@ -73,18 +64,26 @@ export default function TicketManagementPage() {
 
   const filteredTickets = useMemo(() => {
     if (!tickets) return [];
-    return tickets.filter(ticket => {
-      const matchesLocation = locationFilter === 'all' || ticket.locationId === locationFilter;
-      
-      let matchesCategory = true;
-      if (categoryFilter !== 'all') {
-        const subInfo = findSubCategory(ticket.categoryId);
-        matchesCategory = subInfo?.parentId === categoryFilter;
-      }
+    
+    const search = searchTerm.toLowerCase().trim();
+    if (!search) return tickets;
 
-      return matchesLocation && matchesCategory;
+    return tickets.filter(ticket => {
+      const subInfo = findSubCategory(ticket.categoryId);
+      
+      const searchFields = [
+        ticket.id,
+        ticket.description,
+        ticket.location,
+        ticket.status,
+        ticket.resolution || '',
+        subInfo?.name || '',
+        subInfo?.parentName || '',
+      ].map(f => f.toLowerCase());
+
+      return searchFields.some(field => field.includes(search));
     });
-  }, [tickets, locationFilter, categoryFilter, categories]);
+  }, [tickets, searchTerm, categories]);
 
   if (teamId === 'allTeams') {
     return (
@@ -100,9 +99,8 @@ export default function TicketManagementPage() {
     );
   }
 
-  const clearFilters = () => {
-    setLocationFilter('all');
-    setCategoryFilter('all');
+  const clearSearch = () => {
+    setSearchTerm('');
   };
 
   return (
@@ -119,52 +117,35 @@ export default function TicketManagementPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row items-end gap-4 mb-6 bg-muted/30 p-4 rounded-lg border">
-            <div className="grid gap-2 w-full md:w-auto flex-1">
-              <Label htmlFor="location-filter" className="text-xs font-bold uppercase">Filter by Location</Label>
-              <Select value={locationFilter} onValueChange={setLocationFilter}>
-                <SelectTrigger id="location-filter" className="bg-card">
-                  <SelectValue placeholder="All Locations" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Locations</SelectItem>
-                  {locations?.sort((a,b) => a.name.localeCompare(b.name)).map(loc => (
-                    <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="flex flex-col md:flex-row items-center gap-4 mb-6 bg-muted/30 p-4 rounded-lg border">
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by ID, Description, Location, Staff, or Category..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-card"
+              />
+              {searchTerm && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground"
+                  onClick={clearSearch}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
-
-            <div className="grid gap-2 w-full md:w-auto flex-1">
-              <Label htmlFor="category-filter" className="text-xs font-bold uppercase">Filter by Category</Label>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger id="category-filter" className="bg-card">
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories?.sort((a,b) => a.name.localeCompare(b.name)).map(cat => (
-                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {(locationFilter !== 'all' || categoryFilter !== 'all') && (
-              <Button variant="ghost" size="sm" onClick={clearFilters} className="h-10 text-muted-foreground">
-                <X className="h-4 w-4 mr-2" />
-                Clear
-              </Button>
-            )}
           </div>
 
           {isLoadingTickets ? (
             <p className="text-center py-8">Loading tickets...</p>
           ) : filteredTickets.length === 0 ? (
             <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/10">
-              <Filter className="h-10 w-10 mx-auto mb-4 text-muted-foreground opacity-20" />
-              <p className="text-muted-foreground">No tickets match the selected filters.</p>
-              <Button variant="link" onClick={clearFilters}>Clear all filters</Button>
+              <Search className="h-10 w-10 mx-auto mb-4 text-muted-foreground opacity-20" />
+              <p className="text-muted-foreground">No tickets match your search.</p>
+              {searchTerm && <Button variant="link" onClick={clearSearch}>Clear search</Button>}
             </div>
           ) : (
             <div className="rounded-md border">
