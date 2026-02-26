@@ -9,7 +9,7 @@ import {
   deleteDocumentNonBlocking,
   useUser,
 } from '@/firebase';
-import { collection, query, doc, where } from 'firebase/firestore';
+import { collection, query, doc } from 'firebase/firestore';
 import { Location } from '@/lib/data';
 import {
   Card,
@@ -50,7 +50,6 @@ import { useToast } from '@/hooks/use-toast';
 export default function LocationsPage() {
   const firestore = useFirestore();
   const { user: currentUser } = useUser();
-  const teamId = currentUser?.teamId;
   const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
@@ -60,16 +59,10 @@ export default function LocationsPage() {
   );
 
   const locationsQuery = useMemoFirebase(() => {
-    if (!firestore || !teamId) return null;
-    // Admins should also only see locations for their active team to ensure separation
-    if (teamId === 'allTeams') {
-        return query(collection(firestore, `locations`));
-    }
-    return query(
-      collection(firestore, `locations`),
-      where('teamId', '==', teamId)
-    );
-  }, [firestore, teamId]);
+    if (!firestore) return null;
+    // Locations are shared globally across all teams
+    return query(collection(firestore, `locations`));
+  }, [firestore]);
 
   const { data: locations, isLoading } = useCollection<Location>(locationsQuery);
 
@@ -121,17 +114,6 @@ export default function LocationsPage() {
     );
   }
 
-  if (teamId === 'allTeams') {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Location Management</CardTitle>
-          <CardDescription>Please select a specific team using the switcher to manage locations.</CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-
   return (
     <>
       <Card>
@@ -139,7 +121,7 @@ export default function LocationsPage() {
           <div className="space-y-2">
             <CardTitle>Location Management</CardTitle>
             <CardDescription>
-              Add, edit, or remove facility locations for your team.
+              Add, edit, or remove facility locations shared across all teams.
               <ul className="list-disc pl-5 mt-2 space-y-1">
                 <li><strong>Field Site Location:</strong> A specific area or lot where parking infrastructure exists.</li>
                 <li><strong>Off-Site Location:</strong> A location outside the primary service area.</li>

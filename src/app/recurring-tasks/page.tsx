@@ -101,11 +101,11 @@ export default function RecurringTasksPage() {
 
   const locationsQuery = useMemoFirebase(
     () => {
-        if (!firestore || !teamId) return null;
-        if (teamId === 'allTeams') return query(collection(firestore, 'locations'));
-        return query(collection(firestore, `locations`), where('teamId', '==', teamId));
+        if (!firestore) return null;
+        // Locations are shared across all teams
+        return query(collection(firestore, 'locations'));
     },
-    [firestore, teamId]
+    [firestore]
   );
   const { data: locations, isLoading: isLoadingLocations } =
     useCollection<Location>(locationsQuery);

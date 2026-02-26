@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -25,7 +26,6 @@ import { Location } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import {
   useFirestore,
-  addDocumentNonBlocking,
   updateDocumentNonBlocking,
   useUser,
   setDocumentNonBlocking,
@@ -62,7 +62,6 @@ export function LocationForm({
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user: currentUser } = useUser();
-  const teamId = currentUser?.teamId;
   const isEditMode = !!location;
 
   const form = useForm<LocationFormValues>({
@@ -88,7 +87,7 @@ export function LocationForm({
   }, [location, form]);
 
   const onSubmit = (data: LocationFormValues) => {
-    if (!firestore || !teamId) return;
+    if (!firestore) return;
 
     if (isEditMode && location) {
       const locationRef = doc(firestore, `locations`, location.id);
@@ -96,8 +95,9 @@ export function LocationForm({
     } else {
       const locationsCollection = collection(firestore, `locations`);
       const newDocRef = doc(locationsCollection);
-      const docWithTeam = { ...data, teamId: teamId, id: newDocRef.id };
-      setDocumentNonBlocking(newDocRef, docWithTeam, {});
+      // Locations are shared across all teams, so we use a 'global' teamId
+      const newLocationData = { ...data, teamId: 'global', id: newDocRef.id };
+      setDocumentNonBlocking(newDocRef, newLocationData, {});
     }
 
     toast({
@@ -186,5 +186,3 @@ export function LocationForm({
     </Dialog>
   );
 }
-
-    

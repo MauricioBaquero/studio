@@ -50,10 +50,10 @@ export default function TaskBoardPage() {
   }, [firestore, teamId]);
 
   const locationsQuery = useMemoFirebase(() => {
-    if (!firestore || !teamId) return null;
-    if (teamId === 'allTeams') return query(collection(firestore, 'locations'));
-    return query(collection(firestore, 'locations'), where('teamId', '==', teamId));
-  }, [firestore, teamId]);
+    if (!firestore) return null;
+    // Locations are shared across all teams
+    return query(collection(firestore, 'locations'));
+  }, [firestore]);
   
   const { data: tickets, isLoading: isLoadingTickets } = useCollection<Ticket>(ticketsQuery);
   const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
