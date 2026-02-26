@@ -1,14 +1,15 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
-import { Ticket, Location, Category } from '@/lib/data';
+import { Ticket, Location, Category, User } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, AlertCircle, Filter, X } from 'lucide-react';
+import { Edit, AlertCircle, Filter, X, User as UserIcon } from 'lucide-react';
 import { EditTicketDialog } from './edit-dialog';
 import {
   Select,
@@ -48,6 +49,12 @@ export default function TicketManagementPage() {
   }, [firestore, teamId]);
   const { data: categories } = useCollection<Category>(categoriesQuery);
 
+  const usersQuery = useMemoFirebase(() => {
+    if (!firestore || !teamId) return null;
+    return query(collection(firestore, 'users'));
+  }, [firestore, teamId]);
+  const { data: users } = useCollection<User>(usersQuery);
+
   const findSubCategory = (subcategoryId: string) => {
     if (!categories) return null;
     for (const parent of categories) {
@@ -72,7 +79,6 @@ export default function TicketManagementPage() {
       let matchesCategory = true;
       if (categoryFilter !== 'all') {
         const subInfo = findSubCategory(ticket.categoryId);
-        // Match against the Parent Category ID
         matchesCategory = subInfo?.parentId === categoryFilter;
       }
 
@@ -105,9 +111,9 @@ export default function TicketManagementPage() {
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <CardTitle>Ticket Re-mapping</CardTitle>
+              <CardTitle>Ticket Administration</CardTitle>
               <CardDescription>
-                Manually update ticket locations and categories. Use this tool to fix historical data or re-map tickets before deleting duplicate categories or locations.
+                Full administrative control over all tickets. Use this tool to modify any detail, re-assign staff, or re-map historical data.
               </CardDescription>
             </div>
           </div>
@@ -166,6 +172,7 @@ export default function TicketManagementPage() {
                 <TableHeader>
                   <TableRow className="bg-muted/50">
                     <TableHead>Ticket ID</TableHead>
+                    <TableHead>Status & Staff</TableHead>
                     <TableHead>Category Reference</TableHead>
                     <TableHead>Location Details</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -174,9 +181,22 @@ export default function TicketManagementPage() {
                 <TableBody>
                   {filteredTickets.map(ticket => {
                     const subInfo = findSubCategory(ticket.categoryId);
+                    const assignees = (ticket.assignedToIds || [])
+                      .map(uid => users?.find(u => u.uid === uid)?.name)
+                      .filter(Boolean);
+
                     return (
                       <TableRow key={ticket.id}>
                         <TableCell className="font-mono text-xs font-bold">{ticket.id}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <Badge variant="outline" className="w-fit text-[10px] uppercase font-bold">{ticket.status}</Badge>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <UserIcon className="h-3 w-3" />
+                              {assignees.length > 0 ? assignees.join(', ') : 'Unassigned'}
+                            </div>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1">
                             {subInfo ? (
@@ -198,7 +218,7 @@ export default function TicketManagementPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="outline" size="sm" onClick={() => setEditingTicket(ticket)}>
-                            <Edit className="h-3.5 w-3.5 mr-2" /> Re-map
+                            <Edit className="h-3.5 w-3.5 mr-2" /> Edit Details
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -211,13 +231,14 @@ export default function TicketManagementPage() {
         </CardContent>
       </Card>
 
-      {editingTicket && categories && locations && (
+      {editingTicket && categories && locations && users && (
         <EditTicketDialog
           open={!!editingTicket}
           onOpenChange={(open) => !open && setEditingTicket(null)}
           ticket={editingTicket}
           categories={categories}
           locations={locations}
+          users={users}
         />
       )}
     </div>
