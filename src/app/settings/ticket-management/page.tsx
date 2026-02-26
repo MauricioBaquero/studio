@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -179,14 +178,17 @@ export default function TicketManagementPage() {
                       <TableRow key={ticket.id}>
                         <TableCell className="font-mono text-xs font-bold">{ticket.id}</TableCell>
                         <TableCell>
-                          {subInfo ? (
-                            <div className="flex flex-col gap-1">
-                              <Badge color={subInfo.color as any} variant="outline" className="w-fit text-[10px] py-0">{subInfo.parentName}</Badge>
-                              <span className="text-sm">{subInfo.name}</span>
-                            </div>
-                          ) : (
-                            <span className="text-destructive font-medium text-xs">Reference Missing</span>
-                          )}
+                          <div className="flex flex-col gap-1">
+                            {subInfo ? (
+                              <>
+                                <Badge color={subInfo.color as any} variant="outline" className="w-fit text-[10px] py-0">{subInfo.parentName}</Badge>
+                                <span className="text-sm">{subInfo.name}</span>
+                              </>
+                            ) : (
+                              <span className="text-destructive font-medium text-xs">Reference Missing</span>
+                            )}
+                            <span className="text-[10px] font-mono text-muted-foreground bg-muted w-fit px-1 rounded">ID: {ticket.categoryId}</span>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1">
