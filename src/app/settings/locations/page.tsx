@@ -145,7 +145,12 @@ export default function LocationsPage() {
             <TableBody>
               {sortedLocations?.map(location => (
                 <TableRow key={location.id}>
-                  <TableCell className="font-medium">{location.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex flex-col gap-1">
+                      <span>{location.name}</span>
+                      <span className="text-[10px] font-mono text-muted-foreground bg-muted w-fit px-1 rounded">ID: {location.id}</span>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     {location.numberOfFloors > 0
                       ? location.numberOfFloors
