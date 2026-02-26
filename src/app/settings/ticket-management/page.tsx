@@ -66,7 +66,7 @@ export default function TicketManagementPage() {
     if (!tickets) return [];
     
     const search = searchTerm.toLowerCase().trim();
-    if (!search) return tickets;
+    if (!search) return [];
 
     return tickets.filter(ticket => {
       const subInfo = findSubCategory(ticket.categoryId);
@@ -102,6 +102,8 @@ export default function TicketManagementPage() {
   const clearSearch = () => {
     setSearchTerm('');
   };
+
+  const hasSearch = searchTerm.trim() !== '';
 
   return (
     <div className="space-y-6">
@@ -141,11 +143,16 @@ export default function TicketManagementPage() {
 
           {isLoadingTickets ? (
             <p className="text-center py-8">Loading tickets...</p>
+          ) : !hasSearch ? (
+            <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/10">
+              <Search className="h-10 w-10 mx-auto mb-4 text-muted-foreground opacity-20" />
+              <p className="text-muted-foreground">Enter a search term to find and manage tickets.</p>
+            </div>
           ) : filteredTickets.length === 0 ? (
             <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/10">
               <Search className="h-10 w-10 mx-auto mb-4 text-muted-foreground opacity-20" />
               <p className="text-muted-foreground">No tickets match your search.</p>
-              {searchTerm && <Button variant="link" onClick={clearSearch}>Clear search</Button>}
+              <Button variant="link" onClick={clearSearch}>Clear search</Button>
             </div>
           ) : (
             <div className="rounded-md border">
