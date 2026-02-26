@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -32,7 +32,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, setDocumentNonBlocking, useStorage, useUser } from "@/firebase";
-import { doc, serverTimestamp, collection } from "firebase/firestore";
+import { doc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import Image from "next/image";
@@ -96,6 +96,27 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
       additionalDetails: "",
     },
   });
+
+  // Safeguard: If parentCategories change (e.g. team switch) or data is updated,
+  // verify that current selections are still valid.
+  useEffect(() => {
+    const currentCatId = form.getValues("categoryId");
+    const currentSubCatId = form.getValues("subcategoryId");
+
+    if (currentCatId) {
+      const parentExists = parentCategories.find(p => p.id === currentCatId);
+      if (!parentExists) {
+        form.setValue("categoryId", "");
+        form.setValue("subcategoryId", "");
+        setSelectedParent(null);
+      } else if (currentSubCatId) {
+        const subExists = parentExists.subcategories.find(s => s.id === currentSubCatId);
+        if (!subExists) {
+          form.setValue("subcategoryId", "");
+        }
+      }
+    }
+  }, [parentCategories, form]);
 
   const subcategoryOptions = useMemo(() => {
     if (!selectedParent) return [];
@@ -162,7 +183,7 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
     if (!parentCat || !subCat) {
         toast({
             title: "Error",
-            description: "Invalid category selected.",
+            description: "Invalid category selected. The list may have been updated.",
             variant: "destructive"
         });
         setIsSubmitting(false);
@@ -273,7 +294,7 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
                       setSelectedParent(value);
                       form.setValue("subcategoryId", ""); // Reset subcategory on parent change
                     }}
-                    defaultValue={field.value}
+                    value={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -442,7 +463,7 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
                         setSelectedLocationId(value);
                         form.setValue('floor', '');
                     }}
-                    defaultValue={field.value}
+                    value={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -469,7 +490,7 @@ export function TicketForm({ parentCategories, locations, minimumNoticeDays }: T
                         render={({ field }) => (
                             <FormItem>
                             <FormLabel>Floor (optional)</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select a floor" />
