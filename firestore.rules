@@ -1,109 +1,50 @@
 
-/**
- * @file Firestore Security Rules
- * @description This ruleset authenticates the user and allows full access.
- *
- * Core Philosophy:
- * This ruleset authenticates the user and allows full access
- *
- * Data Structure:
- * - /teams/{teamId}: Stores team information.
- * - /users/{userId}: Stores user profiles.
- * - /locations/{locationId}: Stores location information.
- * - /teams/{teamId}/tasks/{taskId}: Stores tasks for each team.
- * - /teams/{teamId}/recurringTasks/{recurringTaskId}: Stores recurring tasks for each team.
- * - /teams/{teamId}/categories/{categoryId}: Stores task categories for each team.
- * - /teams/{teamId}/settings/appSettings: Stores team settings.
- *
- * Key Security Decisions:
- * - User authentication is required for all operations.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * @description Allows access to teams collection for authenticated users.
-     * @path /teams/{teamId}
-     * @allow (get) User is authenticated.
-     * @deny (create) User is not authenticated.
-     * @principle Allows authenticated users to read and write to the teams collection.
-     */
     match /teams/{teamId} {
       allow get, list: if isSignedIn();
       allow create, update, delete: if isSignedIn();
     }
 
-    /**
-     * @description Allows access to users collection for authenticated users.
-     * @path /users/{userId}
-     * @allow (get) User is authenticated.
-     * @deny (create) User is not authenticated.
-     * @principle Allows authenticated users to read and write to the users collection.
-     */
     match /users/{userId} {
       allow get, list: if isSignedIn();
       allow create, update, delete: if isSignedIn();
     }
     
-    /**
-     * @description Allows access to locations collection for authenticated users.
-     * @path /locations/{locationId}
-     * @allow (get) User is authenticated.
-     * @deny (create) User is not authenticated.
-     * @principle Allows authenticated users to read and write to the locations collection.
-     */
     match /locations/{locationId} {
       allow get, list: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
+      // Ensure only locations with the 'global' teamId can be created/updated
+      // This blocks old versions of the app that might try to create team-specific locations
+      allow create, update: if isSignedIn() && request.resource.data.teamId == 'global';
+      allow delete: if isSignedIn();
     }
 
-    /**
-     * @description Allows access to tasks collection for authenticated users.
-     * @path /teams/{teamId}/tasks/{taskId}
-     * @allow (get) User is authenticated.
-     * @deny (create) User is not authenticated.
-     * @principle Allows authenticated users to read and write to the tasks collection.
-     */
     match /teams/{teamId}/tasks/{taskId} {
       allow get, list: if isSignedIn();
       allow create, update, delete: if isSignedIn();
     }
 
-    /**
-     * @description Allows access to recurringTasks collection for authenticated users.
-     * @path /teams/{teamId}/recurringTasks/{recurringTaskId}
-     * @allow (get) User is authenticated.
-     * @deny (create) User is not authenticated.
-     * @principle Allows authenticated users to read and write to the recurringTasks collection.
-     */
     match /teams/{teamId}/recurringTasks/{recurringTaskId} {
       allow get, list: if isSignedIn();
       allow create, update, delete: if isSignedIn();
     }
 
-    /**
-     * @description Allows access to categories collection for authenticated users.
-     * @path /teams/{teamId}/categories/{categoryId}
-     * @allow (get) User is authenticated.
-     * @deny (create) User is not authenticated.
-     * @principle Allows authenticated users to read and write to the categories collection.
-     */
     match /teams/{teamId}/categories/{categoryId} {
       allow get, list: if isSignedIn();
       allow create, update, delete: if isSignedIn();
     }
 
-    /**
-     * @description Allows access to appSettings document for authenticated users.
-     * @path /teams/{teamId}/settings/appSettings
-     * @allow (get) User is authenticated.
-     * @deny (create) User is not authenticated.
-     * @principle Allows authenticated users to read and write to the appSettings document.
-     */
     match /teams/{teamId}/settings/appSettings {
       allow get, list: if isSignedIn();
       allow create, update, delete: if isSignedIn();
+    }
+    
+    // Allow access to global configuration and versioning
+    match /settings/global {
+      allow get: if isSignedIn();
+      allow write: if isSignedIn(); // In production, restrict this to Admins
     }
 
     function isSignedIn() {

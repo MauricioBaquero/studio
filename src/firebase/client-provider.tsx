@@ -6,16 +6,27 @@ import { FirebaseProvider } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase';
 import { doc, getDoc, setDoc, writeBatch, collection, getDocs, query } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
+import { CURRENT_APP_VERSION } from '@/lib/data';
 
 const seedTeamsAndSubCollections = async (firestore: any) => {
     const teamsCollectionRef = collection(firestore, 'teams');
     const teamsSnapshot = await getDocs(query(teamsCollectionRef));
+    
+    // Always ensure global settings/version exists
+    const globalSettingsRef = doc(firestore, 'settings', 'global');
+    const globalSettingsSnap = await getDoc(globalSettingsRef);
+    
+    if (!globalSettingsSnap.exists()) {
+        console.log("Seeding global version settings...");
+        await setDoc(globalSettingsRef, { minAppVersion: CURRENT_APP_VERSION });
+    }
+
     if (!teamsSnapshot.empty) {
         // Teams exist, now check if locations are at the top level
         const locationsCollectionRef = collection(firestore, 'locations');
         const locationsSnapshot = await getDocs(query(locationsCollectionRef));
         if (!locationsSnapshot.empty) {
-            return; // Locations also exist, seeding is likely complete
+            return; // Seeding likely complete
         }
     }
 
@@ -72,13 +83,12 @@ const seedTeamsAndSubCollections = async (firestore: any) => {
 
     const batch = writeBatch(firestore);
 
-    // Create a single set of locations associated with the primary team.
+    // Create locations with the 'global' teamId flag
     const locationsColRef = collection(firestore, 'locations');
-    const primaryTeamId = 'parking-facilities';
     locationsData.forEach(locData => {
         const locationId = doc(locationsColRef).id;
         const locationDocRef = doc(locationsColRef, locationId);
-        batch.set(locationDocRef, { id: locationId, ...locData, teamId: primaryTeamId });
+        batch.set(locationDocRef, { id: locationId, ...locData, teamId: 'global' });
     });
 
 

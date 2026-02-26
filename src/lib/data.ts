@@ -3,6 +3,9 @@ import { addDays, addWeeks, addMonths, setDay, setDate, nextDay, startOfDay, isA
 import type { Timestamp } from 'firebase/firestore';
 import { z } from "zod";
 
+// Version control for enforcing app updates
+export const CURRENT_APP_VERSION = 2;
+
 export const USER_ROLES = ["Admin", "Coordinator", "Staff", "Viewer"] as const;
 export const TICKET_STATUSES = ["Not Started", "In Progress", "Pending Review", "Completed"] as const;
 export const RECURRING_FREQUENCIES = ["Daily", "Weekly", "Bi-Weekly", "Monthly", "3 Months", "6 Months"] as const;
@@ -120,6 +123,10 @@ export const settingsSchema = z.object({
     recurringTaskCompletionDays: z.coerce.number().min(0, "Value must be 0 or greater.").max(14),
 });
 export type AppSettings = z.infer<typeof settingsSchema>;
+
+export interface GlobalConfig {
+  minAppVersion: number;
+}
 
 
 // Data Accessor Functions
