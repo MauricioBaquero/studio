@@ -109,15 +109,15 @@ export function EditTicketDialog({ open, onOpenChange, ticket, categories, locat
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="location-text">Display Location String</Label>
+              <Label htmlFor="location-text">Additional Details</Label>
               <Input 
                   id="location-text"
                   value={locationText} 
                   onChange={(e) => setLocationText(e.target.value)} 
-                  placeholder="e.g. Building A, Floor 2"
+                  placeholder="e.g., Room 203, near the main entrance"
               />
               <p className="text-[10px] text-muted-foreground italic">
-                Tip: Manually edit this string to add specific details like room numbers or floor info.
+                Tip: This field stores the full location string. Edit it manually to include floor or room details.
               </p>
             </div>
           </div>
