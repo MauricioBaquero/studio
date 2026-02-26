@@ -294,35 +294,37 @@ export default function LocationsPage() {
         <AlertDialogContent className="sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-4">
-              <span>This action cannot be undone. This will permanently delete the location.</span>
-              
-              {usageCount > 0 && (
-                <div className="bg-destructive/10 p-4 rounded-md border border-destructive/20 text-destructive">
-                    <div className="flex items-center gap-2 font-bold mb-2">
-                        <AlertTriangle className="h-4 w-4" />
-                        Usage Detected
-                    </div>
-                    <p className="text-sm">
-                        This location is tied to <strong>{usageCount}</strong> active tickets for the {currentTeam?.name} team. 
-                        You must select a replacement location to move these tickets to before deleting.
-                    </p>
-                    
-                    <div className="mt-4 space-y-2 text-foreground">
-                        <Label htmlFor="replacement-location" className="text-xs font-bold uppercase">Replacement Location</Label>
-                        <Select value={replacementLocationId} onValueChange={setReplacementLocationId}>
-                            <SelectTrigger id="replacement-location" className="bg-background">
-                                <SelectValue placeholder="Select a location..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {otherLocations.map(loc => (
-                                    <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-              )}
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <span>This action cannot be undone. This will permanently delete the location.</span>
+                
+                {usageCount > 0 && (
+                  <div className="bg-destructive/10 p-4 rounded-md border border-destructive/20 text-destructive">
+                      <div className="flex items-center gap-2 font-bold mb-2">
+                          <AlertTriangle className="h-4 w-4" />
+                          Usage Detected
+                      </div>
+                      <p className="text-sm">
+                          This location is tied to <strong>{usageCount}</strong> active tickets for the {currentTeam?.name} team. 
+                          You must select a replacement location to move these tickets to before deleting.
+                      </p>
+                      
+                      <div className="mt-4 space-y-2 text-foreground">
+                          <Label htmlFor="replacement-location" className="text-xs font-bold uppercase">Replacement Location</Label>
+                          <Select value={replacementLocationId} onValueChange={setReplacementLocationId}>
+                              <SelectTrigger id="replacement-location" className="bg-background">
+                                  <SelectValue placeholder="Select a location..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  {otherLocations.map(loc => (
+                                      <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
+                                  ))}
+                              </SelectContent>
+                          </Select>
+                      </div>
+                  </div>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
