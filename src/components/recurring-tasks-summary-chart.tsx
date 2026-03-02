@@ -1,32 +1,52 @@
 
 'use client';
 
-import { RecurringTask, getNextDueDate, toDate } from '@/lib/data';
+import { RecurringTask, getNextDueDate, toDate, AppSettings } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { isToday, isPast, startOfDay } from 'date-fns';
 import { ListChecks, Timer, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
+import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 interface RecurringTasksSummaryChartProps {
   recurringTasks: RecurringTask[];
 }
 
 export function RecurringTasksSummaryChart({ recurringTasks }: RecurringTasksSummaryChartProps) {
+  const firestore = useFirestore();
+  const { user } = useUser();
+  const teamId = user?.teamId;
+
+  const settingsRef = useMemoFirebase(
+    () => (firestore && teamId && teamId !== 'allTeams' ? doc(firestore, `teams/${teamId}/settings`, 'appSettings') : null),
+    [firestore, teamId]
+  );
+  const { data: settings } = useDoc<AppSettings>(settingsRef);
+  const advanceDays = settings?.recurringTaskCompletionDays ?? 2;
+
   const today = startOfDay(new Date());
 
   let dueTodayCount = 0;
   let overdueCount = 0;
-  let completedTodayCount = 0;
+  let completedForCycleCount = 0;
 
   recurringTasks.forEach(task => {
-    const nextDueDate = startOfDay(getNextDueDate(task));
+    const nextDueDate = startOfDay(getNextDueDate(task, advanceDays));
     
-    // The 'd' can be a CompletionLog object or a raw Timestamp from older data.
-    // This handles both cases by checking for `completedAt` first.
-    const isCompletedToday = (task.lastCompleted || []).some(d => isToday(toDate((d as any).completedAt || d)));
+    const lastCompletionTimestamp = task.lastCompleted && task.lastCompleted.length > 0 
+      ? Math.max(...task.lastCompleted.filter(Boolean).map(d => toDate((d as any).completedAt || d).getTime()))
+      : null;
+    const lastCompletion = lastCompletionTimestamp ? startOfDay(new Date(lastCompletionTimestamp)) : null;
 
-    if (isCompletedToday) {
-      completedTodayCount++;
+    const isCompletedToday = lastCompletion && isToday(lastCompletion);
+    
+    // Check if satisfied early
+    const nominalNext = startOfDay(getNextDueDate(task, 0));
+    const isSatisfiedEarly = nominalNext.getTime() !== nextDueDate.getTime();
+
+    if (isCompletedToday || isSatisfiedEarly) {
+      completedForCycleCount++;
     } else if (isToday(nextDueDate)) {
       dueTodayCount++;
     } else if (isPast(nextDueDate)) {
@@ -65,7 +85,7 @@ export function RecurringTasksSummaryChart({ recurringTasks }: RecurringTasksSum
                 <ListChecks className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
             <div>
-                <p className="text-2xl font-bold">{completedTodayCount}</p>
+                <p className="text-2xl font-bold">{completedForCycleCount}</p>
                 <p className="text-sm text-muted-foreground">Completed Today</p>
             </div>
         </div>

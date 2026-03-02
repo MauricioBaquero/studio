@@ -176,9 +176,9 @@ export default function RecurringTasksPage() {
     return null;
   }
 
-  const { dueTasks, completedTodayTasks, upcomingTasks } = useMemo(() => {
+  const { dueTasks, recentlyCompletedTasks, upcomingTasks } = useMemo(() => {
     if (!allTasks) {
-      return { dueTasks: [], completedTodayTasks: [], upcomingTasks: [] };
+      return { dueTasks: [], recentlyCompletedTasks: [], upcomingTasks: [] };
     }
     const advanceCompletionDays = settings?.recurringTaskCompletionDays ?? 2;
 
@@ -192,7 +192,7 @@ export default function RecurringTasksPage() {
         }
 
         if (filters.dateRange.from && filters.dateRange.to) {
-            const nextDueDate = getNextDueDate(task);
+            const nextDueDate = getNextDueDate(task, advanceCompletionDays);
             if (!isWithinInterval(nextDueDate, filters.dateRange)) return false;
         }
         return true;
@@ -227,8 +227,8 @@ export default function RecurringTasksPage() {
             valB = (getLocationById(b.locationId)?.name || '').toLowerCase();
             break;
           case 'nextDueDate':
-            valA = getNextDueDate(a).getTime();
-            valB = getNextDueDate(b).getTime();
+            valA = getNextDueDate(a, advanceCompletionDays).getTime();
+            valB = getNextDueDate(b, advanceCompletionDays).getTime();
             break;
         }
 
@@ -237,7 +237,7 @@ export default function RecurringTasksPage() {
       }
       
       // Secondary sort by date
-      return getNextDueDate(a).getTime() - getNextDueDate(b).getTime();
+      return getNextDueDate(a, advanceCompletionDays).getTime() - getNextDueDate(b, advanceCompletionDays).getTime();
     });
 
     const due: RecurringTask[] = [];
@@ -251,18 +251,23 @@ export default function RecurringTasksPage() {
           : null;
       const lastCompletion = lastCompletionTimestamp ? new Date(lastCompletionTimestamp) : null;
 
-      const isCompletedToday = lastCompletion && isToday(lastCompletion);
-      const nextDueDate = getNextDueDate(task);
+      const nextDueDate = getNextDueDate(task, advanceCompletionDays);
       const daysUntilDue = differenceInDays(nextDueDate, new Date());
+      
+      // We check if the task is "Satisfied Early" by comparing the natural next due date 
+      // with the advance-aware next due date. If they differ, it was completed for the current window.
+      const nominalNext = getNextDueDate(task, 0);
+      const isSatisfiedEarly = nominalNext.getTime() !== nextDueDate.getTime();
+      const isCompletedToday = lastCompletion && isToday(lastCompletion);
+
       let isEarly = false;
-        
       if (task.frequency === 'Daily') {
         isEarly = isTomorrow(nextDueDate);
       } else if (task.frequency !== 'Daily') {
         isEarly = daysUntilDue > advanceCompletionDays;
       }
 
-      if (isCompletedToday) {
+      if (isCompletedToday || isSatisfiedEarly) {
         completed.push(task);
       } else if (isEarly) {
         upcoming.push(task);
@@ -272,7 +277,7 @@ export default function RecurringTasksPage() {
       }
     });
 
-    return { dueTasks: due, completedTodayTasks: completed, upcomingTasks: upcoming };
+    return { dueTasks: due, recentlyCompletedTasks: completed, upcomingTasks: upcoming };
   }, [allTasks, filters, categories, settings, maintenanceSort]);
   
   const filteredCompletedTasks = useMemo(() => {
@@ -371,7 +376,8 @@ export default function RecurringTasksPage() {
 
   const renderTaskRow = (task: RecurringTask, isCompleted: boolean, isUpcoming: boolean) => {
     const location = getLocationById(task.locationId);
-    const nextDueDate = getNextDueDate(task);
+    const advanceCompletionDays = settings?.recurringTaskCompletionDays ?? 2;
+    const nextDueDate = getNextDueDate(task, advanceCompletionDays);
     const assignedUsers = (task.assignedToIds || []).map(id => getUserById(id)).filter(Boolean) as User[];
     
     // Overdue logic only for Weekly and Monthly
@@ -384,7 +390,6 @@ export default function RecurringTasksPage() {
 
 
     const daysUntilDue = differenceInDays(nextDueDate, new Date());
-    const advanceCompletionDays = settings?.recurringTaskCompletionDays ?? 2;
     
     let isEarly = false;
     if (task.frequency === 'Daily') {
@@ -399,15 +404,15 @@ export default function RecurringTasksPage() {
             id={`task-${task.id}`}
             aria-label={`Complete ${task.title}`}
             onCheckedChange={() => handleTaskCheck(task)}
-            checked={isCompleted ? false : undefined}
-            disabled={!isCompletable}
+            checked={isCompleted ? true : false}
+            disabled={!isCompletable || isCompleted}
           />
     );
 
     return (
       <TableRow key={task.id} className={cn((isCompleted || isUpcoming) && "text-muted-foreground opacity-50")}>
         <TableCell className="text-center">
-            {isEarly ? (
+            {isEarly && !isCompleted ? (
                  <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
@@ -519,7 +524,7 @@ export default function RecurringTasksPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dueTasks.length === 0 && completedTodayTasks.length === 0 && upcomingTasks.length === 0 ? (
+                {dueTasks.length === 0 && recentlyCompletedTasks.length === 0 && upcomingTasks.length === 0 ? (
                    <TableRow>
                     <TableCell colSpan={5} className="h-24 text-center">
                       No scheduled maintenance tasks found.
@@ -529,21 +534,21 @@ export default function RecurringTasksPage() {
                   <>
                     {dueTasks.map(task => renderTaskRow(task, false, false))}
                     
-                    {dueTasks.length > 0 && completedTodayTasks.length > 0 && (
+                    {dueTasks.length > 0 && recentlyCompletedTasks.length > 0 && (
                        <TableRow>
                         <TableCell colSpan={5} className="!p-0">
                           <div className="flex items-center gap-4 py-2 px-4">
                             <Separator className="flex-1" />
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">Already completed today</span>
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">Completed for this cycle</span>
                             <Separator className="flex-1" />
                           </div>
                         </TableCell>
                       </TableRow>
                     )}
 
-                    {completedTodayTasks.map(task => renderTaskRow(task, true, false))}
+                    {recentlyCompletedTasks.map(task => renderTaskRow(task, true, false))}
                     
-                    {upcomingTasks.length > 0 && (dueTasks.length > 0 || completedTodayTasks.length > 0) && (
+                    {upcomingTasks.length > 0 && (dueTasks.length > 0 || recentlyCompletedTasks.length > 0) && (
                        <TableRow>
                         <TableCell colSpan={5} className="!p-0">
                           <div className="flex items-center gap-4 py-2 px-4">
@@ -564,7 +569,7 @@ export default function RecurringTasksPage() {
         </Card>
         <Card className="flex flex-col">
           <CardHeader>
-            <CardTitle>Completed to Date</CardTitle>
+            <CardTitle>History</CardTitle>
           </CardHeader>
           <CardContent className="flex-1">
             <Table>

@@ -1,5 +1,5 @@
 
-import { addDays, addWeeks, addMonths, setDay, setDate, nextDay, startOfDay, isAfter, isSameDay, toDate as fnsToDate } from "date-fns";
+import { addDays, addWeeks, addMonths, setDay, setDate, nextDay, startOfDay, isAfter, isSameDay, differenceInDays, subDays, toDate as fnsToDate } from "date-fns";
 import type { Timestamp } from 'firebase/firestore';
 import { z } from "zod";
 
@@ -150,104 +150,102 @@ export const getCategoryColor = (
   return 'blue';
 };
 
-export const getNextDueDate = (task: RecurringTask): Date => {
+/**
+ * Calculates the next due date for a recurring task.
+ * @param task The task to calculate for.
+ * @param advanceDays The window allowing early completion.
+ * @returns The next date this task is scheduled to be performed.
+ */
+export const getNextDueDate = (task: RecurringTask, advanceDays: number = 0): Date => {
   const today = startOfDay(new Date());
 
   const mostRecentCompletion = task.lastCompleted && task.lastCompleted.length > 0
-    ? new Date(Math.max(...task.lastCompleted.filter(Boolean).map(d => toDate(d.completedAt || d).getTime())))
+    ? new Date(Math.max(...task.lastCompleted.filter(Boolean).map(d => toDate((d as any).completedAt || d).getTime())))
     : null;
 
   const lastCompleted = mostRecentCompletion ? startOfDay(mostRecentCompletion) : null;
 
-  // If it was completed today, the next due date is in the future
-  if (lastCompleted && isSameDay(lastCompleted, today)) {
-     switch (task.frequency) {
-      case "Daily":
-        return addDays(today, 1);
-      case "Weekly":
-        return addWeeks(today, 1);
-      case "Monthly":
-        return addMonths(today, 1);
-      case "3 Months":
-        return addMonths(today, 3);
-      case "6 Months":
-        return addMonths(today, 6);
-    }
-  }
+  // We only apply advance skip logic to non-daily tasks. 
+  // Daily tasks should simply move to the next day once completed.
+  const skipWindow = task.frequency === 'Daily' ? 0 : advanceDays;
 
-  const baseDate = lastCompleted || today;
+  // Function to find the absolute next occurrence strictly after a specific base date
+  const findStrictlyNext = (base: Date): Date => {
+    switch (task.frequency) {
+      case 'Daily':
+        return addDays(base, 1);
+      
+      case 'Weekly': {
+        return nextDay(base, task.dayOfWeek as any);
+      }
 
-  switch (task.frequency) {
-    case 'Daily':
-      return isAfter(today, baseDate) ? today : addDays(baseDate, 1);
-    
-    case 'Weekly': {
-      const nextOccurrence = nextDay(baseDate, task.dayOfWeek as any);
-      return isAfter(nextOccurrence, baseDate) ? nextOccurrence : addWeeks(nextOccurrence, 1);
-    }
-
-    case 'Bi-Weekly': {
-      if (task.weekOfMonth && task.dayOfWeek !== undefined) {
-        // weekOfMonth 1 = Odds (1, 3, 5), 2 = Evens (2, 4)
-        const targetCycle = task.weekOfMonth;
-        let current = baseDate;
-        
-        // Find next day matching cycle
+      case 'Bi-Weekly': {
+        let current = base;
         for (let i = 1; i <= 90; i++) {
           const d = addDays(current, i);
           if (d.getDay() === task.dayOfWeek) {
             const dom = d.getDate();
-            // nth occurrence of that day in the month
             const occurrence = Math.floor((dom - 1) / 7) + 1;
-            
-            const isMatch = (targetCycle === 1 && occurrence % 2 !== 0) || (targetCycle === 2 && occurrence % 2 === 0);
-            if (isMatch) {
-              return d;
-            }
+            const isMatch = (task.weekOfMonth === 1 && occurrence % 2 !== 0) || (task.weekOfMonth === 2 && occurrence % 2 === 0);
+            if (isMatch) return d;
           }
         }
+        return addWeeks(base, 2);
       }
-      return addWeeks(baseDate, 2);
-    }
-    
-    case 'Monthly': {
-      if (task.weekOfMonth && task.dayOfWeek !== undefined) {
-        let candidateDate = setDate(baseDate, 1); // Start of month
-        
-        let firstDayOfWeekInMonth = setDay(candidateDate, task.dayOfWeek, { weekStartsOn: 0 });
-        if (isAfter(candidateDate, firstDayOfWeekInMonth)) {
-            firstDayOfWeekInMonth = addWeeks(firstDayOfWeekInMonth, 1);
-        }
-        
-        let dayOfMonth = firstDayOfWeekInMonth.getDate() + (task.weekOfMonth - 1) * 7;
-        
-        candidateDate = setDate(candidateDate, dayOfMonth);
+      
+      case 'Monthly':
+      case '3 Months':
+      case '6 Months': {
+        const interval = task.frequency === 'Monthly' ? 1 : task.frequency === '3 Months' ? 3 : 6;
+        if (task.weekOfMonth && task.dayOfWeek !== undefined) {
+          let candidate = setDate(base, 1); // Start of month
+          
+          const findNthDay = (mBase: Date) => {
+            let firstDay = setDay(mBase, task.dayOfWeek!, { weekStartsOn: 0 });
+            if (isAfter(mBase, firstDay)) firstDay = addWeeks(firstDay, 1);
+            return addWeeks(firstDay, task.weekOfMonth! - 1);
+          };
 
-        // If this month's date is already past, move to next month
-        if (isAfter(baseDate, candidateDate) || isSameDay(baseDate, candidateDate)) {
-          candidateDate = addMonths(baseDate, 1);
-          candidateDate = setDate(candidateDate, 1); // Start of next month
-          firstDayOfWeekInMonth = setDay(candidateDate, task.dayOfWeek, { weekStartsOn: 0 });
-            if (isAfter(candidateDate, firstDayOfWeekInMonth)) {
-                firstDayOfWeekInMonth = addWeeks(firstDayOfWeekInMonth, 1);
-            }
-          dayOfMonth = firstDayOfWeekInMonth.getDate() + (task.weekOfMonth - 1) * 7;
-          candidateDate = setDate(candidateDate, dayOfMonth);
+          let occurrence = findNthDay(candidate);
+          
+          // If occurrence is not strictly after base, try current month or jump intervals
+          while (!isAfter(occurrence, base)) {
+            candidate = addMonths(candidate, 1);
+            occurrence = findNthDay(candidate);
+          }
+          
+          // Ensure we respect the 3/6 month interval relative to a known start if we had one,
+          // but since we don't, we just find the strictly next one for now.
+          // For simple recurring lists, "strictly next" is the common expectation.
+          return occurrence;
         }
-        return candidateDate;
+        return addMonths(base, interval);
       }
-      return addMonths(baseDate, 1); // Fallback for simple monthly
+
+      default:
+        return addDays(base, 1);
     }
+  };
 
-    case '3 Months':
-      return addMonths(baseDate, 3);
-    
-    case '6 Months':
-      return addMonths(baseDate, 6);
+  // Logic: 
+  // 1. Calculate the occurrence that would be next if we ignored completions.
+  // 2. If we have a completion, and it was "recent enough" to satisfy that occurrence, jump to the next.
+  
+  // Use a very distant past if no completion exists so the first found occurrence is "overdue" or "next"
+  const calculationBase = lastCompleted ? lastCompleted : subDays(today, 365);
+  let occurrence = findStrictlyNext(calculationBase);
 
-    default:
-      return new Date();
+  // If the occurrence we found is in the future relative to today, and lastCompleted is close enough to it...
+  // OR if occurrence is today and lastCompleted was within the window...
+  if (lastCompleted && differenceInDays(occurrence, lastCompleted) <= skipWindow) {
+    // This occurrence was already satisfied early. Skip to the next one.
+    occurrence = findStrictlyNext(occurrence);
   }
+
+  // Final check: if the occurrence is still in the past and NOT satisfied by lastCompleted, 
+  // it remains in the past (Overdue). If it's already satisfied, the logic above handled the skip.
+  
+  return occurrence;
 };
 
 export const generateAbbreviation = (name: string): string => {
