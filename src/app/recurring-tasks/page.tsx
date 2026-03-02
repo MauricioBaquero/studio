@@ -14,7 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { format, isToday, isPast, startOfDay, isSameDay, differenceInDays, isWithinInterval, subDays, isTomorrow } from 'date-fns';
+import { format, isToday, isPast, startOfDay, endOfDay, isSameDay, differenceInDays, isWithinInterval, subDays, isTomorrow } from 'date-fns';
 import {
   useCollection,
   useFirestore,
@@ -191,9 +191,14 @@ export default function RecurringTasksPage() {
             if (subCatInfo?.parentId !== filters.category) return false;
         }
 
-        if (filters.dateRange.from && filters.dateRange.to) {
+        if (filters.dateRange.from || filters.dateRange.to) {
             const nextDueDate = getNextDueDate(task, advanceCompletionDays);
-            if (!isWithinInterval(nextDueDate, filters.dateRange)) return false;
+            const start = filters.dateRange.from ? startOfDay(filters.dateRange.from) : new Date(0);
+            const end = filters.dateRange.to ? endOfDay(filters.dateRange.to) : new Date(8640000000000000);
+            
+            if (nextDueDate < start || nextDueDate > end) {
+                return false;
+            }
         }
         return true;
     });
@@ -290,8 +295,13 @@ export default function RecurringTasksPage() {
             if (subCatInfo?.parentId !== filters.category) return false;
         }
 
-        if (filters.dateRange.from && filters.dateRange.to) {
-            if (!isWithinInterval(task.completedAt, filters.dateRange)) return false;
+        if (filters.dateRange.from || filters.dateRange.to) {
+            const start = filters.dateRange.from ? startOfDay(filters.dateRange.from) : new Date(0);
+            const end = filters.dateRange.to ? endOfDay(filters.dateRange.to) : new Date(8640000000000000);
+            
+            if (task.completedAt < start || task.completedAt > end) {
+                return false;
+            }
         }
         return true;
     });
