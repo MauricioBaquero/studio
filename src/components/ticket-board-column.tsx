@@ -1,5 +1,7 @@
 
-import { useState } from 'react';
+'use client';
+
+import { useState, useEffect } from 'react';
 import { Ticket, User, Category } from "@/lib/data";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import TicketCard from "@/components/ticket-card";
@@ -27,7 +29,8 @@ const statusEmojis: { [key: string]: string } = {
   "Completed": "🏁",
 };
 
-const INITIAL_VISIBLE_COUNT = 3;
+const MOBILE_INITIAL_VISIBLE_COUNT = 3;
+const COMPLETED_INITIAL_VISIBLE_COUNT = 25;
 
 export function CollapsibleTicketBoardColumn({
   status,
@@ -35,10 +38,11 @@ export function CollapsibleTicketBoardColumn({
   users,
   categories,
 }: TicketBoardColumnProps) {
-  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
+  const isCompleted = status === "Completed";
+  const [visibleCount, setVisibleCount] = useState(isCompleted ? COMPLETED_INITIAL_VISIBLE_COUNT : MOBILE_INITIAL_VISIBLE_COUNT);
 
   const handleLoadMore = () => {
-    setVisibleCount(prevCount => prevCount + 5);
+    setVisibleCount(prevCount => prevCount + (isCompleted ? 25 : 10));
   };
 
   const visibleTickets = tickets.slice(0, visibleCount);
@@ -47,23 +51,25 @@ export function CollapsibleTicketBoardColumn({
     <div className="flex flex-col h-full">
       <div className="p-4 space-y-4">
         {tickets.length > 0 ? (
-          visibleTickets.map((ticket) => (
-            <TicketCard
-              key={ticket.id}
-              ticket={ticket}
-              users={users}
-              categories={categories}
-            />
-          ))
+          <>
+            {visibleTickets.map((ticket) => (
+              <TicketCard
+                key={ticket.id}
+                ticket={ticket}
+                users={users}
+                categories={categories}
+              />
+            ))}
+            {tickets.length > visibleCount && (
+              <Button onClick={handleLoadMore} variant="outline" className="w-full">
+                Load More
+              </Button>
+            )}
+          </>
         ) : (
           <div className="flex items-center justify-center h-24 text-sm text-muted-foreground">
             No tickets
           </div>
-        )}
-        {tickets.length > visibleCount && (
-          <Button onClick={handleLoadMore} variant="outline" className="w-full">
-            Load More
-          </Button>
         )}
       </div>
     </div>
@@ -77,6 +83,20 @@ export default function TicketBoardColumn({
   users,
   categories,
 }: TicketBoardColumnProps) {
+  const isCompleted = status === "Completed";
+  const [visibleCount, setVisibleCount] = useState(isCompleted ? COMPLETED_INITIAL_VISIBLE_COUNT : tickets.length);
+
+  // Reset pagination when status or total tickets change (e.g. from filters)
+  useEffect(() => {
+    setVisibleCount(isCompleted ? COMPLETED_INITIAL_VISIBLE_COUNT : tickets.length);
+  }, [tickets.length, isCompleted]);
+
+  const handleLoadMore = () => {
+    setVisibleCount(prev => prev + 25);
+  };
+
+  const visibleTickets = tickets.slice(0, visibleCount);
+
   return (
     <div className="flex flex-col rounded-lg bg-card shadow-sm h-full">
       <div className="p-4 border-b">
@@ -96,14 +116,21 @@ export default function TicketBoardColumn({
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-4">
           {tickets.length > 0 ? (
-            tickets.map((ticket) => (
-              <TicketCard 
-                key={ticket.id} 
-                ticket={ticket}
-                users={users}
-                categories={categories}
-              />
-            ))
+            <>
+              {visibleTickets.map((ticket) => (
+                <TicketCard 
+                  key={ticket.id} 
+                  ticket={ticket}
+                  users={users}
+                  categories={categories}
+                />
+              ))}
+              {tickets.length > visibleCount && (
+                <Button onClick={handleLoadMore} variant="outline" className="w-full">
+                  Load More
+                </Button>
+              )}
+            </>
           ) : (
             <div className="flex items-center justify-center h-24 text-sm text-muted-foreground">
               No tickets
