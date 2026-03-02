@@ -43,7 +43,7 @@ service cloud.firestore {
     
     // Allow access to global configuration and versioning
     match /settings/global {
-      allow get: if isSignedIn();
+      allow get: if true; // Public read allowed for version checking even if not signed in
       allow write: if isSignedIn(); // In production, restrict this to Admins
     }
 

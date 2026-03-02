@@ -47,10 +47,8 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   }, [user, isUserLoading, isLoginPage, router, firestore, auth]);
 
-  if (isLoginPage) {
-    return <>{children}</>;
-  }
-
+  // If the app is outdated, we block interaction even on the login page
+  // to ensure users don't attempt to authenticate with stale logic.
   if (isOutdated) {
     return (
       <div className="fixed inset-0 z-[9999] bg-background/95 backdrop-blur-sm flex items-center justify-center p-6 text-center">
@@ -72,11 +70,16 @@ export function AppLayout({ children }: AppLayoutProps) {
             Update & Refresh Now
           </Button>
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
-            Local v{CURRENT_APP_VERSION} <span className="mx-2">|</span> Required v{globalConfig.minAppVersion}
+            Local v{CURRENT_APP_VERSION} <span className="mx-2">|</span> Required v{globalConfig?.minAppVersion || '?'}
           </p>
         </div>
       </div>
     );
+  }
+
+  // Allow login page access after version check passes
+  if (isLoginPage) {
+    return <>{children}</>;
   }
 
   if (isUserLoading || !user || !user.teamId) {
