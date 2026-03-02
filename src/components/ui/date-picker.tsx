@@ -19,9 +19,10 @@ interface DatePickerProps {
     fromDate?: Date;
     className?: string;
     disabled?: boolean;
+    placeholder?: string;
 }
 
-export function DatePicker({ value, onSelect, fromDate, className, disabled }: DatePickerProps) {
+export function DatePicker({ value, onSelect, fromDate, className, disabled, placeholder = "Pick a date" }: DatePickerProps) {
 
   return (
     <Popover>
@@ -36,7 +37,8 @@ export function DatePicker({ value, onSelect, fromDate, className, disabled }: D
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? format(value, "PPP") : <span>Pick a date</span>}
+          {/* Use shorthand date format 'P' (e.g., 02/01/2026) for a cleaner UI in filters and forms */}
+          {value ? format(value, "P") : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0">

@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -55,17 +53,21 @@ export function RecurringTaskFilters({
     <div className="flex flex-wrap items-center gap-4 rounded-lg bg-card p-4 border shadow-sm">
       <h3 className="text-lg font-semibold mr-4">Filters</h3>
       
-      <DatePicker
-        value={dateRange?.from}
-        onSelect={(date) => setDateRange(prev => ({ ...prev, from: date }))}
-        className="w-full sm:w-[240px]"
-      />
-       <DatePicker
-        value={dateRange?.to}
-        onSelect={(date) => setDateRange(prev => ({ ...prev, to: date }))}
-        className="w-full sm:w-[240px]"
-        fromDate={dateRange?.from}
-      />
+      <div className="flex flex-col sm:flex-row gap-2">
+        <DatePicker
+          value={dateRange?.from}
+          onSelect={(date) => setDateRange(prev => ({ ...prev, from: date }))}
+          className="w-full sm:w-[200px]"
+          placeholder="From Date"
+        />
+        <DatePicker
+          value={dateRange?.to}
+          onSelect={(date) => setDateRange(prev => ({ ...prev, to: date }))}
+          className="w-full sm:w-[200px]"
+          fromDate={dateRange?.from}
+          placeholder="To Date"
+        />
+      </div>
 
       <Select value={frequency} onValueChange={setFrequency}>
         <SelectTrigger className="w-full sm:w-[180px]">

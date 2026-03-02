@@ -72,13 +72,15 @@ export function TicketFilters({
         <DatePicker
           value={dateRange?.from}
           onSelect={(date) => setDateRange(prev => ({ ...prev, from: date }))}
-          className="w-full sm:w-[180px]"
+          className="w-full sm:w-[160px]"
+          placeholder="From Date"
         />
         <DatePicker
           value={dateRange?.to}
           onSelect={(date) => setDateRange(prev => ({ ...prev, to: date }))}
-          className="w-full sm:w-[180px]"
+          className="w-full sm:w-[160px]"
           fromDate={dateRange?.from}
+          placeholder="To Date"
         />
       </div>
 
