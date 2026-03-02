@@ -8,9 +8,8 @@ import { PlusCircle } from "lucide-react";
 import Link from "next/link";
 import TicketBoard from "@/components/ticket-board";
 import { TicketFilters, FilterValues } from '@/components/ticket-filters';
-import { isWithinInterval } from 'date-fns';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, Timestamp, where } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 
 export default function TaskBoardPage() {
   const firestore = useFirestore();
@@ -21,7 +20,6 @@ export default function TaskBoardPage() {
     assignee: 'all',
     location: 'all',
     category: 'all',
-    dateRange: { from: undefined, to: undefined },
   });
 
   // Set default filter based on role when the user is first loaded
@@ -71,10 +69,6 @@ export default function TaskBoardPage() {
     if (!tickets || !currentUser) return [];
 
     return tickets.filter(ticket => {
-      const requestedCompletionDate = ticket.requestedCompletionDate instanceof Timestamp 
-        ? ticket.requestedCompletionDate.toDate() 
-        : new Date(ticket.requestedCompletionDate);
-
       if (filters.assignee === 'me-unassigned') {
         const isAssignedToMe = (ticket.assignedToIds || []).includes(currentUser.uid);
         const isUnassigned = !ticket.assignedToIds || ticket.assignedToIds.length === 0;
@@ -96,12 +90,6 @@ export default function TaskBoardPage() {
         const allSubcategoryIds = parentCat?.subcategories.map(s => s.id) || [];
         if (!allSubcategoryIds.includes(ticket.categoryId)) {
           return false;
-        }
-      }
-      
-      if (filters.dateRange.from && filters.dateRange.to) {
-        if (!isWithinInterval(requestedCompletionDate, filters.dateRange)) {
-            return false;
         }
       }
 

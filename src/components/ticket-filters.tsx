@@ -4,18 +4,14 @@
 import { useState, useEffect } from 'react';
 import { Category, Location, User } from '@/lib/data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DatePicker } from '@/components/ui/date-picker';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
-import { DateRange } from 'react-day-picker';
 import { useUser } from '@/firebase';
-import { cn } from '@/lib/utils';
 
 export type FilterValues = {
   assignee: string;
   location: string;
   category: string;
-  dateRange: { from: Date | undefined; to: Date | undefined };
 };
 
 interface TicketFiltersProps {
@@ -35,7 +31,6 @@ export function TicketFilters({
   const [assignee, setAssignee] = useState('all');
   const [location, setLocation] = useState('all');
   const [category, setCategory] = useState('all');
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   // Set default filter based on role when the user is first loaded
   useEffect(() => {
@@ -51,18 +46,16 @@ export function TicketFilters({
       assignee,
       location,
       category,
-      dateRange: { from: dateRange?.from, to: dateRange?.to },
     });
-  }, [assignee, location, category, dateRange, onFilterChange]);
+  }, [assignee, location, category, onFilterChange]);
   
   const handleClearFilters = () => {
     setAssignee('all');
     setLocation('all');
     setCategory('all');
-    setDateRange(undefined);
   }
 
-  const hasActiveFilters = assignee !== 'all' || location !== 'all' || category !== 'all' || dateRange?.from || dateRange?.to;
+  const hasActiveFilters = assignee !== 'all' || location !== 'all' || category !== 'all';
 
   const filteredUsers = users.filter(user => user.uid !== currentUser?.uid);
 
@@ -83,19 +76,6 @@ export function TicketFilters({
           ))}
         </SelectContent>
       </Select>
-
-      <DatePicker
-        value={dateRange?.from}
-        onSelect={(date) => setDateRange(prev => ({ from: date, to: undefined }))}
-        className="w-full sm:w-[240px]"
-      />
-       <DatePicker
-        value={dateRange?.to}
-        onSelect={(date) => setDateRange(prev => ({ ...prev, to: date }))}
-        className={cn("w-full sm:w-[240px]", !dateRange?.from && "opacity-50 cursor-not-allowed")}
-        fromDate={dateRange?.from}
-        disabled={!dateRange?.from}
-      />
       
       <Select value={location} onValueChange={setLocation}>
         <SelectTrigger className="w-full sm:w-[180px]">
