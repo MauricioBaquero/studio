@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
-import { Ticket, User, Category, Location } from "@/lib/data";
+import { Ticket, User, Category, Location, toDate } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
@@ -10,6 +9,7 @@ import TicketBoard from "@/components/ticket-board";
 import { TicketFilters, FilterValues } from '@/components/ticket-filters';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
+import { startOfDay, endOfDay } from 'date-fns';
 
 export default function TaskBoardPage() {
   const firestore = useFirestore();
@@ -20,6 +20,7 @@ export default function TaskBoardPage() {
     assignee: 'all',
     location: 'all',
     category: 'all',
+    dateRange: { from: undefined, to: undefined },
   });
 
   // Set default filter based on role when the user is first loaded
@@ -69,6 +70,7 @@ export default function TaskBoardPage() {
     if (!tickets || !currentUser) return [];
 
     return tickets.filter(ticket => {
+      // 1. Assignee Filter
       if (filters.assignee === 'me-unassigned') {
         const isAssignedToMe = (ticket.assignedToIds || []).includes(currentUser.uid);
         const isUnassigned = !ticket.assignedToIds || ticket.assignedToIds.length === 0;
@@ -81,14 +83,35 @@ export default function TaskBoardPage() {
         }
       }
 
+      // 2. Location Filter
       if (filters.location !== 'all' && ticket.locationId !== filters.location) {
          return false;
       }
 
+      // 3. Category Filter
       if (filters.category !== 'all') {
         const parentCat = categories?.find(c => c.id === filters.category);
         const allSubcategoryIds = parentCat?.subcategories.map(s => s.id) || [];
         if (!allSubcategoryIds.includes(ticket.categoryId)) {
+          return false;
+        }
+      }
+
+      // 4. Date Filter (Completed Dates)
+      // When a date range is selected, we filter by when the work was submitted/finished.
+      // If a ticket is not yet submitted (Not Started/In Progress), we only show it if no date range is set,
+      // or if it matches the range based on its creation date (standard fallback).
+      if (filters.dateRange.from || filters.dateRange.to) {
+        const dateToFilter = ticket.submitToReviewDate 
+          ? toDate(ticket.submitToReviewDate) 
+          : ticket.actualCompletionDate 
+            ? toDate(ticket.actualCompletionDate)
+            : toDate(ticket.createdAt);
+        
+        const start = filters.dateRange.from ? startOfDay(filters.dateRange.from) : new Date(0);
+        const end = filters.dateRange.to ? endOfDay(filters.dateRange.to) : new Date(8640000000000000);
+        
+        if (dateToFilter < start || dateToFilter > end) {
           return false;
         }
       }

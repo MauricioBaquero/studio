@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,11 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { useUser } from '@/firebase';
+import { DatePicker } from '@/components/ui/date-picker';
+import { DateRange } from 'react-day-picker';
 
 export type FilterValues = {
   assignee: string;
   location: string;
   category: string;
+  dateRange: { from: Date | undefined; to: Date | undefined };
 };
 
 interface TicketFiltersProps {
@@ -31,6 +33,7 @@ export function TicketFilters({
   const [assignee, setAssignee] = useState('all');
   const [location, setLocation] = useState('all');
   const [category, setCategory] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   // Set default filter based on role when the user is first loaded
   useEffect(() => {
@@ -46,22 +49,39 @@ export function TicketFilters({
       assignee,
       location,
       category,
+      dateRange: { from: dateRange?.from, to: dateRange?.to },
     });
-  }, [assignee, location, category, onFilterChange]);
+  }, [assignee, location, category, dateRange, onFilterChange]);
   
   const handleClearFilters = () => {
     setAssignee('all');
     setLocation('all');
     setCategory('all');
+    setDateRange(undefined);
   }
 
-  const hasActiveFilters = assignee !== 'all' || location !== 'all' || category !== 'all';
+  const hasActiveFilters = assignee !== 'all' || location !== 'all' || category !== 'all' || dateRange?.from || dateRange?.to;
 
   const filteredUsers = users.filter(user => user.uid !== currentUser?.uid);
 
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-lg bg-card p-4 border shadow-sm">
       <h3 className="text-lg font-semibold mr-4">Filters</h3>
+      
+      <div className="flex flex-col sm:flex-row gap-2">
+        <DatePicker
+          value={dateRange?.from}
+          onSelect={(date) => setDateRange(prev => ({ ...prev, from: date }))}
+          className="w-full sm:w-[180px]"
+        />
+        <DatePicker
+          value={dateRange?.to}
+          onSelect={(date) => setDateRange(prev => ({ ...prev, to: date }))}
+          className="w-full sm:w-[180px]"
+          fromDate={dateRange?.from}
+        />
+      </div>
+
       <Select value={assignee} onValueChange={setAssignee}>
         <SelectTrigger className="w-full sm:w-[180px]">
           <SelectValue placeholder="Filter by assignee" />
