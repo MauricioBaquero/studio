@@ -294,7 +294,8 @@
           "enum": [
             "City-Owned Parking Facilities",
             "Public Right-of-Way",
-            "City-Owned Public Building"
+            "City-Owned Public Building",
+            "Privately Owned Facility"
           ],
           "description": "The category/type of the location."
         },

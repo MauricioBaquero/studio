@@ -286,19 +286,24 @@
           "type": "string",
           "description": "The name of the location."
         },
+        "type": {
+          "type": "string",
+          "enum": [
+            "City-Owned Parking Facilities",
+            "Public Right-of-Way",
+            "City-Owned Public Building",
+            "Privately Owned Facility"
+          ],
+          "description": "The category/type of the location."
+        },
         "numberOfFloors": {
           "type": "number",
           "description": "Number of floors at the location. Can be 0 or N/A."
-        },
-        "teamId": {
-          "type": "string",
-          "description": "The ID of the team this location belongs to."
         }
       },
       "required": [
         "id",
-        "name",
-        "teamId"
+        "name"
       ]
     },
     "Category": {
