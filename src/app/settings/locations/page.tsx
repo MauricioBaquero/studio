@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -208,9 +207,6 @@ export default function LocationsPage() {
                 <li><strong>Off-Site Location:</strong> A location outside the primary service area.</li>
               </ul>
             </CardDescription>
-            {currentTeam && (
-              <Badge variant="outline" className="mt-2">Team: {currentTeam.name}</Badge>
-            )}
           </div>
           <Button onClick={() => handleOpenForm(null)}>
             <PlusCircle className="mr-2 h-4 w-4" />
