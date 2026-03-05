@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "Team": {
@@ -87,7 +86,7 @@
         },
         "locationId": {
           "type": "string",
-          "description": "Reference to a Location within the team."
+          "description": "Reference to a Location."
         },
         "requestedCompletionDate": {
           "type": "string",
@@ -261,9 +260,12 @@
             ]
           }
         },
-        "assignedToId": {
-          "type": "string",
-          "description": "The UID of the user this task is assigned to. Can be empty."
+        "assignedToIds": {
+          "type": "array",
+          "description": "A list of user IDs assigned to this task.",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [
@@ -277,7 +279,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Location",
       "type": "object",
-      "description": "Represents a facility location.",
+      "description": "Represents a facility location shared across the organization.",
       "properties": {
         "id": {
           "type": "string",
@@ -299,16 +301,11 @@
         "numberOfFloors": {
           "type": "number",
           "description": "Number of floors at the location. Can be 0 or N/A."
-        },
-        "teamId": {
-          "type": "string",
-          "description": "The ID of the team this location belongs to."
         }
       },
       "required": [
         "id",
-        "name",
-        "teamId"
+        "name"
       ]
     },
     "Category": {
@@ -398,7 +395,7 @@
           "schema": {
             "$ref": "#/entities/User"
           },
-          "description": "Stores user profiles, independent of teams."
+          "description": "Stores user profiles."
         }
       },
       {
@@ -408,7 +405,7 @@
           "schema": {
             "$ref": "#/entities/Location"
           },
-          "description": "Stores all facility locations, independent of teams."
+          "description": "Stores all shared facility locations."
         }
       },
       {
@@ -448,7 +445,7 @@
           "schema": {
             "$ref": "#/entities/Setting"
           },
-          "description": "Stores team-specific settings in a single document."
+          "description": "Stores team-specific settings."
         }
       }
     ]

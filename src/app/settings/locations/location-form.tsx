@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect } from 'react';
@@ -108,8 +107,7 @@ export function LocationForm({
     } else {
       const locationsCollection = collection(firestore, `locations`);
       const newDocRef = doc(locationsCollection);
-      // Locations are shared across all teams, so we use a 'global' teamId
-      const newLocationData = { ...data, teamId: 'global', id: newDocRef.id };
+      const newLocationData = { ...data, id: newDocRef.id };
       setDocumentNonBlocking(newDocRef, newLocationData, {});
     }
 
@@ -140,9 +138,10 @@ export function LocationForm({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{isEditMode ? 'Edit' : 'Add New'} Location</DialogTitle>
-          <DialogDescription>
-            Fill out the form below to{' '}
-            {isEditMode ? 'update the' : 'create a new'} location.
+          <DialogDescription asChild>
+            <div className="space-y-4">
+              Fill out the form below to {isEditMode ? 'update the' : 'create a new'} location.
+            </div>
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

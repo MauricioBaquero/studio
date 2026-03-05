@@ -1,4 +1,3 @@
-
 import { addDays, addWeeks, addMonths, setDay, setDate, nextDay, startOfDay, isAfter, isSameDay, differenceInDays, subDays, toDate as fnsToDate } from "date-fns";
 import type { Timestamp } from 'firebase/firestore';
 import { z } from "zod";
@@ -55,7 +54,6 @@ export const locationSchema = z.object({
     name: z.string(),
     type: z.enum(LOCATION_TYPES).optional(),
     numberOfFloors: z.number().optional(),
-    teamId: z.string(),
 });
 export type Location = z.infer<typeof locationSchema>;
 

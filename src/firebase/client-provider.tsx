@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useMemo, type ReactNode, useEffect } from 'react';
@@ -70,10 +69,10 @@ const seedTeamsAndSubCollections = async (firestore: any) => {
     ];
     
     const locationsData = [
-      { name: 'City Hall Garage', numberOfFloors: 5 },
-      { name: 'Courthouse Garage', numberOfFloors: 8 },
-      { name: 'Riverwalk Garage', numberOfFloors: 4 },
-      { name: 'Beach Lot A', numberOfFloors: 0 },
+      { name: 'City Hall Garage', numberOfFloors: 5, type: 'City-Owned Parking Facilities' },
+      { name: 'Courthouse Garage', numberOfFloors: 8, type: 'City-Owned Parking Facilities' },
+      { name: 'Riverwalk Garage', numberOfFloors: 4, type: 'City-Owned Parking Facilities' },
+      { name: 'Beach Lot A', numberOfFloors: 0, type: 'City-Owned Parking Facilities' },
     ];
     
     const settingsData = {
@@ -83,12 +82,12 @@ const seedTeamsAndSubCollections = async (firestore: any) => {
 
     const batch = writeBatch(firestore);
 
-    // Create locations with the 'global' teamId flag
+    // Create locations without teamId
     const locationsColRef = collection(firestore, 'locations');
     locationsData.forEach(locData => {
         const locationId = doc(locationsColRef).id;
         const locationDocRef = doc(locationsColRef, locationId);
-        batch.set(locationDocRef, { id: locationId, ...locData, teamId: 'global' });
+        batch.set(locationDocRef, { id: locationId, ...locData });
     });
 
 
