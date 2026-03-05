@@ -77,7 +77,7 @@ export function LocationForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      type: 'City-Owned Parking Facilities',
+      type: undefined as any,
       numberOfFloors: 0,
     },
   });
@@ -86,13 +86,13 @@ export function LocationForm({
     if (location) {
       form.reset({
         name: location.name,
-        type: location.type || 'City-Owned Parking Facilities',
+        type: location.type || undefined as any,
         numberOfFloors: location.numberOfFloors || 0,
       });
     } else {
       form.reset({
         name: '',
-        type: 'City-Owned Parking Facilities',
+        type: undefined as any,
         numberOfFloors: 0,
       });
     }
@@ -168,7 +168,7 @@ export function LocationForm({
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a type" />
+                        <SelectValue placeholder="Select one" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
