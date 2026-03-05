@@ -21,8 +21,15 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Location } from '@/lib/data';
+import { Location, LOCATION_TYPES } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import {
   useFirestore,
@@ -35,6 +42,9 @@ import { z } from 'zod';
 
 const formSchema = z.object({
   name: z.string().min(3, "Location name must be at least 3 characters."),
+  type: z.enum(LOCATION_TYPES, {
+    required_error: "Please select a location type.",
+  }),
   numberOfFloors: z.coerce
     .number()
     .int()
@@ -68,6 +78,7 @@ export function LocationForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
+      type: 'City-Owned Parking Facilities',
       numberOfFloors: 0,
     },
   });
@@ -76,11 +87,13 @@ export function LocationForm({
     if (location) {
       form.reset({
         name: location.name,
+        type: location.type || 'City-Owned Parking Facilities',
         numberOfFloors: location.numberOfFloors || 0,
       });
     } else {
       form.reset({
         name: '',
+        type: 'City-Owned Parking Facilities',
         numberOfFloors: 0,
       });
     }
@@ -143,6 +156,30 @@ export function LocationForm({
                   <FormControl>
                     <Input placeholder="e.g., Building A" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Location Type</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {LOCATION_TYPES.map(type => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

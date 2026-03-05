@@ -10,11 +10,13 @@ export const USER_ROLES = ["Admin", "Coordinator", "Staff", "Viewer"] as const;
 export const TICKET_STATUSES = ["Not Started", "In Progress", "Pending Review", "Completed"] as const;
 export const RECURRING_FREQUENCIES = ["Daily", "Weekly", "Bi-Weekly", "Monthly", "3 Months", "6 Months"] as const;
 export const CATEGORY_COLORS = ["red", "orange", "yellow", "green", "blue", "purple", "pink", "teal", "indigo", "cyan"] as const;
+export const LOCATION_TYPES = ["City-Owned Parking Facilities", "Public Right-of-Way", "City-Owned Public Building"] as const;
 
 export type UserRole = (typeof USER_ROLES)[number];
 export type TicketStatus = (typeof TICKET_STATUSES)[number];
 export type RecurringFrequency = (typeof RECURRING_FREQUENCIES)[number];
 export type CategoryColor = (typeof CATEGORY_COLORS)[number];
+export type LocationType = (typeof LOCATION_TYPES)[number];
 
 export const teamSchema = z.object({
   id: z.string(),
@@ -51,6 +53,7 @@ export type Category = z.infer<typeof categorySchema>;
 export const locationSchema = z.object({
     id: z.string(),
     name: z.string(),
+    type: z.enum(LOCATION_TYPES).optional(),
     numberOfFloors: z.number().optional(),
     teamId: z.string(),
 });

@@ -19,7 +19,11 @@
           "description": "The name of the parent department (e.g., 'Transportation and Mobility')."
         }
       },
-      "required": ["id", "name", "department"]
+      "required": [
+        "id",
+        "name",
+        "department"
+      ]
     },
     "User": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -42,12 +46,17 @@
         },
         "role": {
           "type": "string",
-          "enum": ["Admin", "Coordinator", "Staff", "Viewer"],
+          "enum": [
+            "Admin",
+            "Coordinator",
+            "Staff",
+            "Viewer"
+          ],
           "description": "The role of the user within their assigned team."
         },
         "teamId": {
-            "type": "string",
-            "description": "The ID of the team the user belongs to, or 'allTeams' for admins."
+          "type": "string",
+          "description": "The ID of the team the user belongs to, or 'allTeams' for admins."
         }
       },
       "required": [
@@ -119,54 +128,63 @@
                 "description": "The date the photo was uploaded."
               }
             },
-            "required": ["url", "path", "createdAt"]
+            "required": [
+              "url",
+              "path",
+              "createdAt"
+            ]
           }
         },
         "emlAttachments": {
-            "type": "array",
-            "description": "A list of EML files associated with the task.",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string",
-                        "description": "Name of the EML file."
-                    },
-                    "url": {
-                        "type": "string",
-                        "description": "Public URL of the EML file."
-                    },
-                    "path": {
-                        "type": "string",
-                        "description": "Storage path of the EML file."
-                    },
-                    "createdAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The date the EML file was uploaded."
-                    }
-                },
-                "required": ["name", "url", "path", "createdAt"]
-            }
+          "type": "array",
+          "description": "A list of EML files associated with the task.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Name of the EML file."
+              },
+              "url": {
+                "type": "string",
+                "description": "Public URL of the EML file."
+              },
+              "path": {
+                "type": "string",
+                "description": "Storage path of the EML file."
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "The date the EML file was uploaded."
+              }
+            },
+            "required": [
+              "name",
+              "url",
+              "path",
+              "createdAt"
+            ]
+          }
         },
         "creatorId": {
-            "type": "string",
-            "description": "The UID of the user who created the task."
+          "type": "string",
+          "description": "The UID of the user who created the task."
         },
         "approvedBy": {
           "type": "string",
           "description": "The UID of the user who approved the task completion."
         },
         "assignedToIds": {
-            "type": "array",
-            "description": "A list of user IDs assigned to the task.",
-            "items": {
-                "type": "string"
-            }
+          "type": "array",
+          "description": "A list of user IDs assigned to the task.",
+          "items": {
+            "type": "string"
+          }
         },
         "unableToComplete": {
-            "type": "boolean",
-            "description": "Indicates if the task was marked as unable to be completed."
+          "type": "boolean",
+          "description": "Indicates if the task was marked as unable to be completed."
         },
         "resolution": {
           "type": "string",
@@ -237,15 +255,15 @@
                 "description": "The UID of the user who completed the task."
               }
             },
-            "required": ["completedAt", "completedBy"]
+            "required": [
+              "completedAt",
+              "completedBy"
+            ]
           }
         },
-        "assignedToIds": {
-            "type": "array",
-            "description": "A list of user IDs assigned to the task.",
-            "items": {
-                "type": "string"
-            }
+        "assignedToId": {
+          "type": "string",
+          "description": "The UID of the user this task is assigned to. Can be empty."
         }
       },
       "required": [
@@ -268,6 +286,15 @@
         "name": {
           "type": "string",
           "description": "The name of the location."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "City-Owned Parking Facilities",
+            "Public Right-of-Way",
+            "City-Owned Public Building"
+          ],
+          "description": "The category/type of the location."
         },
         "numberOfFloors": {
           "type": "number",
@@ -303,16 +330,23 @@
           "description": "The color associated with the category."
         },
         "subcategories": {
-            "type": "array",
-            "description": "A list of sub-categories.",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "string" },
-                    "name": { "type": "string" }
-                },
-                "required": ["id", "name"]
-            }
+          "type": "array",
+          "description": "A list of sub-categories.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          }
         }
       },
       "required": [

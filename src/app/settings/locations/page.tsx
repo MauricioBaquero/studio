@@ -222,6 +222,7 @@ export default function LocationsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Location Name</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Tickets</TableHead>
                 <TableHead>Number of Floors</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -237,6 +238,9 @@ export default function LocationsPage() {
                         <span>{location.name}</span>
                         <span className="text-[10px] font-mono text-muted-foreground bg-muted w-fit px-1 rounded">ID: {location.id}</span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm">{location.type || '-'}</span>
                     </TableCell>
                     <TableCell>
                       <Badge variant={count > 0 ? "secondary" : "outline"} className="text-[10px] py-0">
@@ -296,7 +300,7 @@ export default function LocationsPage() {
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-4">
-                <span>This action cannot be undone. This will permanently delete the location.</span>
+                <div>This action cannot be undone. This will permanently delete the location.</div>
                 
                 {usageCount > 0 && (
                   <div className="bg-destructive/10 p-4 rounded-md border border-destructive/20 text-destructive">
@@ -304,10 +308,10 @@ export default function LocationsPage() {
                           <AlertTriangle className="h-4 w-4" />
                           Usage Detected
                       </div>
-                      <p className="text-sm">
+                      <div className="text-sm">
                           This location is tied to <strong>{usageCount}</strong> active tickets for the {currentTeam?.name} team. 
                           You must select a replacement location to move these tickets to before deleting.
-                      </p>
+                      </div>
                       
                       <div className="mt-4 space-y-2 text-foreground">
                           <Label htmlFor="replacement-location" className="text-xs font-bold uppercase">Replacement Location</Label>
