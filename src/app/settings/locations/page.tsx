@@ -9,7 +9,7 @@ import {
   updateDocumentNonBlocking,
   useUser,
 } from '@/firebase';
-import { collection, query, doc, updateDoc, deleteField } from 'firebase/firestore';
+import { collection, query, doc } from 'firebase/firestore';
 import { Location, Ticket, Team } from '@/lib/data';
 import {
   Card,
@@ -27,7 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { MoreHorizontal, PlusCircle, AlertTriangle, Eraser, Loader2 } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, AlertTriangle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,7 +62,6 @@ export default function LocationsPage() {
   const teamId = currentUser?.teamId;
   const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isCleaning, setIsCleaning] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [deletingLocationId, setDeletingLocationId] = useState<string | null>(
@@ -109,37 +108,6 @@ export default function LocationsPage() {
     });
     return counts;
   }, [tickets]);
-
-  const handleCleanup = async () => {
-    if (!firestore || !locations) return;
-    
-    setIsCleaning(true);
-    try {
-      const promises = locations.map(loc => {
-        const locRef = doc(firestore, 'locations', loc.id);
-        // Explicitly remove the teamId field from the document
-        return updateDoc(locRef, {
-          teamId: deleteField()
-        });
-      });
-
-      await Promise.all(promises);
-      
-      toast({
-        title: "Cleanup Successful",
-        description: "Historical team data has been removed from all locations.",
-      });
-    } catch (error) {
-      console.error("Cleanup failed:", error);
-      toast({
-        title: "Cleanup Failed",
-        description: "There was an error updating your database documents.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsCleaning(false);
-    }
-  };
 
   const handleOpenForm = (location: Location | null) => {
     setEditingLocation(location);
@@ -237,16 +205,6 @@ export default function LocationsPage() {
             </CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleCleanup} 
-              disabled={isCleaning || !locations || locations.length === 0}
-              className="border-yellow-500/50 text-yellow-600 hover:bg-yellow-50"
-            >
-              {isCleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Eraser className="mr-2 h-4 w-4" />}
-              Cleanup legacy Metadata
-            </Button>
             <Button onClick={() => handleOpenForm(null)}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Add Location
