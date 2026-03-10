@@ -266,6 +266,11 @@
           "items": {
             "type": "string"
           }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date the recurring task was created."
         }
       },
       "required": [

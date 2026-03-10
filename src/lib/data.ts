@@ -116,6 +116,7 @@ export const recurringTaskSchema = z.object({
   assignedToIds: z.array(z.string()).optional(),
   dayOfWeek: z.number().optional(),
   weekOfMonth: z.number().optional(),
+  createdAt: timestampSchema.optional(),
 });
 export type RecurringTask = z.infer<typeof recurringTaskSchema>;
 

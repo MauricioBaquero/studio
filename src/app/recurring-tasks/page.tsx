@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -35,6 +34,8 @@ import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { RecurringTaskFilters, FilterValues } from '@/components/recurring-task-filters';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 
 type CompletedTask = {
@@ -49,6 +50,7 @@ type CompletedTask = {
 };
 
 export default function RecurringTasksPage() {
+  const { toast } = useToast();
   const firestore = useFirestore();
   const { user: currentUser } = useUser();
   const teamId = currentUser?.teamId;
@@ -382,6 +384,32 @@ export default function RecurringTasksPage() {
     return currentSort.direction === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
   };
 
+  const handleMigrateCreationDates = () => {
+    if (!firestore || !teamId || teamId === 'allTeams' || !recurringTasks) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Cannot migrate: missing data or context."
+      });
+      return;
+    }
+    
+    // March 9, 2026 at 8:43:38 AM UTC-5
+    const migrationDate = new Date('2026-03-09T08:43:38-05:00');
+    
+    recurringTasks.forEach(task => {
+      const taskRef = doc(firestore, `teams/${teamId}/recurringTasks`, task.id);
+      updateDocumentNonBlocking(taskRef, {
+        createdAt: migrationDate
+      });
+    });
+
+    toast({
+      title: "Migration Successful",
+      description: `Updated creation date for ${recurringTasks.length} recurring tasks.`
+    });
+  };
+
   const isLoading = isLoadingRecurringTasks || isLoadingCategories || isLoadingUsers || isLoadingLocations;
 
   const renderTaskRow = (task: RecurringTask, isCompleted: boolean, isUpcoming: boolean) => {
@@ -501,7 +529,14 @@ export default function RecurringTasksPage() {
 
   return (
     <div className="flex flex-col h-full gap-6">
-      <h1 className="text-3xl font-bold font-headline">Recurring Tasks</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold font-headline">Recurring Tasks</h1>
+        {currentUser?.role === 'Admin' && (
+          <Button variant="outline" size="sm" onClick={handleMigrateCreationDates}>
+            Migrate Creation Dates
+          </Button>
+        )}
+      </div>
       
       <RecurringTaskFilters 
         parentCategories={parentCategories}

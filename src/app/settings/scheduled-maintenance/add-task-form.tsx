@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -46,7 +45,7 @@ import {
   useCollection,
   useMemoFirebase,
 } from '@/firebase';
-import { collection, doc, query } from 'firebase/firestore';
+import { collection, doc, query, serverTimestamp } from 'firebase/firestore';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Check, ChevronsUpDown } from 'lucide-react';
@@ -173,6 +172,7 @@ export function AddTaskForm({
     
     if (!isEditMode) {
         taskData.lastCompleted = [];
+        taskData.createdAt = serverTimestamp();
     }
 
     // Explicitly set scheduling fields based on frequency to prevent 'undefined' errors

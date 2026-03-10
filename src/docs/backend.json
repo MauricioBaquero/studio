@@ -263,6 +263,11 @@
         "assignedToId": {
           "type": "string",
           "description": "The UID of the user this task is assigned to. Can be empty."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date the recurring task was created."
         }
       },
       "required": [
