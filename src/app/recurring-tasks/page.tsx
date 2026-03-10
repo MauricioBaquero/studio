@@ -262,8 +262,8 @@ export default function RecurringTasksPage() {
       const nextDueDate = getNextDueDate(task, advanceCompletionDays);
       const daysUntilDue = differenceInDays(nextDueDate, new Date());
       
-      // We check if the task is "Satisfied Early" by comparing the natural next due date 
-      // with the advance-aware next due date. If they differ, it was completed for the current window.
+      // A task is "Satisfied Early" if it has been completed within the advance window
+      // causing the getNextDueDate logic to skip the current occurrence.
       const nominalNext = getNextDueDate(task, 0);
       const isSatisfiedEarly = nominalNext.getTime() !== nextDueDate.getTime();
       const isCompletedToday = lastCompletion && isToday(lastCompletion);
