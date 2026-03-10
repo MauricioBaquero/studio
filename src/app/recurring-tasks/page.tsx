@@ -300,7 +300,7 @@ export default function RecurringTasksPage() {
 
         if (filters.dateRange.from || filters.dateRange.to) {
             const start = filters.dateRange.from ? startOfDay(filters.dateRange.from) : new Date(0);
-            const end = filters.dateRange.to ? startOfDay(filters.dateRange.to) : new Date(8640000000000000);
+            const end = filters.dateRange.to ? endOfDay(filters.dateRange.to) : new Date(8640000000000000);
             
             if (task.completedAt < start || task.completedAt > end) {
                 return false;
