@@ -394,19 +394,19 @@ export default function RecurringTasksPage() {
       return;
     }
     
-    // March 9, 2026 at 8:43:38 AM UTC-5
-    const migrationDate = new Date('2026-03-09T08:43:38-05:00');
+    // Use the current time for migration
+    const now = new Date();
     
     recurringTasks.forEach(task => {
       const taskRef = doc(firestore, `teams/${teamId}/recurringTasks`, task.id);
       updateDocumentNonBlocking(taskRef, {
-        createdAt: migrationDate
+        createdAt: now
       });
     });
 
     toast({
       title: "Migration Successful",
-      description: `Updated creation date for ${recurringTasks.length} recurring tasks.`
+      description: `Updated creation date for ${recurringTasks.length} recurring tasks to current time.`
     });
   };
 
