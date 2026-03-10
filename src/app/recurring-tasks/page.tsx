@@ -410,6 +410,29 @@ export default function RecurringTasksPage() {
     });
   };
 
+  const handleResetCompletionHistory = () => {
+    if (!firestore || !teamId || teamId === 'allTeams' || !recurringTasks) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Cannot reset: missing data or context."
+      });
+      return;
+    }
+    
+    recurringTasks.forEach(task => {
+      const taskRef = doc(firestore, `teams/${teamId}/recurringTasks`, task.id);
+      updateDocumentNonBlocking(taskRef, {
+        lastCompleted: []
+      });
+    });
+
+    toast({
+      title: "History Reset Successful",
+      description: `Cleared completion history for ${recurringTasks.length} recurring tasks.`
+    });
+  };
+
   const isLoading = isLoadingRecurringTasks || isLoadingCategories || isLoadingUsers || isLoadingLocations;
 
   const renderTaskRow = (task: RecurringTask, isCompleted: boolean, isUpcoming: boolean) => {
@@ -532,9 +555,14 @@ export default function RecurringTasksPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold font-headline">Recurring Tasks</h1>
         {currentUser?.role === 'Admin' && (
-          <Button variant="outline" size="sm" onClick={handleMigrateCreationDates}>
-            Migrate Creation Dates
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleResetCompletionHistory}>
+              Reset Completion History
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleMigrateCreationDates}>
+              Migrate Creation Dates
+            </Button>
+          </div>
         )}
       </div>
       
