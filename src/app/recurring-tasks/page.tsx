@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -386,55 +385,6 @@ export default function RecurringTasksPage() {
     return currentSort.direction === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
   };
 
-  const handleMigrateCreationDates = () => {
-    if (!firestore || !teamId || teamId === 'allTeams' || !recurringTasks) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Cannot migrate: missing data or context."
-      });
-      return;
-    }
-    
-    // Use the current time for migration
-    const now = new Date();
-    
-    recurringTasks.forEach(task => {
-      const taskRef = doc(firestore, `teams/${teamId}/recurringTasks`, task.id);
-      updateDocumentNonBlocking(taskRef, {
-        createdAt: now
-      });
-    });
-
-    toast({
-      title: "Migration Successful",
-      description: `Updated creation date for ${recurringTasks.length} recurring tasks to current time.`
-    });
-  };
-
-  const handleResetCompletionHistory = () => {
-    if (!firestore || !teamId || teamId === 'allTeams' || !recurringTasks) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Cannot reset: missing data or context."
-      });
-      return;
-    }
-    
-    recurringTasks.forEach(task => {
-      const taskRef = doc(firestore, `teams/${teamId}/recurringTasks`, task.id);
-      updateDocumentNonBlocking(taskRef, {
-        lastCompleted: []
-      });
-    });
-
-    toast({
-      title: "History Reset Successful",
-      description: `Cleared completion history for ${recurringTasks.length} recurring tasks.`
-    });
-  };
-
   const isLoading = isLoadingRecurringTasks || isLoadingCategories || isLoadingUsers || isLoadingLocations;
 
   const renderTaskRow = (task: RecurringTask, isCompleted: boolean, isUpcoming: boolean) => {
@@ -556,16 +506,6 @@ export default function RecurringTasksPage() {
     <div className="flex flex-col h-full gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold font-headline">Recurring Tasks</h1>
-        {currentUser?.role === 'Admin' && (
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleResetCompletionHistory}>
-              Reset Completion History
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleMigrateCreationDates}>
-              Migrate Creation Dates
-            </Button>
-          </div>
-        )}
       </div>
       
       <RecurringTaskFilters 
