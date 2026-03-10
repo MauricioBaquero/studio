@@ -161,23 +161,30 @@ export const getCategoryColor = (
 export const getNextDueDate = (task: RecurringTask, advanceDays: number = 0): Date => {
   const today = startOfDay(new Date());
 
+  // Use createdAt as the starting anchor for the task's schedule. 
+  // Fallback to "yesterday" if missing, so it can be due today.
+  const createdAt = task.createdAt ? toDate(task.createdAt) : subDays(today, 1);
+  const startAnchor = startOfDay(createdAt);
+
   const mostRecentCompletion = task.lastCompleted && task.lastCompleted.length > 0
     ? new Date(Math.max(...task.lastCompleted.filter(Boolean).map(d => toDate((d as any).completedAt || d).getTime())))
     : null;
 
   const lastCompleted = mostRecentCompletion ? startOfDay(mostRecentCompletion) : null;
 
-  // We only apply advance skip logic to non-daily tasks. 
-  // Daily tasks should simply move to the next day once completed.
+  // Skip logic: Non-daily tasks can be satisfied early if completed within the advance window.
   const skipWindow = task.frequency === 'Daily' ? 0 : advanceDays;
 
-  // Function to find the absolute next occurrence strictly after a specific base date
   const findStrictlyNext = (base: Date): Date => {
     switch (task.frequency) {
       case 'Daily':
+        // If searching from "before creation", the first occurrence is the creation date itself.
+        if (isSameDay(base, subDays(startAnchor, 1))) return startAnchor;
         return addDays(base, 1);
       
       case 'Weekly': {
+        // Finds next occurrence of dayOfWeek strictly after base.
+        // nextDay handles day matching: if base is Sunday and anchor is Monday, it returns Monday.
         return nextDay(base, task.dayOfWeek as any);
       }
 
@@ -188,8 +195,10 @@ export const getNextDueDate = (task: RecurringTask, advanceDays: number = 0): Da
           if (d.getDay() === task.dayOfWeek) {
             const dom = d.getDate();
             const occurrence = Math.floor((dom - 1) / 7) + 1;
-            const isMatch = (task.weekOfMonth === 1 && occurrence % 2 !== 0) || (task.weekOfMonth === 2 && occurrence % 2 === 0);
-            if (isMatch) return d;
+            const isMatch = (task.weekOfMonth === 1 && occurrence % 2 !== 0) || 
+                            (task.weekOfMonth === 2 && occurrence % 2 === 0);
+            
+            if (isMatch && !isAfter(startAnchor, d)) return d;
           }
         }
         return addWeeks(base, 2);
@@ -199,29 +208,31 @@ export const getNextDueDate = (task: RecurringTask, advanceDays: number = 0): Da
       case '3 Months':
       case '6 Months': {
         const interval = task.frequency === 'Monthly' ? 1 : task.frequency === '3 Months' ? 3 : 6;
+        
+        // Day-of-week based pattern (e.g., 2nd Tuesday)
         if (task.weekOfMonth && task.dayOfWeek !== undefined) {
-          let candidate = setDate(base, 1); // Start of month
-          
+          let candidate = setDate(base, 1); 
           const findNthDay = (mBase: Date) => {
             let firstDay = setDay(mBase, task.dayOfWeek!, { weekStartsOn: 0 });
             if (isAfter(mBase, firstDay)) firstDay = addWeeks(firstDay, 1);
             return addWeeks(firstDay, task.weekOfMonth! - 1);
           };
-
-          let occurrence = findNthDay(candidate);
           
-          // If occurrence is not strictly after base, try current month or jump intervals
-          while (!isAfter(occurrence, base)) {
+          let occurrence = findNthDay(candidate);
+          // Loop until occurrence is after base AND on/after creation
+          while (!isAfter(occurrence, base) || isAfter(startAnchor, occurrence)) {
             candidate = addMonths(candidate, 1);
             occurrence = findNthDay(candidate);
           }
-          
-          // Ensure we respect the 3/6 month interval relative to a known start if we had one,
-          // but since we don't, we just find the strictly next one for now.
-          // For simple recurring lists, "strictly next" is the common expectation.
           return occurrence;
         }
-        return addMonths(base, interval);
+        
+        // Fixed anniversary-based schedule
+        let occurrence = startAnchor;
+        while (!isAfter(occurrence, base)) {
+          occurrence = addMonths(occurrence, interval);
+        }
+        return occurrence;
       }
 
       default:
@@ -229,24 +240,15 @@ export const getNextDueDate = (task: RecurringTask, advanceDays: number = 0): Da
     }
   };
 
-  // Logic: 
-  // 1. Calculate the occurrence that would be next if we ignored completions.
-  // 2. If we have a completion, and it was "recent enough" to satisfy that occurrence, jump to the next.
-  
-  // Use a very distant past if no completion exists so the first found occurrence is "overdue" or "next"
-  const calculationBase = lastCompleted ? lastCompleted : subDays(today, 365);
-  let occurrence = findStrictlyNext(calculationBase);
+  // Search from either the last completion or right before the creation date
+  const baseDate = lastCompleted ? lastCompleted : subDays(startAnchor, 1);
+  let occurrence = findStrictlyNext(baseDate);
 
-  // If the occurrence we found is in the future relative to today, and lastCompleted is close enough to it...
-  // OR if occurrence is today and lastCompleted was within the window...
+  // If completed recently enough to satisfy this cycle, jump to the next one
   if (lastCompleted && differenceInDays(occurrence, lastCompleted) <= skipWindow) {
-    // This occurrence was already satisfied early. Skip to the next one.
     occurrence = findStrictlyNext(occurrence);
   }
 
-  // Final check: if the occurrence is still in the past and NOT satisfied by lastCompleted, 
-  // it remains in the past (Overdue). If it's already satisfied, the logic above handled the skip.
-  
   return occurrence;
 };
 
