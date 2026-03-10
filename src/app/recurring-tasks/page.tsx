@@ -13,7 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { format, isToday, isPast, startOfDay, endOfDay, isSameDay, differenceInDays, isWithinInterval, subDays, isTomorrow } from 'date-fns';
+import { format, isToday, isPast, startOfDay, isSameDay, differenceInDays, subDays, isTomorrow } from 'date-fns';
 import {
   useCollection,
   useFirestore,
@@ -36,6 +36,7 @@ import { RecurringTaskFilters, FilterValues } from '@/components/recurring-task-
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 type CompletedTask = {
@@ -196,7 +197,7 @@ export default function RecurringTasksPage() {
         if (filters.dateRange.from || filters.dateRange.to) {
             const nextDueDate = getNextDueDate(task, advanceCompletionDays);
             const start = filters.dateRange.from ? startOfDay(filters.dateRange.from) : new Date(0);
-            const end = filters.dateRange.to ? endOfDay(filters.dateRange.to) : new Date(8640000000000000);
+            const end = filters.dateRange.to ? startOfDay(filters.dateRange.to) : new Date(8640000000000000);
             
             if (nextDueDate < start || nextDueDate > end) {
                 return false;
@@ -299,7 +300,7 @@ export default function RecurringTasksPage() {
 
         if (filters.dateRange.from || filters.dateRange.to) {
             const start = filters.dateRange.from ? startOfDay(filters.dateRange.from) : new Date(0);
-            const end = filters.dateRange.to ? endOfDay(filters.dateRange.to) : new Date(8640000000000000);
+            const end = filters.dateRange.to ? startOfDay(filters.dateRange.to) : new Date(8640000000000000);
             
             if (task.completedAt < start || task.completedAt > end) {
                 return false;
@@ -572,130 +573,140 @@ export default function RecurringTasksPage() {
         onFilterChange={setFilters}
       />
 
-      <div className="grid lg:grid-cols-1 gap-6 flex-1">
-        <Card className="flex flex-col">
-          <CardHeader>
-            <CardTitle>Scheduled Maintenance</CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px]"></TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleMaintenanceSort('title')}>
-                    <div className="flex items-center">Task <SortIcon field="title" currentSort={maintenanceSort} /></div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleMaintenanceSort('assignedTo')}>
-                    <div className="flex items-center">Assigned To <SortIcon field="assignedTo" currentSort={maintenanceSort} /></div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleMaintenanceSort('location')}>
-                    <div className="flex items-center">Location <SortIcon field="location" currentSort={maintenanceSort} /></div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleMaintenanceSort('nextDueDate')}>
-                    <div className="flex items-center">Next Due Date <SortIcon field="nextDueDate" currentSort={maintenanceSort} /></div>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {dueTasks.length === 0 && recentlyCompletedTasks.length === 0 && upcomingTasks.length === 0 ? (
-                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                      No scheduled maintenance tasks found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  <>
-                    {dueTasks.map(task => renderTaskRow(task, false, false))}
-                    
-                    {dueTasks.length > 0 && recentlyCompletedTasks.length > 0 && (
-                       <TableRow>
-                        <TableCell colSpan={5} className="!p-0">
-                          <div className="flex items-center gap-4 py-2 px-4">
-                            <Separator className="flex-1" />
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">Completed for this cycle</span>
-                            <Separator className="flex-1" />
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
+      <Tabs defaultValue="current" className="w-full flex-1 flex flex-col gap-6">
+        <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
+          <TabsTrigger value="current">Current / Upcoming</TabsTrigger>
+          <TabsTrigger value="history">History</TabsTrigger>
+        </TabsList>
 
-                    {recentlyCompletedTasks.map(task => renderTaskRow(task, true, false))}
-                    
-                    {upcomingTasks.length > 0 && (dueTasks.length > 0 || recentlyCompletedTasks.length > 0) && (
-                       <TableRow>
-                        <TableCell colSpan={5} className="!p-0">
-                          <div className="flex items-center gap-4 py-2 px-4">
-                            <Separator className="flex-1" />
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">Upcoming</span>
-                            <Separator className="flex-1" />
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    
-                    {upcomingTasks.map(task => renderTaskRow(task, false, true))}
-                  </>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-        <Card className="flex flex-col">
-          <CardHeader>
-            <CardTitle>History</CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleCompletedSort('title')}>
-                    <div className="flex items-center">Task <SortIcon field="title" currentSort={completedSort} /></div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleCompletedSort('locationName')}>
-                    <div className="flex items-center">Location <SortIcon field="locationName" currentSort={completedSort} /></div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleCompletedSort('frequency')}>
-                    <div className="flex items-center">Frequency <SortIcon field="frequency" currentSort={completedSort} /></div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleCompletedSort('completedBy')}>
-                    <div className="flex items-center">Completed By <SortIcon field="completedBy" currentSort={completedSort} /></div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleCompletedSort('completedAt')}>
-                    <div className="flex items-center">Completed At <SortIcon field="completedAt" currentSort={completedSort} /></div>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCompletedTasks.length > 0 ? (
-                  filteredCompletedTasks.map(task => {
-                    return (
-                      <TableRow
-                        key={`completed-${task.id}-${task.completedAt.getTime()}`}
-                      >
-                        <TableCell className="font-medium">
-                          {task.title}
-                        </TableCell>
-                        <TableCell>{task.locationName}</TableCell>
-                        <TableCell>{task.frequency}</TableCell>
-                        <TableCell>{task.completedBy?.name || 'N/A'}</TableCell>
-                        <TableCell>
-                            {format(task.completedAt, 'MM/dd/yyyy')}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                ) : (
+        <TabsContent value="current" className="flex-1">
+          <Card className="flex flex-col">
+            <CardHeader>
+              <CardTitle>Scheduled Maintenance</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                      No recurring tasks have been completed yet.
-                    </TableCell>
+                    <TableHead className="w-[50px]"></TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleMaintenanceSort('title')}>
+                      <div className="flex items-center">Task <SortIcon field="title" currentSort={maintenanceSort} /></div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleMaintenanceSort('assignedTo')}>
+                      <div className="flex items-center">Assigned To <SortIcon field="assignedTo" currentSort={maintenanceSort} /></div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleMaintenanceSort('location')}>
+                      <div className="flex items-center">Location <SortIcon field="location" currentSort={maintenanceSort} /></div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleMaintenanceSort('nextDueDate')}>
+                      <div className="flex items-center">Next Due Date <SortIcon field="nextDueDate" currentSort={maintenanceSort} /></div>
+                    </TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
+                </TableHeader>
+                <TableBody>
+                  {dueTasks.length === 0 && recentlyCompletedTasks.length === 0 && upcomingTasks.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-24 text-center">
+                        No scheduled maintenance tasks found.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    <>
+                      {dueTasks.map(task => renderTaskRow(task, false, false))}
+                      
+                      {dueTasks.length > 0 && recentlyCompletedTasks.length > 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} className="!p-0">
+                            <div className="flex items-center gap-4 py-2 px-4">
+                              <Separator className="flex-1" />
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">Completed for this cycle</span>
+                              <Separator className="flex-1" />
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+
+                      {recentlyCompletedTasks.map(task => renderTaskRow(task, true, false))}
+                      
+                      {upcomingTasks.length > 0 && (dueTasks.length > 0 || recentlyCompletedTasks.length > 0) && (
+                        <TableRow>
+                          <TableCell colSpan={5} className="!p-0">
+                            <div className="flex items-center gap-4 py-2 px-4">
+                              <Separator className="flex-1" />
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">Upcoming</span>
+                              <Separator className="flex-1" />
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      
+                      {upcomingTasks.map(task => renderTaskRow(task, false, true))}
+                    </>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="history" className="flex-1">
+          <Card className="flex flex-col">
+            <CardHeader>
+              <CardTitle>History</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleCompletedSort('title')}>
+                      <div className="flex items-center">Task <SortIcon field="title" currentSort={completedSort} /></div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleCompletedSort('locationName')}>
+                      <div className="flex items-center">Location <SortIcon field="locationName" currentSort={completedSort} /></div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleCompletedSort('frequency')}>
+                      <div className="flex items-center">Frequency <SortIcon field="frequency" currentSort={completedSort} /></div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleCompletedSort('completedBy')}>
+                      <div className="flex items-center">Completed By <SortIcon field="completedBy" currentSort={completedSort} /></div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleCompletedSort('completedAt')}>
+                      <div className="flex items-center">Completed At <SortIcon field="completedAt" currentSort={completedSort} /></div>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredCompletedTasks.length > 0 ? (
+                    filteredCompletedTasks.map(task => {
+                      return (
+                        <TableRow
+                          key={`completed-${task.id}-${task.completedAt.getTime()}`}
+                        >
+                          <TableCell className="font-medium">
+                            {task.title}
+                          </TableCell>
+                          <TableCell>{task.locationName}</TableCell>
+                          <TableCell>{task.frequency}</TableCell>
+                          <TableCell>{task.completedBy?.name || 'N/A'}</TableCell>
+                          <TableCell>
+                              {format(task.completedAt, 'MM/dd/yyyy')}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-24 text-center">
+                        No recurring tasks have been completed yet.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
