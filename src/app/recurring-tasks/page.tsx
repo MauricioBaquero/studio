@@ -197,7 +197,7 @@ export default function RecurringTasksPage() {
         if (filters.dateRange.from || filters.dateRange.to) {
             const nextDueDate = getNextDueDate(task, advanceCompletionDays);
             const start = filters.dateRange.from ? startOfDay(filters.dateRange.from) : new Date(0);
-            const end = filters.dateRange.to ? startOfDay(filters.dateRange.to) : new Date(8640000000000000);
+            const end = filters.dateRange.to ? endOfDay(filters.dateRange.to) : new Date(8640000000000000);
             
             if (nextDueDate < start || nextDueDate > end) {
                 return false;
