@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useParams } from 'next/navigation';
@@ -325,10 +324,6 @@ export default function LocationPropertyDetailsPage() {
               <CardContent className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-4">
-                    <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                      <RefreshCw className="h-4 w-4" />
-                      Status & Classification
-                    </h3>
                     <FormField
                       control={metadataForm.control}
                       name="status"
