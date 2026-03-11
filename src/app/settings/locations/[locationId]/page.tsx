@@ -149,6 +149,12 @@ export default function LocationPropertyDetailsPage() {
           lifeguardParking: data.lifeguardParking,
           otherParking: data.otherParking,
         }
+      },
+      // Note: We also update the metadata audit fields when capacity changes
+      metadata: {
+        ...location?.metadata,
+        lastUpdated: serverTimestamp(),
+        lastUser: currentUser.name || currentUser.email || 'Unknown User',
       }
     };
 
@@ -191,6 +197,18 @@ export default function LocationPropertyDetailsPage() {
     ? format(lastUpdatedDate, 'MMM d, yyyy p')
     : format(new Date(), 'MMM d, yyyy');
 
+  const AuditInfo = () => (
+    <div className="flex flex-col items-start gap-0.5">
+      <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground/80">
+        <User className="h-3 w-3 text-primary" />
+        <span>Last Edited by: {lastUser}</span>
+      </div>
+      <p className="text-[10px] text-muted-foreground">
+        {displayDateString}
+      </p>
+    </div>
+  );
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between gap-4">
@@ -208,16 +226,6 @@ export default function LocationPropertyDetailsPage() {
               ID: {locationId}
             </p>
           </div>
-        </div>
-
-        <div className="text-right hidden md:block border-l pl-6">
-          <div className="flex items-center justify-end gap-2 text-sm font-semibold">
-            <User className="h-3.5 w-3.5 text-primary" />
-            <span>{lastUser}</span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {displayDateString}
-          </p>
         </div>
       </div>
 
@@ -311,7 +319,8 @@ export default function LocationPropertyDetailsPage() {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="bg-muted/30 border-t p-6 flex justify-end">
+              <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
+                <AuditInfo />
                 <Button type="submit" disabled={isSavingMetadata} className="min-w-[140px]">
                   {isSavingMetadata ? (
                     <>
@@ -443,7 +452,8 @@ export default function LocationPropertyDetailsPage() {
                   />
                 </div>
               </CardContent>
-              <CardFooter className="bg-muted/30 border-t p-6 flex justify-end">
+              <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
+                <AuditInfo />
                 <Button type="submit" disabled={isSavingParking} className="min-w-[140px]">
                   {isSavingParking ? (
                     <>
