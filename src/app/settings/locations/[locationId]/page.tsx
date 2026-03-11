@@ -756,7 +756,36 @@ export default function LocationPropertyDetailsPage() {
                   )} />
                   <FormField control={technologyForm.control} name="network" render={({ field }) => (
                     <FormItem className="lg:col-span-2">
-                      <FormLabel className="flex items-center gap-2 font-semibold"><Wifi className="h-4 w-4 text-muted-foreground" /> Network Infrastructure</FormLabel>
+                      <FormLabel className="flex items-center gap-2 font-semibold">
+                        <Wifi className="h-4 w-4 text-muted-foreground" /> 
+                        Network Infrastructure
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button type="button" className="inline-flex outline-none">
+                              <Info className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary transition-colors" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-80 p-4">
+                            <div className="space-y-3">
+                              <h4 className="font-bold text-sm leading-none">Network Type Definitions</h4>
+                              <div className="grid gap-3">
+                                <div className="space-y-1">
+                                  <p className="text-xs font-bold text-primary">City Network</p>
+                                  <p className="text-xs text-muted-foreground">Connected directly to the municipality's private fiber or wireless backhaul.</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-xs font-bold text-primary">No Network</p>
+                                  <p className="text-xs text-muted-foreground">No active internet or data connection present at this site.</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-xs font-bold text-primary">City + Business Network</p>
+                                  <p className="text-xs text-muted-foreground">Hybrid setup providing both municipal service and private business-line connectivity.</p>
+                                </div>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </FormLabel>
                       <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
                           <SelectTrigger>
