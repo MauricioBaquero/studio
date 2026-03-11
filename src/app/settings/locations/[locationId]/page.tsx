@@ -238,7 +238,7 @@ export default function LocationPropertyDetailsPage() {
                             {location?.metadata?.lastUser || 'System Seed'}
                           </TableCell>
                         </TableRow>
-                        <TableRow className="hover:bg-transparent">
+                        <TableRow className="hover:bg-transparent border-b-0">
                           <TableCell className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-3">
                             Last Updated
                           </TableCell>
@@ -246,14 +246,6 @@ export default function LocationPropertyDetailsPage() {
                             {location?.metadata?.lastUpdated 
                               ? format(toDate(location.metadata.lastUpdated), 'MMM d, yyyy p')
                               : '---'}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow className="hover:bg-transparent border-b-0">
-                          <TableCell className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-3">
-                            Floors
-                          </TableCell>
-                          <TableCell className="text-sm font-medium py-3">
-                            {location?.numberOfFloors || 'N/A'}
                           </TableCell>
                         </TableRow>
                       </TableBody>
