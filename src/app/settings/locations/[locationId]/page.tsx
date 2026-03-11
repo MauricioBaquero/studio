@@ -134,6 +134,20 @@ export default function LocationPropertyDetailsPage() {
     },
   });
 
+  // Calculate total signage in real-time
+  const watchedSignage = signageForm.watch();
+  const totalSignageCount = useMemo(() => {
+    return (
+      (Number(watchedSignage.monumentSignage) || 0) +
+      (Number(watchedSignage.parkingInfoSignage) || 0) +
+      (Number(watchedSignage.paymentSystemSignage) || 0) +
+      (Number(watchedSignage.trafficRegulatorySignage) || 0) +
+      (Number(watchedSignage.trafficDirectionSignage) || 0) +
+      (Number(watchedSignage.wayfindingSignage) || 0) +
+      (Number(watchedSignage.otherSignage) || 0)
+    );
+  }, [watchedSignage]);
+
   const lightingForm = useForm<LightingValues>({
     resolver: zodResolver(lightingSchema),
     defaultValues: {
@@ -141,6 +155,15 @@ export default function LocationPropertyDetailsPage() {
       smallLights: 0,
     },
   });
+
+  // Calculate total lighting in real-time
+  const watchedLighting = lightingForm.watch();
+  const totalLightingCount = useMemo(() => {
+    return (
+      (Number(watchedLighting.largeLights) || 0) +
+      (Number(watchedLighting.smallLights) || 0)
+    );
+  }, [watchedLighting]);
 
   const technologyForm = useForm<TechnologyValues>({
     resolver: zodResolver(technologySchema),
@@ -615,6 +638,16 @@ export default function LocationPropertyDetailsPage() {
           <Form {...signageForm}>
             <form onSubmit={signageForm.handleSubmit(onSaveSignage)}>
               <CardContent className="p-6">
+                <div className="mb-6 p-4 bg-primary/5 rounded-lg border border-primary/10 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold uppercase tracking-wider text-primary/70">Calculated Inventory</p>
+                    <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">Total Sign Count</p>
+                  </div>
+                  <div className="text-4xl font-black font-headline text-primary">
+                    {totalSignageCount}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
                   <FormField
                     control={signageForm.control}
@@ -743,6 +776,16 @@ export default function LocationPropertyDetailsPage() {
           <Form {...lightingForm}>
             <form onSubmit={lightingForm.handleSubmit(onSaveLighting)}>
               <CardContent className="p-6">
+                <div className="mb-6 p-4 bg-primary/5 rounded-lg border border-primary/10 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold uppercase tracking-wider text-primary/70">Calculated Inventory</p>
+                    <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">Total Fixture Count</p>
+                  </div>
+                  <div className="text-4xl font-black font-headline text-primary">
+                    {totalLightingCount}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                   <FormField
                     control={lightingForm.control}
