@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -9,7 +10,7 @@ import {
   updateDocumentNonBlocking,
   useUser,
 } from '@/firebase';
-import { collection, query, doc } from 'firebase/firestore';
+import { collection, query, doc, deleteField } from 'firebase/firestore';
 import { Location, Ticket, Team } from '@/lib/data';
 import {
   Card,
@@ -27,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { MoreHorizontal, PlusCircle, AlertTriangle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, AlertTriangle, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -167,6 +168,24 @@ export default function LocationsPage() {
     setReplacementLocationId('');
   };
 
+  const handlePurgeFacilitySpecs = () => {
+    if (!firestore || !locations || locations.length === 0) return;
+    
+    if (!confirm("Are you sure you want to remove technical specifications from all locations? This cannot be undone.")) {
+        return;
+    }
+
+    locations.forEach(loc => {
+        const docRef = doc(firestore, 'locations', loc.id);
+        updateDocumentNonBlocking(docRef, { facilitySpecs: deleteField() });
+    });
+
+    toast({
+        title: "Cleanup Initiated",
+        description: "Removing technical specifications from all location records.",
+    });
+  };
+
   const isLoading = isLoadingLocations || isLoadingTickets;
 
   const usageCount = deletingLocationId ? ticketCounts[deletingLocationId] || 0 : 0;
@@ -205,6 +224,12 @@ export default function LocationsPage() {
             </CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {currentUser?.role === 'Admin' && (
+                <Button variant="outline" onClick={handlePurgeFacilitySpecs} className="text-destructive hover:bg-destructive/10">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Reset Technical Data
+                </Button>
+            )}
             <Button onClick={() => handleOpenForm(null)}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Add Location
