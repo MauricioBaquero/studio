@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useParams } from 'next/navigation';
@@ -761,7 +760,7 @@ export default function LocationPropertyDetailsPage() {
             <div className="flex items-center gap-3">
               <div className="bg-primary-foreground/20 p-2 rounded-lg"><HardHat className="h-6 w-6" /></div>
               <div>
-                <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">Infrastructure & Accessibility</CardTitle>
+                <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">Infrastructure &amp; Accessibility</CardTitle>
                 <CardDescription className="text-primary-foreground/80 font-medium">Site Characteristics & Clearances</CardDescription>
               </div>
             </div>
@@ -769,15 +768,6 @@ export default function LocationPropertyDetailsPage() {
           <Form {...infrastructureForm}>
             <form onSubmit={infrastructureForm.handleSubmit(onSaveInfrastructure)}>
               <CardContent className="p-6">
-                <div className="mb-6 p-4 bg-primary/5 rounded-lg border border-primary/10 flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-bold uppercase tracking-wider text-primary/70">Calculated Access Inventory</p>
-                    <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">TOTAL COUNT</p>
-                  </div>
-                  <div className="text-4xl font-black font-headline text-primary">
-                    {Number(infrastructureForm.watch('entrances') || 0) + Number(infrastructureForm.watch('exits') || 0)}
-                  </div>
-                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                   <div className="space-y-6">
                     <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2 border-b pb-2">
