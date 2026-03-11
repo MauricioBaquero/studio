@@ -114,7 +114,7 @@ export default function LocationPropertyDetailsPage() {
   const metadataForm = useForm<MetadataValues>({
     resolver: zodResolver(metadataSchema),
     values: {
-      status: location?.propertyDetails?.metadata?.status || 'Active',
+      status: location?.propertyDetails?.metadata?.status || '',
       latitude: location?.propertyDetails?.metadata?.location?.latitude || 0,
       longitude: location?.propertyDetails?.metadata?.location?.longitude || 0,
     },
@@ -435,17 +435,9 @@ export default function LocationPropertyDetailsPage() {
                           </PopoverContent>
                         </Popover>
                       </FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || "Active"}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          <SelectItem value="Active">Active</SelectItem>
-                          <SelectItem value="Construction">Construction</SelectItem>
-                          <SelectItem value="Divested">Divested</SelectItem>
-                          {field.value && !["Active", "Construction", "Divested"].includes(field.value) && (
-                            <SelectItem value={field.value}>{field.value}</SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <Input placeholder="e.g., Active, Construction" {...field} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
@@ -786,22 +778,9 @@ export default function LocationPropertyDetailsPage() {
                           </PopoverContent>
                         </Popover>
                       </FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select Network Type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="City Network">City Network</SelectItem>
-                          <SelectItem value="No Network">No Network</SelectItem>
-                          <SelectItem value="City + Business Network">City + Business Network</SelectItem>
-                          {/* Ensure legacy data is visible */}
-                          {field.value && !["City Network", "No Network", "City + Business Network"].includes(field.value) && (
-                            <SelectItem value={field.value}>{field.value}</SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <Input placeholder="e.g., City Network, Fiber" {...field} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
