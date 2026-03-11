@@ -313,67 +313,67 @@
           "type": "number",
           "description": "Number of floors at the location. Can be 0 or N/A."
         },
-        "facilitySpecs": {
-          "type": "array",
-          "description": "A list of technical specifications for the facility.",
-          "items": {
-            "type": "object"
-          }
-        },
-        "metadata": {
+        "propertyDetails": {
           "type": "object",
-          "description": "Site metadata including geolocation and status audit.",
           "properties": {
-            "lastUpdated": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "lastUser": {
-              "type": "string"
-            },
-            "status": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string"
-            },
-            "location": {
+            "metadata": {
               "type": "object",
               "properties": {
-                "latitude": {
-                  "type": "number"
+                "lastUpdated": {
+                  "type": "string",
+                  "format": "date-time"
                 },
-                "longitude": {
-                  "type": "number"
+                "lastUser": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "location": {
+                  "type": "object",
+                  "properties": {
+                    "latitude": {
+                      "type": "number"
+                    },
+                    "longitude": {
+                      "type": "number"
+                    }
+                  }
                 }
               }
-            }
-          }
-        },
-        "parkingCapacity": {
-          "type": "object",
-          "description": "Inventory of parking spaces by type.",
-          "properties": {
-            "totalParking": {
+            },
+            "parkingCapacity": {
               "type": "object",
               "properties": {
-                "adaParking": {
-                  "type": "integer"
+                "lastUpdated": {
+                  "type": "string",
+                  "format": "date-time"
                 },
-                "cityStaffParking": {
-                  "type": "integer"
+                "lastUser": {
+                  "type": "string"
                 },
-                "evParking": {
-                  "type": "integer"
-                },
-                "generalParking": {
-                  "type": "integer"
-                },
-                "lifeguardParking": {
-                  "type": "integer"
-                },
-                "otherParking": {
-                  "type": "integer"
+                "totalParking": {
+                  "type": "object",
+                  "properties": {
+                    "adaParking": {
+                      "type": "integer"
+                    },
+                    "cityStaffParking": {
+                      "type": "integer"
+                    },
+                    "evParking": {
+                      "type": "integer"
+                    },
+                    "generalParking": {
+                      "type": "integer"
+                    },
+                    "lifeguardParking": {
+                      "type": "integer"
+                    },
+                    "otherParking": {
+                      "type": "integer"
+                    }
+                  }
                 }
               }
             }

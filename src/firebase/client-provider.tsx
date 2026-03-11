@@ -69,10 +69,50 @@ const seedTeamsAndSubCollections = async (firestore: any) => {
     ];
     
     const locationsData = [
-      { name: 'City Hall Garage', numberOfFloors: 5, type: 'City-Owned Parking Facilities' },
-      { name: 'Courthouse Garage', numberOfFloors: 8, type: 'City-Owned Parking Facilities' },
-      { name: 'Riverwalk Garage', numberOfFloors: 4, type: 'City-Owned Parking Facilities' },
-      { name: 'Beach Lot A', numberOfFloors: 0, type: 'City-Owned Parking Facilities' },
+      { 
+        name: 'City Hall Garage', 
+        numberOfFloors: 5, 
+        type: 'City-Owned Parking Facilities',
+        propertyDetails: {
+          metadata: { status: 'Active', location: { latitude: 26.1224, longitude: -80.1373 } },
+          parkingCapacity: { 
+            totalParking: { adaParking: 10, cityStaffParking: 25, evParking: 4, generalParking: 450, lifeguardParking: 0, otherParking: 5 } 
+          }
+        }
+      },
+      { 
+        name: 'Courthouse Garage', 
+        numberOfFloors: 8, 
+        type: 'City-Owned Parking Facilities',
+        propertyDetails: {
+          metadata: { status: 'Active', location: { latitude: 26.1185, longitude: -80.1425 } },
+          parkingCapacity: { 
+            totalParking: { adaParking: 15, cityStaffParking: 10, evParking: 2, generalParking: 600, lifeguardParking: 0, otherParking: 0 } 
+          }
+        }
+      },
+      { 
+        name: 'Riverwalk Garage', 
+        numberOfFloors: 4, 
+        type: 'City-Owned Parking Facilities',
+        propertyDetails: {
+          metadata: { status: 'Active', location: { latitude: 26.1198, longitude: -80.1456 } },
+          parkingCapacity: { 
+            totalParking: { adaParking: 8, cityStaffParking: 5, evParking: 6, generalParking: 300, lifeguardParking: 0, otherParking: 2 } 
+          }
+        }
+      },
+      { 
+        name: 'Beach Lot A', 
+        numberOfFloors: 0, 
+        type: 'City-Owned Parking Facilities',
+        propertyDetails: {
+          metadata: { status: 'Active', location: { latitude: 26.1250, longitude: -80.1025 } },
+          parkingCapacity: { 
+            totalParking: { adaParking: 5, cityStaffParking: 0, evParking: 0, generalParking: 150, lifeguardParking: 10, otherParking: 0 } 
+          }
+        }
+      },
     ];
     
     const settingsData = {

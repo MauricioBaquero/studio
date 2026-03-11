@@ -10,9 +10,7 @@ import { useFirestore, useDoc, useMemoFirebase, useUser, updateDocumentNonBlocki
 import { doc, serverTimestamp } from 'firebase/firestore';
 import { Location, toDate } from '@/lib/data';
 import { format } from 'date-fns';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -24,7 +22,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const metadataSchema = z.object({
@@ -85,17 +82,17 @@ export default function LocationPropertyDetailsPage() {
   useEffect(() => {
     if (location) {
       metadataForm.reset({
-        status: location.metadata?.status || 'Active',
-        latitude: location.metadata?.location?.latitude || 0,
-        longitude: location.metadata?.location?.longitude || 0,
+        status: location.propertyDetails?.metadata?.status || 'Active',
+        latitude: location.propertyDetails?.metadata?.location?.latitude || 0,
+        longitude: location.propertyDetails?.metadata?.location?.longitude || 0,
       });
       parkingForm.reset({
-        adaParking: location.parkingCapacity?.totalParking?.adaParking || 0,
-        cityStaffParking: location.parkingCapacity?.totalParking?.cityStaffParking || 0,
-        evParking: location.parkingCapacity?.totalParking?.evParking || 0,
-        generalParking: location.parkingCapacity?.totalParking?.generalParking || 0,
-        lifeguardParking: location.parkingCapacity?.totalParking?.lifeguardParking || 0,
-        otherParking: location.parkingCapacity?.totalParking?.otherParking || 0,
+        adaParking: location.propertyDetails?.parkingCapacity?.totalParking?.adaParking || 0,
+        cityStaffParking: location.propertyDetails?.parkingCapacity?.totalParking?.cityStaffParking || 0,
+        evParking: location.propertyDetails?.parkingCapacity?.totalParking?.evParking || 0,
+        generalParking: location.propertyDetails?.parkingCapacity?.totalParking?.generalParking || 0,
+        lifeguardParking: location.propertyDetails?.parkingCapacity?.totalParking?.lifeguardParking || 0,
+        otherParking: location.propertyDetails?.parkingCapacity?.totalParking?.otherParking || 0,
       });
     }
   }, [location, metadataForm, parkingForm]);
@@ -105,7 +102,7 @@ export default function LocationPropertyDetailsPage() {
     setIsSavingMetadata(true);
 
     const updatedData = {
-      metadata: {
+      'propertyDetails.metadata': {
         status: data.status,
         location: {
           latitude: data.latitude,
@@ -140,7 +137,7 @@ export default function LocationPropertyDetailsPage() {
     setIsSavingParking(true);
 
     const updatedData = {
-      parkingCapacity: {
+      'propertyDetails.parkingCapacity': {
         totalParking: {
           adaParking: data.adaParking,
           cityStaffParking: data.cityStaffParking,
@@ -148,11 +145,7 @@ export default function LocationPropertyDetailsPage() {
           generalParking: data.generalParking,
           lifeguardParking: data.lifeguardParking,
           otherParking: data.otherParking,
-        }
-      },
-      // Note: We also update the metadata audit fields when capacity changes
-      metadata: {
-        ...location?.metadata,
+        },
         lastUpdated: serverTimestamp(),
         lastUser: currentUser.name || currentUser.email || 'Unknown User',
       }
@@ -188,25 +181,18 @@ export default function LocationPropertyDetailsPage() {
     );
   }
 
-  const lastUser = location?.metadata?.lastUser || 'System Seed';
-  const lastUpdatedDate = location?.metadata?.lastUpdated 
-    ? toDate(location.metadata.lastUpdated) 
-    : new Date();
-  
-  const displayDateString = location?.metadata?.lastUpdated 
-    ? format(lastUpdatedDate, 'MMM d, yyyy p')
-    : format(new Date(), 'MMM d, yyyy');
+  const AuditInfo = ({ lastUser, lastUpdated }: { lastUser?: string, lastUpdated?: any }) => {
+    const user = lastUser || 'System Seed';
+    const date = lastUpdated ? toDate(lastUpdated) : new Date();
+    const dateString = format(date, 'MMM d, yyyy p');
 
-  const AuditInfo = () => (
-    <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground/80">
-      <User className="h-3 w-3 text-primary" />
-      <span className="whitespace-nowrap">Last Edited by: {lastUser}</span>
-      <span className="mx-1 opacity-20">|</span>
-      <span className="text-[10px] font-normal text-muted-foreground whitespace-nowrap">
-        {displayDateString}
-      </span>
-    </div>
-  );
+    return (
+      <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground/80">
+        <User className="h-3 w-3 text-primary" />
+        <span className="whitespace-nowrap">Last Edited by: {user} on {dateString}</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -319,7 +305,10 @@ export default function LocationPropertyDetailsPage() {
                 </div>
               </CardContent>
               <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
-                <AuditInfo />
+                <AuditInfo 
+                  lastUser={location?.propertyDetails?.metadata?.lastUser} 
+                  lastUpdated={location?.propertyDetails?.metadata?.lastUpdated} 
+                />
                 <Button type="submit" disabled={isSavingMetadata} className="min-w-[140px]">
                   {isSavingMetadata ? (
                     <>
@@ -452,7 +441,10 @@ export default function LocationPropertyDetailsPage() {
                 </div>
               </CardContent>
               <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
-                <AuditInfo />
+                <AuditInfo 
+                  lastUser={location?.propertyDetails?.parkingCapacity?.lastUser} 
+                  lastUpdated={location?.propertyDetails?.parkingCapacity?.lastUpdated} 
+                />
                 <Button type="submit" disabled={isSavingParking} className="min-w-[140px]">
                   {isSavingParking ? (
                     <>

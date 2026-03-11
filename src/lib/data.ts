@@ -59,14 +59,15 @@ export const locationCoordsSchema = z.object({
 });
 
 export const locationMetadataSchema = z.object({
-  lastUpdated: timestampSchema,
-  lastUser: z.string(),
-  status: z.string(),
-  type: z.string().optional(),
-  location: locationCoordsSchema,
+  lastUpdated: timestampSchema.optional(),
+  lastUser: z.string().optional(),
+  status: z.string().optional(),
+  location: locationCoordsSchema.optional(),
 });
 
 export const parkingCapacitySchema = z.object({
+  lastUpdated: timestampSchema.optional(),
+  lastUser: z.string().optional(),
   totalParking: z.object({
     adaParking: z.number().int(),
     cityStaffParking: z.number().int(),
@@ -78,14 +79,18 @@ export const parkingCapacitySchema = z.object({
 });
 export type ParkingCapacity = z.infer<typeof parkingCapacitySchema>;
 
+export const propertyDetailsSchema = z.object({
+  metadata: locationMetadataSchema.optional(),
+  parkingCapacity: parkingCapacitySchema.optional(),
+});
+
 export const locationSchema = z.object({
     id: z.string(),
     name: z.string(),
     type: z.enum(LOCATION_TYPES).optional(),
     numberOfFloors: z.number().optional(),
     facilitySpecs: z.array(z.any()).optional(),
-    metadata: locationMetadataSchema.optional(),
-    parkingCapacity: parkingCapacitySchema.optional(),
+    propertyDetails: propertyDetailsSchema.optional(),
 });
 export type Location = z.infer<typeof locationSchema>;
 
