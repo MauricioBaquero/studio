@@ -1,10 +1,10 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, MapPin, ShieldCheck, Save, Car, Zap, Accessibility, UserCog, LifeBuoy, HelpCircle, Milestone, Lightbulb, Info, CreditCard, ShieldAlert, ArrowRight, Monitor, Cpu, Wifi, Trees, Sprout, Droplets, Leaf, Gauge, Smartphone, HardHat, Construction, Scaling, ArrowUpToLine, DoorOpen } from 'lucide-react';
+import { ArrowLeft, Loader2, MapPin, ShieldCheck, Save, Car, Zap, Accessibility, UserCog, LifeBuoy, HelpCircle, Milestone, Lightbulb, Info, CreditCard, ShieldAlert, ArrowRight, Monitor, Cpu, Wifi, Trees, Sprout, Droplets, Leaf, Gauge, Smartphone, HardHat, Construction, Scaling, DoorOpen } from 'lucide-react';
 import Link from 'next/link';
 import { useFirestore, useDoc, useMemoFirebase, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { doc, serverTimestamp } from 'firebase/firestore';
@@ -110,94 +110,83 @@ export default function LocationPropertyDetailsPage() {
   );
   const { data: location, isLoading } = useDoc<Location>(locationRef);
 
+  // Forms using reactive 'values' binding to keep in sync with Firestore data automatically
   const metadataForm = useForm<MetadataValues>({
     resolver: zodResolver(metadataSchema),
-    defaultValues: { status: 'Active', latitude: 0, longitude: 0 },
+    values: {
+      status: location?.propertyDetails?.metadata?.status || 'Active',
+      latitude: location?.propertyDetails?.metadata?.location?.latitude || 0,
+      longitude: location?.propertyDetails?.metadata?.location?.longitude || 0,
+    },
   });
 
   const parkingForm = useForm<ParkingValues>({
     resolver: zodResolver(parkingSchema),
-    defaultValues: { adaParking: 0, cityStaffParking: 0, evParking: 0, generalParking: 0, lifeguardParking: 0, otherParking: 0 },
+    values: {
+      adaParking: location?.propertyDetails?.parkingCapacity?.totalParking?.adaParking || 0,
+      cityStaffParking: location?.propertyDetails?.parkingCapacity?.totalParking?.cityStaffParking || 0,
+      evParking: location?.propertyDetails?.parkingCapacity?.totalParking?.evParking || 0,
+      generalParking: location?.propertyDetails?.parkingCapacity?.totalParking?.generalParking || 0,
+      lifeguardParking: location?.propertyDetails?.parkingCapacity?.totalParking?.lifeguardParking || 0,
+      otherParking: location?.propertyDetails?.parkingCapacity?.totalParking?.otherParking || 0,
+    },
   });
 
   const signageForm = useForm<SignageValues>({
     resolver: zodResolver(signageSchema),
-    defaultValues: { monumentSignage: 0, otherSignage: 0, parkingInfoSignage: 0, paymentSystemSignage: 0, trafficDirectionSignage: 0, trafficRegulatorySignage: 0, wayfindingSignage: 0 },
+    values: {
+      monumentSignage: location?.propertyDetails?.signage?.totalSignage?.monumentSignage || 0,
+      otherSignage: location?.propertyDetails?.signage?.totalSignage?.otherSignage || 0,
+      parkingInfoSignage: location?.propertyDetails?.signage?.totalSignage?.parkingInfoSignage || 0,
+      paymentSystemSignage: location?.propertyDetails?.signage?.totalSignage?.paymentSystemSignage || 0,
+      trafficDirectionSignage: location?.propertyDetails?.signage?.totalSignage?.trafficDirectionSignage || 0,
+      trafficRegulatorySignage: location?.propertyDetails?.signage?.totalSignage?.trafficRegulatorySignage || 0,
+      wayfindingSignage: location?.propertyDetails?.signage?.totalSignage?.wayfindingSignage || 0,
+    },
   });
 
   const lightingForm = useForm<LightingValues>({
     resolver: zodResolver(lightingSchema),
-    defaultValues: { largeLights: 0, smallLights: 0 },
+    values: {
+      largeLights: location?.propertyDetails?.lighting?.totalLighting?.largeLights || 0,
+      smallLights: location?.propertyDetails?.lighting?.totalLighting?.smallLights || 0,
+    },
   });
 
   const technologyForm = useForm<TechnologyValues>({
     resolver: zodResolver(technologySchema),
-    defaultValues: { surfaceMounts: 0, flushMounts: 0, cameraTracking: 0, meters: 0, mobileAppPayment: false, network: '' },
+    values: {
+      surfaceMounts: location?.propertyDetails?.technology?.surfaceMounts || 0,
+      flushMounts: location?.propertyDetails?.technology?.flushMounts || 0,
+      cameraTracking: location?.propertyDetails?.technology?.cameraTracking || 0,
+      meters: location?.propertyDetails?.technology?.meters || 0,
+      mobileAppPayment: location?.propertyDetails?.technology?.mobileAppPayment || false,
+      network: location?.propertyDetails?.technology?.network || '',
+    },
   });
 
   const landscapingForm = useForm<LandscapingValues>({
     resolver: zodResolver(landscapingSchema),
-    defaultValues: { bushes: false, flowerBeds: false, grassGroundCover: false, irrigation: false, trees: false },
+    values: {
+      bushes: location?.propertyDetails?.landscaping?.bushes || false,
+      flowerBeds: location?.propertyDetails?.landscaping?.flowerBeds || false,
+      grassGroundCover: location?.propertyDetails?.landscaping?.grassGroundCover || false,
+      irrigation: location?.propertyDetails?.landscaping?.irrigation || false,
+      trees: location?.propertyDetails?.landscaping?.trees || false,
+    },
   });
 
   const infrastructureForm = useForm<InfrastructureValues>({
     resolver: zodResolver(infrastructureSchema),
-    defaultValues: { surfaceCondition: '', surfaceType: '', ft: 0, in: 0, entrances: 0, exits: 0 },
+    values: {
+      surfaceCondition: location?.propertyDetails?.infrastructure?.surfaceCondition || '',
+      surfaceType: location?.propertyDetails?.infrastructure?.surfaceType || '',
+      ft: location?.propertyDetails?.infrastructure?.clearanceRequirements?.ft || 0,
+      in: location?.propertyDetails?.infrastructure?.clearanceRequirements?.in || 0,
+      entrances: location?.propertyDetails?.infrastructure?.accessPoints?.entrances || 0,
+      exits: location?.propertyDetails?.infrastructure?.accessPoints?.exits || 0,
+    },
   });
-
-  useEffect(() => {
-    if (location) {
-      metadataForm.reset({
-        status: location.propertyDetails?.metadata?.status || 'Active',
-        latitude: location.propertyDetails?.metadata?.location?.latitude || 0,
-        longitude: location.propertyDetails?.metadata?.location?.longitude || 0,
-      });
-      parkingForm.reset({
-        adaParking: location.propertyDetails?.parkingCapacity?.totalParking?.adaParking || 0,
-        cityStaffParking: location.propertyDetails?.parkingCapacity?.totalParking?.cityStaffParking || 0,
-        evParking: location.propertyDetails?.parkingCapacity?.totalParking?.evParking || 0,
-        generalParking: location.propertyDetails?.parkingCapacity?.totalParking?.generalParking || 0,
-        lifeguardParking: location.propertyDetails?.parkingCapacity?.totalParking?.lifeguardParking || 0,
-        otherParking: location.propertyDetails?.parkingCapacity?.totalParking?.otherParking || 0,
-      });
-      signageForm.reset({
-        monumentSignage: location.propertyDetails?.signage?.totalSignage?.monumentSignage || 0,
-        otherSignage: location.propertyDetails?.signage?.totalSignage?.otherSignage || 0,
-        parkingInfoSignage: location.propertyDetails?.signage?.totalSignage?.parkingInfoSignage || 0,
-        paymentSystemSignage: location.propertyDetails?.signage?.totalSignage?.paymentSystemSignage || 0,
-        trafficDirectionSignage: location.propertyDetails?.signage?.totalSignage?.trafficDirectionSignage || 0,
-        trafficRegulatorySignage: location.propertyDetails?.signage?.totalSignage?.trafficRegulatorySignage || 0,
-        wayfindingSignage: location.propertyDetails?.signage?.totalSignage?.wayfindingSignage || 0,
-      });
-      lightingForm.reset({
-        largeLights: location.propertyDetails?.lighting?.totalLighting?.largeLights || 0,
-        smallLights: location.propertyDetails?.lighting?.totalLighting?.smallLights || 0,
-      });
-      technologyForm.reset({
-        surfaceMounts: location.propertyDetails?.technology?.surfaceMounts || 0,
-        flushMounts: location.propertyDetails?.technology?.flushMounts || 0,
-        cameraTracking: location.propertyDetails?.technology?.cameraTracking || 0,
-        meters: location.propertyDetails?.technology?.meters || 0,
-        mobileAppPayment: location.propertyDetails?.technology?.mobileAppPayment || false,
-        network: location.propertyDetails?.technology?.network || '',
-      });
-      landscapingForm.reset({
-        bushes: location.propertyDetails?.landscaping?.bushes || false,
-        flowerBeds: location.propertyDetails?.landscaping?.flowerBeds || false,
-        grassGroundCover: location.propertyDetails?.landscaping?.grassGroundCover || false,
-        irrigation: location.propertyDetails?.landscaping?.irrigation || false,
-        trees: location.propertyDetails?.landscaping?.trees || false,
-      });
-      infrastructureForm.reset({
-        surfaceCondition: location.propertyDetails?.infrastructure?.surfaceCondition || '',
-        surfaceType: location.propertyDetails?.infrastructure?.surfaceType || '',
-        ft: location.propertyDetails?.infrastructure?.clearanceRequirements?.ft || 0,
-        in: location.propertyDetails?.infrastructure?.clearanceRequirements?.in || 0,
-        entrances: location.propertyDetails?.infrastructure?.accessPoints?.entrances || 0,
-        exits: location.propertyDetails?.infrastructure?.accessPoints?.exits || 0,
-      });
-    }
-  }, [location, metadataForm, parkingForm, signageForm, lightingForm, technologyForm, landscapingForm, infrastructureForm]);
 
   const onSaveMetadata = async (data: MetadataValues) => {
     if (!firestore || !currentUser) return;
@@ -418,7 +407,7 @@ export default function LocationPropertyDetailsPage() {
                   <FormField control={metadataForm.control} name="status" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Site Status</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || "Active"}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
                         <SelectContent>
                           <SelectItem value="Active">Active</SelectItem>
@@ -741,7 +730,7 @@ export default function LocationPropertyDetailsPage() {
                   <FormField control={technologyForm.control} name="network" render={({ field }) => (
                     <FormItem className="lg:col-span-2">
                       <FormLabel className="flex items-center gap-2 font-semibold"><Wifi className="h-4 w-4 text-muted-foreground" /> Network Infrastructure</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select Network Type" />
