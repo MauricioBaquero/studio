@@ -252,21 +252,20 @@ export default function LocationPropertyDetailsPage() {
                     </Table>
                   </div>
                 </div>
-
-                <div className="bg-blue-500/5 border border-blue-500/10 rounded-lg p-4 space-y-2">
-                  <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                    <ShieldCheck className="h-4 w-4" />
-                    <span className="text-xs font-bold uppercase tracking-widest">Metadata Notice</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed italic">
-                    All changes are logged for internal auditing. Geolocation data is used for mapping tools and field staff routing.
-                  </p>
-                </div>
               </div>
             </div>
 
-            <CardFooter className="bg-muted/30 border-t p-6 flex justify-end items-center">
-              <Button type="submit" disabled={isSaving} className="min-w-[140px]">
+            <CardFooter className="bg-muted/30 border-t p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="flex-1 max-w-xl bg-blue-500/5 border border-blue-500/10 rounded-lg p-3 space-y-1">
+                <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest">Metadata Notice</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-snug italic">
+                  All changes are logged for internal auditing. Geolocation data is used for mapping tools and field staff routing.
+                </p>
+              </div>
+              <Button type="submit" disabled={isSaving} className="min-w-[140px] shrink-0">
                 {isSaving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
