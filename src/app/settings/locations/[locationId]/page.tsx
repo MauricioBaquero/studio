@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, MapPin, User, Clock, ShieldCheck, Save, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Loader2, MapPin, User, ShieldCheck, Save, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useFirestore, useDoc, useMemoFirebase, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { doc, serverTimestamp } from 'firebase/firestore';
@@ -279,13 +279,7 @@ export default function LocationPropertyDetailsPage() {
               </div>
             </div>
 
-            <CardFooter className="bg-muted/30 border-t p-6 flex justify-between items-center">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                <span className="text-xs font-medium italic">
-                  Changes will be visible to all departments immediately.
-                </span>
-              </div>
+            <CardFooter className="bg-muted/30 border-t p-6 flex justify-end items-center">
               <Button type="submit" disabled={isSaving} className="min-w-[140px]">
                 {isSaving ? (
                   <>
