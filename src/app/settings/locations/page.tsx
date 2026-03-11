@@ -1,7 +1,7 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import {
   useCollection,
   useFirestore,
@@ -258,7 +258,12 @@ export default function LocationsPage() {
                           <DropdownMenuItem
                             onClick={() => handleOpenForm(location)}
                           >
-                            Edit
+                            Edit Basic Info
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/settings/locations/${location.id}`}>
+                              Edit Property Details
+                            </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
