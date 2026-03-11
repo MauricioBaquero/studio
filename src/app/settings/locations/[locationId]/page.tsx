@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useParams } from 'next/navigation';
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, MapPin, ShieldCheck, Save, Car, Zap, Accessibility, UserCog, LifeBuoy, HelpCircle, Milestone, Lightbulb, Info, CreditCard, ShieldAlert, ArrowRight, Monitor, Cpu, Wifi } from 'lucide-react';
+import { ArrowLeft, Loader2, MapPin, ShieldCheck, Save, Car, Zap, Accessibility, UserCog, LifeBuoy, HelpCircle, Milestone, Lightbulb, Info, CreditCard, ShieldAlert, ArrowRight, Monitor, Cpu, Wifi, Trees, Sprout, Droplets, Leaf } from 'lucide-react';
 import Link from 'next/link';
 import { useFirestore, useDoc, useMemoFirebase, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { doc, serverTimestamp } from 'firebase/firestore';
@@ -23,6 +24,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Switch } from '@/components/ui/switch';
 
 const metadataSchema = z.object({
   status: z.string().min(1, "Status is required"),
@@ -61,11 +63,20 @@ const technologySchema = z.object({
   network: z.string(),
 });
 
+const landscapingSchema = z.object({
+  bushes: z.boolean(),
+  flowerBeds: z.boolean(),
+  grassGroundCover: z.boolean(),
+  irrigation: z.boolean(),
+  trees: z.boolean(),
+});
+
 type MetadataValues = z.infer<typeof metadataSchema>;
 type ParkingValues = z.infer<typeof parkingSchema>;
 type SignageValues = z.infer<typeof signageSchema>;
 type LightingValues = z.infer<typeof lightingSchema>;
 type TechnologyValues = z.infer<typeof technologySchema>;
+type LandscapingValues = z.infer<typeof landscapingSchema>;
 
 export default function LocationPropertyDetailsPage() {
   const params = useParams();
@@ -79,6 +90,7 @@ export default function LocationPropertyDetailsPage() {
   const [isSavingSignage, setIsSavingSignage] = useState(false);
   const [isSavingLighting, setIsSavingLighting] = useState(false);
   const [isSavingTechnology, setIsSavingTechnology] = useState(false);
+  const [isSavingLandscaping, setIsSavingLandscaping] = useState(false);
 
   const locationRef = useMemoFirebase(
     () => (firestore ? doc(firestore, 'locations', locationId) : null),
@@ -88,90 +100,32 @@ export default function LocationPropertyDetailsPage() {
 
   const metadataForm = useForm<MetadataValues>({
     resolver: zodResolver(metadataSchema),
-    defaultValues: {
-      status: 'Active',
-      latitude: 0,
-      longitude: 0,
-    },
+    defaultValues: { status: 'Active', latitude: 0, longitude: 0 },
   });
 
   const parkingForm = useForm<ParkingValues>({
     resolver: zodResolver(parkingSchema),
-    defaultValues: {
-      adaParking: 0,
-      cityStaffParking: 0,
-      evParking: 0,
-      generalParking: 0,
-      lifeguardParking: 0,
-      otherParking: 0,
-    },
+    defaultValues: { adaParking: 0, cityStaffParking: 0, evParking: 0, generalParking: 0, lifeguardParking: 0, otherParking: 0 },
   });
-
-  // Calculate total parking spaces in real-time
-  const watchedParking = parkingForm.watch();
-  const totalParkingSpaces = useMemo(() => {
-    return (
-      (Number(watchedParking.generalParking) || 0) +
-      (Number(watchedParking.adaParking) || 0) +
-      (Number(watchedParking.evParking) || 0) +
-      (Number(watchedParking.cityStaffParking) || 0) +
-      (Number(watchedParking.lifeguardParking) || 0) +
-      (Number(watchedParking.otherParking) || 0)
-    );
-  }, [watchedParking]);
 
   const signageForm = useForm<SignageValues>({
     resolver: zodResolver(signageSchema),
-    defaultValues: {
-      monumentSignage: 0,
-      otherSignage: 0,
-      parkingInfoSignage: 0,
-      paymentSystemSignage: 0,
-      trafficDirectionSignage: 0,
-      trafficRegulatorySignage: 0,
-      wayfindingSignage: 0,
-    },
+    defaultValues: { monumentSignage: 0, otherSignage: 0, parkingInfoSignage: 0, paymentSystemSignage: 0, trafficDirectionSignage: 0, trafficRegulatorySignage: 0, wayfindingSignage: 0 },
   });
-
-  // Calculate total signage in real-time
-  const watchedSignage = signageForm.watch();
-  const totalSignageCount = useMemo(() => {
-    return (
-      (Number(watchedSignage.monumentSignage) || 0) +
-      (Number(watchedSignage.parkingInfoSignage) || 0) +
-      (Number(watchedSignage.paymentSystemSignage) || 0) +
-      (Number(watchedSignage.trafficRegulatorySignage) || 0) +
-      (Number(watchedSignage.trafficDirectionSignage) || 0) +
-      (Number(watchedSignage.wayfindingSignage) || 0) +
-      (Number(watchedSignage.otherSignage) || 0)
-    );
-  }, [watchedSignage]);
 
   const lightingForm = useForm<LightingValues>({
     resolver: zodResolver(lightingSchema),
-    defaultValues: {
-      largeLights: 0,
-      smallLights: 0,
-    },
+    defaultValues: { largeLights: 0, smallLights: 0 },
   });
-
-  // Calculate total lighting in real-time
-  const watchedLighting = lightingForm.watch();
-  const totalLightingCount = useMemo(() => {
-    return (
-      (Number(watchedLighting.largeLights) || 0) +
-      (Number(watchedLighting.smallLights) || 0)
-    );
-  }, [watchedLighting]);
 
   const technologyForm = useForm<TechnologyValues>({
     resolver: zodResolver(technologySchema),
-    defaultValues: {
-      surfaceMounts: 0,
-      flushMounts: 0,
-      cameraTracking: 0,
-      network: '',
-    },
+    defaultValues: { surfaceMounts: 0, flushMounts: 0, cameraTracking: 0, network: '' },
+  });
+
+  const landscapingForm = useForm<LandscapingValues>({
+    resolver: zodResolver(landscapingSchema),
+    defaultValues: { bushes: false, flowerBeds: false, grassGroundCover: false, irrigation: false, trees: false },
   });
 
   useEffect(() => {
@@ -208,25 +162,27 @@ export default function LocationPropertyDetailsPage() {
         cameraTracking: location.propertyDetails?.technology?.cameraTracking || 0,
         network: location.propertyDetails?.technology?.network || '',
       });
+      landscapingForm.reset({
+        bushes: location.propertyDetails?.landscaping?.bushes || false,
+        flowerBeds: location.propertyDetails?.landscaping?.flowerBeds || false,
+        grassGroundCover: location.propertyDetails?.landscaping?.grassGroundCover || false,
+        irrigation: location.propertyDetails?.landscaping?.irrigation || false,
+        trees: location.propertyDetails?.landscaping?.trees || false,
+      });
     }
-  }, [location, metadataForm, parkingForm, signageForm, lightingForm, technologyForm]);
+  }, [location, metadataForm, parkingForm, signageForm, lightingForm, technologyForm, landscapingForm]);
 
   const onSaveMetadata = async (data: MetadataValues) => {
     if (!firestore || !currentUser) return;
     setIsSavingMetadata(true);
-
     const updatedData = {
       'propertyDetails.metadata': {
         status: data.status,
-        location: {
-          latitude: data.latitude,
-          longitude: data.longitude,
-        },
+        location: { latitude: data.latitude, longitude: data.longitude },
         lastUpdated: serverTimestamp(),
         lastUser: currentUser.name || currentUser.email || 'Unknown User',
       }
     };
-
     try {
       const ref = doc(firestore, 'locations', locationId);
       updateDocumentNonBlocking(ref, updatedData);
@@ -242,22 +198,13 @@ export default function LocationPropertyDetailsPage() {
   const onSaveParking = async (data: ParkingValues) => {
     if (!firestore || !currentUser) return;
     setIsSavingParking(true);
-
     const updatedData = {
       'propertyDetails.parkingCapacity': {
-        totalParking: {
-          adaParking: data.adaParking,
-          cityStaffParking: data.cityStaffParking,
-          evParking: data.evParking,
-          generalParking: data.generalParking,
-          lifeguardParking: data.lifeguardParking,
-          otherParking: data.otherParking,
-        },
+        totalParking: data,
         lastUpdated: serverTimestamp(),
         lastUser: currentUser.name || currentUser.email || 'Unknown User',
       }
     };
-
     try {
       const ref = doc(firestore, 'locations', locationId);
       updateDocumentNonBlocking(ref, updatedData);
@@ -273,7 +220,6 @@ export default function LocationPropertyDetailsPage() {
   const onSaveSignage = async (data: SignageValues) => {
     if (!firestore || !currentUser) return;
     setIsSavingSignage(true);
-
     const updatedData = {
       'propertyDetails.signage': {
         totalSignage: data,
@@ -281,7 +227,6 @@ export default function LocationPropertyDetailsPage() {
         lastUser: currentUser.name || currentUser.email || 'Unknown User',
       }
     };
-
     try {
       const ref = doc(firestore, 'locations', locationId);
       updateDocumentNonBlocking(ref, updatedData);
@@ -297,7 +242,6 @@ export default function LocationPropertyDetailsPage() {
   const onSaveLighting = async (data: LightingValues) => {
     if (!firestore || !currentUser) return;
     setIsSavingLighting(true);
-
     const updatedData = {
       'propertyDetails.lighting': {
         totalLighting: data,
@@ -305,7 +249,6 @@ export default function LocationPropertyDetailsPage() {
         lastUser: currentUser.name || currentUser.email || 'Unknown User',
       }
     };
-
     try {
       const ref = doc(firestore, 'locations', locationId);
       updateDocumentNonBlocking(ref, updatedData);
@@ -321,7 +264,6 @@ export default function LocationPropertyDetailsPage() {
   const onSaveTechnology = async (data: TechnologyValues) => {
     if (!firestore || !currentUser) return;
     setIsSavingTechnology(true);
-
     const updatedData = {
       'propertyDetails.technology': {
         ...data,
@@ -329,7 +271,6 @@ export default function LocationPropertyDetailsPage() {
         lastUser: currentUser.name || currentUser.email || 'Unknown User',
       }
     };
-
     try {
       const ref = doc(firestore, 'locations', locationId);
       updateDocumentNonBlocking(ref, updatedData);
@@ -339,6 +280,28 @@ export default function LocationPropertyDetailsPage() {
       toast({ title: "Error", description: "Failed to update technology inventory.", variant: "destructive" });
     } finally {
       setIsSavingTechnology(false);
+    }
+  };
+
+  const onSaveLandscaping = async (data: LandscapingValues) => {
+    if (!firestore || !currentUser) return;
+    setIsSavingLandscaping(true);
+    const updatedData = {
+      'propertyDetails.landscaping': {
+        ...data,
+        lastUpdated: serverTimestamp(),
+        lastUser: currentUser.name || currentUser.email || 'Unknown User',
+      }
+    };
+    try {
+      const ref = doc(firestore, 'locations', locationId);
+      updateDocumentNonBlocking(ref, updatedData);
+      toast({ title: "Landscaping Updated", description: "Landscaping features have been saved." });
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Error", description: "Failed to update landscaping.", variant: "destructive" });
+    } finally {
+      setIsSavingLandscaping(false);
     }
   };
 
@@ -357,7 +320,6 @@ export default function LocationPropertyDetailsPage() {
     const user = lastUser || 'System Seed';
     const date = lastUpdated ? toDate(lastUpdated) : new Date();
     const dateString = format(date, 'MMM d, yyyy p');
-
     return (
       <div className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground/60">
         Last Edited by {user} on {dateString}
@@ -390,16 +352,10 @@ export default function LocationPropertyDetailsPage() {
         <Card className="overflow-hidden border-primary/10 shadow-lg">
           <CardHeader className="bg-primary text-primary-foreground p-6">
             <div className="flex items-center gap-3">
-              <div className="bg-primary-foreground/20 p-2 rounded-lg">
-                <ShieldCheck className="h-6 w-6" />
-              </div>
+              <div className="bg-primary-foreground/20 p-2 rounded-lg"><ShieldCheck className="h-6 w-6" /></div>
               <div>
-                <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">
-                  METADATA
-                </CardTitle>
-                <CardDescription className="text-primary-foreground/80 font-medium">
-                  Technical Specifications
-                </CardDescription>
+                <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">METADATA</CardTitle>
+                <CardDescription className="text-primary-foreground/80 font-medium">Technical Specifications</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -407,70 +363,40 @@ export default function LocationPropertyDetailsPage() {
             <form onSubmit={metadataForm.handleSubmit(onSaveMetadata)}>
               <CardContent className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <FormField
-                      control={metadataForm.control}
-                      name="status"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Site Status</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select Status" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="Active">Active</SelectItem>
-                              <SelectItem value="Construction">Construction</SelectItem>
-                              <SelectItem value="Divested">Divested</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
+                  <FormField control={metadataForm.control} name="status" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Site Status</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          <SelectItem value="Active">Active</SelectItem>
+                          <SelectItem value="Construction">Construction</SelectItem>
+                          <SelectItem value="Divested">Divested</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                   <div className="grid grid-cols-2 gap-4 items-end">
-                    <FormField
-                      control={metadataForm.control}
-                      name="latitude"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-2">
-                            <MapPin className="h-3 w-3 text-muted-foreground" /> Latitude
-                          </FormLabel>
-                          <FormControl>
-                            <Input type="number" step="any" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={metadataForm.control}
-                      name="longitude"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-2">
-                            <MapPin className="h-3 w-3 text-muted-foreground" /> Longitude
-                          </FormLabel>
-                          <FormControl>
-                            <Input type="number" step="any" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <FormField control={metadataForm.control} name="latitude" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2"><MapPin className="h-3 w-3 text-muted-foreground" /> Latitude</FormLabel>
+                        <FormControl><Input type="number" step="any" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={metadataForm.control} name="longitude" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2"><MapPin className="h-3 w-3 text-muted-foreground" /> Longitude</FormLabel>
+                        <FormControl><Input type="number" step="any" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
                   </div>
                 </div>
               </CardContent>
               <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
-                <AuditInfo 
-                  lastUser={location?.propertyDetails?.metadata?.lastUser} 
-                  lastUpdated={location?.propertyDetails?.metadata?.lastUpdated} 
-                />
+                <AuditInfo lastUser={location?.propertyDetails?.metadata?.lastUser} lastUpdated={location?.propertyDetails?.metadata?.lastUpdated} />
                 <Button type="submit" disabled={isSavingMetadata} className="min-w-[140px]">
                   {isSavingMetadata ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                   Save Metadata
@@ -484,16 +410,10 @@ export default function LocationPropertyDetailsPage() {
         <Card className="overflow-hidden border-primary/10 shadow-lg">
           <CardHeader className="bg-primary text-primary-foreground p-6">
             <div className="flex items-center gap-3">
-              <div className="bg-primary-foreground/20 p-2 rounded-lg">
-                <Car className="h-6 w-6" />
-              </div>
+              <div className="bg-primary-foreground/20 p-2 rounded-lg"><Car className="h-6 w-6" /></div>
               <div>
-                <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">
-                  Parking Capacity
-                </CardTitle>
-                <CardDescription className="text-primary-foreground/80 font-medium">
-                  Total Stall Inventory & Allocations
-                </CardDescription>
+                <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">Parking Capacity</CardTitle>
+                <CardDescription className="text-primary-foreground/80 font-medium">Total Stall Inventory & Allocations</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -506,108 +426,56 @@ export default function LocationPropertyDetailsPage() {
                     <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">TOTAL COUNT</p>
                   </div>
                   <div className="text-4xl font-black font-headline text-primary">
-                    {totalParkingSpaces}
+                    {Number(parkingForm.watch('generalParking') || 0) + Number(parkingForm.watch('adaParking') || 0) + Number(parkingForm.watch('evParking') || 0) + Number(parkingForm.watch('cityStaffParking') || 0) + Number(parkingForm.watch('lifeguardParking') || 0) + Number(parkingForm.watch('otherParking') || 0)}
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
-                  <FormField
-                    control={parkingForm.control}
-                    name="generalParking"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2 font-semibold">
-                          <Car className="h-4 w-4 text-muted-foreground" /> General Parking
-                        </FormLabel>
-                        <FormControl>
-                          <Input type="number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={parkingForm.control}
-                    name="adaParking"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2 font-semibold">
-                          <Accessibility className="h-4 w-4 text-muted-foreground" /> ADA Accessible
-                        </FormLabel>
-                        <FormControl>
-                          <Input type="number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={parkingForm.control}
-                    name="evParking"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2 font-semibold">
-                          <Zap className="h-4 w-4 text-muted-foreground" /> EV Charging
-                        </FormLabel>
-                        <FormControl>
-                          <Input type="number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={parkingForm.control}
-                    name="cityStaffParking"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2 font-semibold">
-                          <UserCog className="h-4 w-4 text-muted-foreground" /> City Staff
-                        </FormLabel>
-                        <FormControl>
-                          <Input type="number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={parkingForm.control}
-                    name="lifeguardParking"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2 font-semibold">
-                          <LifeBuoy className="h-4 w-4 text-muted-foreground" /> Lifeguard
-                        </FormLabel>
-                        <FormControl>
-                          <Input type="number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={parkingForm.control}
-                    name="otherParking"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2 font-semibold">
-                          <HelpCircle className="h-4 w-4 text-muted-foreground" /> Other/Special
-                        </FormLabel>
-                        <FormControl>
-                          <Input type="number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormField control={parkingForm.control} name="generalParking" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><Car className="h-4 w-4 text-muted-foreground" /> General Parking</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={parkingForm.control} name="adaParking" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><Accessibility className="h-4 w-4 text-muted-foreground" /> ADA Accessible</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={parkingForm.control} name="evParking" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><Zap className="h-4 w-4 text-muted-foreground" /> EV Charging</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={parkingForm.control} name="cityStaffParking" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><UserCog className="h-4 w-4 text-muted-foreground" /> City Staff</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={parkingForm.control} name="lifeguardParking" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><LifeBuoy className="h-4 w-4 text-muted-foreground" /> Lifeguard</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={parkingForm.control} name="otherParking" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><HelpCircle className="h-4 w-4 text-muted-foreground" /> Other/Special</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
               </CardContent>
               <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
-                <AuditInfo 
-                  lastUser={location?.propertyDetails?.parkingCapacity?.lastUser} 
-                  lastUpdated={location?.propertyDetails?.parkingCapacity?.lastUpdated} 
-                />
+                <AuditInfo lastUser={location?.propertyDetails?.parkingCapacity?.lastUser} lastUpdated={location?.propertyDetails?.parkingCapacity?.lastUpdated} />
                 <Button type="submit" disabled={isSavingParking} className="min-w-[140px]">
                   {isSavingParking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                   Save Capacity
@@ -621,16 +489,10 @@ export default function LocationPropertyDetailsPage() {
         <Card className="overflow-hidden border-primary/10 shadow-lg">
           <CardHeader className="bg-primary text-primary-foreground p-6">
             <div className="flex items-center gap-3">
-              <div className="bg-primary-foreground/20 p-2 rounded-lg">
-                <Milestone className="h-6 w-6" />
-              </div>
+              <div className="bg-primary-foreground/20 p-2 rounded-lg"><Milestone className="h-6 w-6" /></div>
               <div>
-                <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">
-                  Signage Inventory
-                </CardTitle>
-                <CardDescription className="text-primary-foreground/80 font-medium">
-                  Informational, Regulatory & Wayfinding Assets
-                </CardDescription>
+                <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">Signage Inventory</CardTitle>
+                <CardDescription className="text-primary-foreground/80 font-medium">Assets & Wayfinding</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -643,109 +505,63 @@ export default function LocationPropertyDetailsPage() {
                     <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">TOTAL COUNT</p>
                   </div>
                   <div className="text-4xl font-black font-headline text-primary">
-                    {totalSignageCount}
+                    {Number(signageForm.watch('monumentSignage') || 0) + Number(signageForm.watch('parkingInfoSignage') || 0) + Number(signageForm.watch('paymentSystemSignage') || 0) + Number(signageForm.watch('trafficRegulatorySignage') || 0) + Number(signageForm.watch('trafficDirectionSignage') || 0) + Number(signageForm.watch('wayfindingSignage') || 0) + Number(signageForm.watch('otherSignage') || 0)}
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
-                  <FormField
-                    control={signageForm.control}
-                    name="monumentSignage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2 font-semibold text-xs uppercase tracking-tight">
-                          <Milestone className="h-4 w-4 text-muted-foreground" /> Monument
-                        </FormLabel>
-                        <FormControl><Input type="number" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={signageForm.control}
-                    name="parkingInfoSignage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2 font-semibold text-xs uppercase tracking-tight">
-                          <Info className="h-4 w-4 text-muted-foreground" /> Parking Info
-                        </FormLabel>
-                        <FormControl><Input type="number" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={signageForm.control}
-                    name="paymentSystemSignage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2 font-semibold text-xs uppercase tracking-tight">
-                          <CreditCard className="h-4 w-4 text-muted-foreground" /> Payment Systems
-                        </FormLabel>
-                        <FormControl><Input type="number" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={signageForm.control}
-                    name="trafficRegulatorySignage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2 font-semibold text-xs uppercase tracking-tight">
-                          <ShieldAlert className="h-4 w-4 text-muted-foreground" /> Regulatory
-                        </FormLabel>
-                        <FormControl><Input type="number" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={signageForm.control}
-                    name="trafficDirectionSignage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2 font-semibold text-xs uppercase tracking-tight">
-                          <ArrowRight className="h-4 w-4 text-muted-foreground" /> Traffic Direction
-                        </FormLabel>
-                        <FormControl><Input type="number" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={signageForm.control}
-                    name="wayfindingSignage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2 font-semibold text-xs uppercase tracking-tight">
-                          <Milestone className="h-4 w-4 text-muted-foreground" /> Wayfinding
-                        </FormLabel>
-                        <FormControl><Input type="number" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={signageForm.control}
-                    name="otherSignage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2 font-semibold text-xs uppercase tracking-tight">
-                          <HelpCircle className="h-4 w-4 text-muted-foreground" /> Other/Misc
-                        </FormLabel>
-                        <FormControl><Input type="number" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormField control={signageForm.control} name="monumentSignage" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold text-xs uppercase tracking-tight"><Milestone className="h-4 w-4 text-muted-foreground" /> Monument</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={signageForm.control} name="parkingInfoSignage" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold text-xs uppercase tracking-tight"><Info className="h-4 w-4 text-muted-foreground" /> Parking Info</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={signageForm.control} name="paymentSystemSignage" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold text-xs uppercase tracking-tight"><CreditCard className="h-4 w-4 text-muted-foreground" /> Payment Systems</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={signageForm.control} name="trafficRegulatorySignage" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold text-xs uppercase tracking-tight"><ShieldAlert className="h-4 w-4 text-muted-foreground" /> Regulatory</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={signageForm.control} name="trafficDirectionSignage" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold text-xs uppercase tracking-tight"><ArrowRight className="h-4 w-4 text-muted-foreground" /> Traffic Direction</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={signageForm.control} name="wayfindingSignage" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold text-xs uppercase tracking-tight"><Milestone className="h-4 w-4 text-muted-foreground" /> Wayfinding</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={signageForm.control} name="otherSignage" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold text-xs uppercase tracking-tight"><HelpCircle className="h-4 w-4 text-muted-foreground" /> Other/Misc</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
               </CardContent>
               <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
-                <AuditInfo 
-                  lastUser={location?.propertyDetails?.signage?.lastUser} 
-                  lastUpdated={location?.propertyDetails?.signage?.lastUpdated} 
-                />
+                <AuditInfo lastUser={location?.propertyDetails?.signage?.lastUser} lastUpdated={location?.propertyDetails?.signage?.lastUpdated} />
                 <Button type="submit" disabled={isSavingSignage} className="min-w-[140px]">
                   {isSavingSignage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                   Save Signage
@@ -759,16 +575,10 @@ export default function LocationPropertyDetailsPage() {
         <Card className="overflow-hidden border-primary/10 shadow-lg">
           <CardHeader className="bg-primary text-primary-foreground p-6">
             <div className="flex items-center gap-3">
-              <div className="bg-primary-foreground/20 p-2 rounded-lg">
-                <Lightbulb className="h-6 w-6" />
-              </div>
+              <div className="bg-primary-foreground/20 p-2 rounded-lg"><Lightbulb className="h-6 w-6" /></div>
               <div>
-                <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">
-                  Lighting infrastructure
-                </CardTitle>
-                <CardDescription className="text-primary-foreground/80 font-medium">
-                  Illumination & Safety Fixtures
-                </CardDescription>
+                <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">Lighting Infrastructure</CardTitle>
+                <CardDescription className="text-primary-foreground/80 font-medium">Illumination Assets</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -781,44 +591,28 @@ export default function LocationPropertyDetailsPage() {
                     <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">TOTAL COUNT</p>
                   </div>
                   <div className="text-4xl font-black font-headline text-primary">
-                    {totalLightingCount}
+                    {Number(lightingForm.watch('largeLights') || 0) + Number(lightingForm.watch('smallLights') || 0)}
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                  <FormField
-                    control={lightingForm.control}
-                    name="largeLights"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2 font-bold text-xs uppercase tracking-widest text-muted-foreground">
-                          <Lightbulb className="h-4 w-4" /> Large Fixtures (High Mast/Pole)
-                        </FormLabel>
-                        <FormControl><Input type="number" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={lightingForm.control}
-                    name="smallLights"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2 font-bold text-xs uppercase tracking-widest text-muted-foreground">
-                          <Lightbulb className="h-4 w-4" /> Small Fixtures (Wall/Bollard)
-                        </FormLabel>
-                        <FormControl><Input type="number" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormField control={lightingForm.control} name="largeLights" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-bold text-xs uppercase tracking-widest text-muted-foreground"><Lightbulb className="h-4 w-4" /> Large Fixtures</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={lightingForm.control} name="smallLights" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-bold text-xs uppercase tracking-widest text-muted-foreground"><Lightbulb className="h-4 w-4" /> Small Fixtures</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
               </CardContent>
               <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
-                <AuditInfo 
-                  lastUser={location?.propertyDetails?.lighting?.lastUser} 
-                  lastUpdated={location?.propertyDetails?.lighting?.lastUpdated} 
-                />
+                <AuditInfo lastUser={location?.propertyDetails?.lighting?.lastUser} lastUpdated={location?.propertyDetails?.lighting?.lastUpdated} />
                 <Button type="submit" disabled={isSavingLighting} className="min-w-[140px]">
                   {isSavingLighting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                   Save Lighting
@@ -832,16 +626,10 @@ export default function LocationPropertyDetailsPage() {
         <Card className="overflow-hidden border-primary/10 shadow-lg">
           <CardHeader className="bg-primary text-primary-foreground p-6">
             <div className="flex items-center gap-3">
-              <div className="bg-primary-foreground/20 p-2 rounded-lg">
-                <Monitor className="h-6 w-6" />
-              </div>
+              <div className="bg-primary-foreground/20 p-2 rounded-lg"><Monitor className="h-6 w-6" /></div>
               <div>
-                <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">
-                  Technology Inventory
-                </CardTitle>
-                <CardDescription className="text-primary-foreground/80 font-medium">
-                  Hardware, Tracking & Connectivity
-                </CardDescription>
+                <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">Technology Inventory</CardTitle>
+                <CardDescription className="text-primary-foreground/80 font-medium">Hardware & Network</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -858,68 +646,109 @@ export default function LocationPropertyDetailsPage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
-                  <FormField
-                    control={technologyForm.control}
-                    name="surfaceMounts"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2 font-semibold">
-                          <Cpu className="h-4 w-4 text-muted-foreground" /> Surface Mounts
-                        </FormLabel>
-                        <FormControl><Input type="number" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={technologyForm.control}
-                    name="flushMounts"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2 font-semibold">
-                          <Cpu className="h-4 w-4 text-muted-foreground" /> Flush Mounts
-                        </FormLabel>
-                        <FormControl><Input type="number" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={technologyForm.control}
-                    name="cameraTracking"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2 font-semibold">
-                          <Monitor className="h-4 w-4 text-muted-foreground" /> Camera Tracking
-                        </FormLabel>
-                        <FormControl><Input type="number" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={technologyForm.control}
-                    name="network"
-                    render={({ field }) => (
-                      <FormItem className="lg:col-span-2">
-                        <FormLabel className="flex items-center gap-2 font-semibold">
-                          <Wifi className="h-4 w-4 text-muted-foreground" /> Network Details
-                        </FormLabel>
-                        <FormControl><Input placeholder="e.g., Fiber Optic, 5G Backbone" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormField control={technologyForm.control} name="surfaceMounts" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><Cpu className="h-4 w-4 text-muted-foreground" /> Surface Mounts</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={technologyForm.control} name="flushMounts" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><Cpu className="h-4 w-4 text-muted-foreground" /> Flush Mounts</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={technologyForm.control} name="cameraTracking" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><Monitor className="h-4 w-4 text-muted-foreground" /> Camera Tracking</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={technologyForm.control} name="network" render={({ field }) => (
+                    <FormItem className="lg:col-span-2">
+                      <FormLabel className="flex items-center gap-2 font-semibold"><Wifi className="h-4 w-4 text-muted-foreground" /> Network Details</FormLabel>
+                      <FormControl><Input placeholder="e.g., Fiber, 5G" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
               </CardContent>
               <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
-                <AuditInfo 
-                  lastUser={location?.propertyDetails?.technology?.lastUser} 
-                  lastUpdated={location?.propertyDetails?.technology?.lastUpdated} 
-                />
+                <AuditInfo lastUser={location?.propertyDetails?.technology?.lastUser} lastUpdated={location?.propertyDetails?.technology?.lastUpdated} />
                 <Button type="submit" disabled={isSavingTechnology} className="min-w-[140px]">
                   {isSavingTechnology ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                   Save Technology
+                </Button>
+              </CardFooter>
+            </form>
+          </Form>
+        </Card>
+
+        {/* Landscaping Card */}
+        <Card className="overflow-hidden border-primary/10 shadow-lg">
+          <CardHeader className="bg-primary text-primary-foreground p-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary-foreground/20 p-2 rounded-lg"><Trees className="h-6 w-6" /></div>
+              <div>
+                <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">Landscaping Features</CardTitle>
+                <CardDescription className="text-primary-foreground/80 font-medium">Environmental Assets</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <Form {...landscapingForm}>
+            <form onSubmit={landscapingForm.handleSubmit(onSaveLandscaping)}>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                  <FormField control={landscapingForm.control} name="bushes" render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base flex items-center gap-2"><Leaf className="h-4 w-4 text-muted-foreground" /> Bushes</FormLabel>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={landscapingForm.control} name="flowerBeds" render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base flex items-center gap-2"><Sprout className="h-4 w-4 text-muted-foreground" /> Flower Beds</FormLabel>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={landscapingForm.control} name="grassGroundCover" render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base flex items-center gap-2"><Leaf className="h-4 w-4 text-muted-foreground" /> Grass/Cover</FormLabel>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={landscapingForm.control} name="irrigation" render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base flex items-center gap-2"><Droplets className="h-4 w-4 text-muted-foreground" /> Irrigation</FormLabel>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={landscapingForm.control} name="trees" render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base flex items-center gap-2"><Trees className="h-4 w-4 text-muted-foreground" /> Trees</FormLabel>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                  )} />
+                </div>
+              </CardContent>
+              <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
+                <AuditInfo lastUser={location?.propertyDetails?.landscaping?.lastUser} lastUpdated={location?.propertyDetails?.landscaping?.lastUpdated} />
+                <Button type="submit" disabled={isSavingLandscaping} className="min-w-[140px]">
+                  {isSavingLandscaping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                  Save Landscaping
                 </Button>
               </CardFooter>
             </form>

@@ -115,12 +115,24 @@ export const technologySchema = z.object({
 });
 export type Technology = z.infer<typeof technologySchema>;
 
+export const landscapingSchema = z.object({
+  lastUpdated: timestampSchema.optional(),
+  lastUser: z.string().optional(),
+  bushes: z.boolean(),
+  flowerBeds: z.boolean(),
+  grassGroundCover: z.boolean(),
+  irrigation: z.boolean(),
+  trees: z.boolean(),
+});
+export type Landscaping = z.infer<typeof landscapingSchema>;
+
 export const propertyDetailsSchema = z.object({
   metadata: locationMetadataSchema.optional(),
   parkingCapacity: parkingCapacitySchema.optional(),
   signage: signageSchema.optional(),
   lighting: lightingSchema.optional(),
   technology: technologySchema.optional(),
+  landscaping: landscapingSchema.optional(),
 });
 
 export const locationSchema = z.object({
