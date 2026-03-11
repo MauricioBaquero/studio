@@ -25,12 +25,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
-const formSchema = z.object({
+const metadataSchema = z.object({
   status: z.string().min(1, "Status is required"),
   latitude: z.coerce.number(),
   longitude: z.coerce.number(),
-  // Parking Capacity
+});
+
+const parkingSchema = z.object({
   adaParking: z.coerce.number().int().min(0),
   cityStaffParking: z.coerce.number().int().min(0),
   evParking: z.coerce.number().int().min(0),
@@ -39,7 +42,8 @@ const formSchema = z.object({
   otherParking: z.coerce.number().int().min(0),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+type MetadataValues = z.infer<typeof metadataSchema>;
+type ParkingValues = z.infer<typeof parkingSchema>;
 
 export default function LocationPropertyDetailsPage() {
   const params = useParams();
@@ -47,7 +51,9 @@ export default function LocationPropertyDetailsPage() {
   const firestore = useFirestore();
   const { user: currentUser } = useUser();
   const { toast } = useToast();
-  const [isSaving, setIsSaving] = useState(false);
+  
+  const [isSavingMetadata, setIsSavingMetadata] = useState(false);
+  const [isSavingParking, setIsSavingParking] = useState(false);
 
   const locationRef = useMemoFirebase(
     () => (firestore ? doc(firestore, 'locations', locationId) : null),
@@ -55,12 +61,18 @@ export default function LocationPropertyDetailsPage() {
   );
   const { data: location, isLoading } = useDoc<Location>(locationRef);
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+  const metadataForm = useForm<MetadataValues>({
+    resolver: zodResolver(metadataSchema),
     defaultValues: {
       status: 'Active',
       latitude: 0,
       longitude: 0,
+    },
+  });
+
+  const parkingForm = useForm<ParkingValues>({
+    resolver: zodResolver(parkingSchema),
+    defaultValues: {
       adaParking: 0,
       cityStaffParking: 0,
       evParking: 0,
@@ -72,10 +84,12 @@ export default function LocationPropertyDetailsPage() {
 
   useEffect(() => {
     if (location) {
-      form.reset({
+      metadataForm.reset({
         status: location.metadata?.status || 'Active',
         latitude: location.metadata?.location?.latitude || 0,
         longitude: location.metadata?.location?.longitude || 0,
+      });
+      parkingForm.reset({
         adaParking: location.parkingCapacity?.totalParking?.adaParking || 0,
         cityStaffParking: location.parkingCapacity?.totalParking?.cityStaffParking || 0,
         evParking: location.parkingCapacity?.totalParking?.evParking || 0,
@@ -84,11 +98,11 @@ export default function LocationPropertyDetailsPage() {
         otherParking: location.parkingCapacity?.totalParking?.otherParking || 0,
       });
     }
-  }, [location, form]);
+  }, [location, metadataForm, parkingForm]);
 
-  const onSaveAll = async (data: FormValues) => {
+  const onSaveMetadata = async (data: MetadataValues) => {
     if (!firestore || !currentUser) return;
-    setIsSaving(true);
+    setIsSavingMetadata(true);
 
     const updatedData = {
       metadata: {
@@ -99,7 +113,33 @@ export default function LocationPropertyDetailsPage() {
         },
         lastUpdated: serverTimestamp(),
         lastUser: currentUser.name || currentUser.email || 'Unknown User',
-      },
+      }
+    };
+
+    try {
+      const ref = doc(firestore, 'locations', locationId);
+      updateDocumentNonBlocking(ref, updatedData);
+      toast({
+        title: "Metadata Updated",
+        description: "Site status and geolocation have been saved.",
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Error",
+        description: "Failed to update metadata.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingMetadata(false);
+    }
+  };
+
+  const onSaveParking = async (data: ParkingValues) => {
+    if (!firestore || !currentUser) return;
+    setIsSavingParking(true);
+
+    const updatedData = {
       parkingCapacity: {
         totalParking: {
           adaParking: data.adaParking,
@@ -115,20 +155,19 @@ export default function LocationPropertyDetailsPage() {
     try {
       const ref = doc(firestore, 'locations', locationId);
       updateDocumentNonBlocking(ref, updatedData);
-      
       toast({
-        title: "Properties Updated",
-        description: "Metadata and parking capacities have been successfully saved.",
+        title: "Capacity Updated",
+        description: "Parking stall inventory has been saved.",
       });
     } catch (error) {
       console.error(error);
       toast({
         title: "Error",
-        description: "Failed to update property details.",
+        description: "Failed to update parking capacity.",
         variant: "destructive",
       });
     } finally {
-      setIsSaving(false);
+      setIsSavingParking(false);
     }
   };
 
@@ -168,7 +207,8 @@ export default function LocationPropertyDetailsPage() {
         </div>
       </div>
 
-      <form onSubmit={form.handleSubmit(onSaveAll)} className="space-y-6 pb-12">
+      <div className="space-y-6 pb-12">
+        {/* Metadata Card */}
         <Card className="overflow-hidden border-primary/10 shadow-lg">
           <CardHeader className="bg-primary text-primary-foreground p-6">
             <div className="flex items-center justify-between">
@@ -187,104 +227,132 @@ export default function LocationPropertyDetailsPage() {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="p-0">
-            <div className="grid grid-cols-1 md:grid-cols-2">
-              {/* Left Column: Primary Metadata */}
-              <div className="p-6 space-y-6 border-r border-border/50">
-                <div className="space-y-4">
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <RefreshCw className="h-4 w-4" />
-                    Status & Classification
-                  </h3>
-                  
-                  <div className="grid gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="status">Site Status</Label>
-                      <Select 
-                        value={form.watch('status')} 
-                        onValueChange={(val) => form.setValue('status', val)}
-                      >
-                        <SelectTrigger id="status">
-                          <SelectValue placeholder="Select Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Active">Active</SelectItem>
-                          <SelectItem value="Construction">Construction</SelectItem>
-                          <SelectItem value="Divested">Divested</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4 pt-4">
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    Geolocation
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="latitude">Latitude</Label>
-                      <Input 
-                        id="latitude" 
-                        type="number" 
-                        step="any"
-                        placeholder="0.000000"
-                        {...form.register('latitude')}
+          <Form {...metadataForm}>
+            <form onSubmit={metadataForm.handleSubmit(onSaveMetadata)}>
+              <CardContent className="p-0">
+                <div className="grid grid-cols-1 md:grid-cols-2">
+                  <div className="p-6 space-y-6 border-r border-border/50">
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                        <RefreshCw className="h-4 w-4" />
+                        Status & Classification
+                      </h3>
+                      
+                      <FormField
+                        control={metadataForm.control}
+                        name="status"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Site Status</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select Status" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="Active">Active</SelectItem>
+                                <SelectItem value="Construction">Construction</SelectItem>
+                                <SelectItem value="Divested">Divested</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="longitude">Longitude</Label>
-                      <Input 
-                        id="longitude" 
-                        type="number" 
-                        step="any"
-                        placeholder="0.000000"
-                        {...form.register('longitude')}
-                      />
+
+                    <div className="space-y-4 pt-4">
+                      <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        Geolocation
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={metadataForm.control}
+                          name="latitude"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Latitude</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="any" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={metadataForm.control}
+                          name="longitude"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Longitude</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="any" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 bg-muted/10 space-y-6">
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        System Audit
+                      </h3>
+                      
+                      <div className="rounded-lg border bg-card overflow-hidden">
+                        <Table>
+                          <TableBody>
+                            <TableRow className="hover:bg-transparent">
+                              <TableCell className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-3">
+                                Last Editor
+                              </TableCell>
+                              <TableCell className="text-sm font-medium py-3">
+                                {location?.metadata?.lastUser || 'System Seed'}
+                              </TableCell>
+                            </TableRow>
+                            <TableRow className="hover:bg-transparent border-b-0">
+                              <TableCell className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-3">
+                                Last Updated
+                              </TableCell>
+                              <TableCell className="text-sm font-medium py-3">
+                                {location?.metadata?.lastUpdated 
+                                  ? format(toDate(location.metadata.lastUpdated), 'MMM d, yyyy p')
+                                  : '---'}
+                              </TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Right Column: Audit & Read-only Info */}
-              <div className="p-6 bg-muted/10 space-y-6">
-                <div className="space-y-4">
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    System Audit
-                  </h3>
-                  
-                  <div className="rounded-lg border bg-card overflow-hidden">
-                    <Table>
-                      <TableBody>
-                        <TableRow className="hover:bg-transparent">
-                          <TableCell className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-3">
-                            Last Editor
-                          </TableCell>
-                          <TableCell className="text-sm font-medium py-3">
-                            {location?.metadata?.lastUser || 'System Seed'}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow className="hover:bg-transparent border-b-0">
-                          <TableCell className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-3">
-                            Last Updated
-                          </TableCell>
-                          <TableCell className="text-sm font-medium py-3">
-                            {location?.metadata?.lastUpdated 
-                              ? format(toDate(location.metadata.lastUpdated), 'MMM d, yyyy p')
-                              : '---'}
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
+              </CardContent>
+              <CardFooter className="bg-muted/30 border-t p-6 flex justify-end">
+                <Button type="submit" disabled={isSavingMetadata} className="min-w-[140px]">
+                  {isSavingMetadata ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Metadata
+                    </>
+                  )}
+                </Button>
+              </CardFooter>
+            </form>
+          </Form>
         </Card>
 
+        {/* Parking Capacity Card */}
         <Card className="overflow-hidden border-blue-500/10 shadow-lg">
           <CardHeader className="bg-slate-900 text-white p-6">
             <div className="flex items-center gap-3">
@@ -301,78 +369,121 @@ export default function LocationPropertyDetailsPage() {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="generalParking" className="flex items-center gap-2 font-semibold">
-                  <Car className="h-4 w-4 text-blue-500" />
-                  General Parking
-                </Label>
-                <Input id="generalParking" type="number" {...form.register('generalParking')} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="adaParking" className="flex items-center gap-2 font-semibold">
-                  <Accessibility className="h-4 w-4 text-blue-500" />
-                  ADA Accessible
-                </Label>
-                <Input id="adaParking" type="number" {...form.register('adaParking')} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="evParking" className="flex items-center gap-2 font-semibold">
-                  <Zap className="h-4 w-4 text-blue-500" />
-                  EV Charging
-                </Label>
-                <Input id="evParking" type="number" {...form.register('evParking')} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cityStaffParking" className="flex items-center gap-2 font-semibold">
-                  <UserCog className="h-4 w-4 text-blue-500" />
-                  City Staff
-                </Label>
-                <Input id="cityStaffParking" type="number" {...form.register('cityStaffParking')} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lifeguardParking" className="flex items-center gap-2 font-semibold">
-                  <LifeBuoy className="h-4 w-4 text-blue-500" />
-                  Lifeguard Dept.
-                </Label>
-                <Input id="lifeguardParking" type="number" {...form.register('lifeguardParking')} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="otherParking" className="flex items-center gap-2 font-semibold">
-                  <HelpCircle className="h-4 w-4 text-blue-500" />
-                  Other/Special
-                </Label>
-                <Input id="otherParking" type="number" {...form.register('otherParking')} />
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter className="bg-muted/30 border-t p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div className="flex-1 max-w-xl bg-blue-500/5 border border-blue-500/10 rounded-lg p-3 space-y-1">
-              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Metadata Notice</span>
-              </div>
-              <p className="text-[10px] text-muted-foreground leading-snug italic">
-                All changes are logged for internal auditing. Geolocation and capacity data are used for mapping, analytics, and field staff routing.
-              </p>
-            </div>
-            <Button type="submit" disabled={isSaving} className="min-w-[140px] shrink-0 h-11 font-bold">
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save All Changes
-                </>
-              )}
-            </Button>
-          </CardFooter>
+          <Form {...parkingForm}>
+            <form onSubmit={parkingForm.handleSubmit(onSaveParking)}>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
+                  <FormField
+                    control={parkingForm.control}
+                    name="generalParking"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 font-semibold">
+                          <Car className="h-4 w-4 text-blue-500" /> General Parking
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={parkingForm.control}
+                    name="adaParking"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 font-semibold">
+                          <Accessibility className="h-4 w-4 text-blue-500" /> ADA Accessible
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={parkingForm.control}
+                    name="evParking"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 font-semibold">
+                          <Zap className="h-4 w-4 text-blue-500" /> EV Charging
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={parkingForm.control}
+                    name="cityStaffParking"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 font-semibold">
+                          <UserCog className="h-4 w-4 text-blue-500" /> City Staff
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={parkingForm.control}
+                    name="lifeguardParking"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 font-semibold">
+                          <LifeBuoy className="h-4 w-4 text-blue-500" /> Lifeguard Dept.
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={parkingForm.control}
+                    name="otherParking"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 font-semibold">
+                          <HelpCircle className="h-4 w-4 text-blue-500" /> Other/Special
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+              <CardFooter className="bg-muted/30 border-t p-6 flex justify-end">
+                <Button type="submit" disabled={isSavingParking} className="min-w-[140px]">
+                  {isSavingParking ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Capacity
+                    </>
+                  )}
+                </Button>
+              </CardFooter>
+            </form>
+          </Form>
         </Card>
-      </form>
+      </div>
     </div>
   );
 }
