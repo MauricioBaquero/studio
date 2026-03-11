@@ -195,15 +195,10 @@ export default function LocationPropertyDetailsPage() {
             <h1 className="text-3xl font-bold font-headline tracking-tight">
               {location?.name ? `${location.name} Property Details` : 'Property Details'}
             </h1>
-            <p className="text-sm text-muted-foreground font-medium">
-              Administrative Overrides & Site Metadata
+            <p className="text-sm text-muted-foreground font-medium font-mono">
+              ID: {locationId}
             </p>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-           <Badge variant="outline" className="px-3 py-1 font-bold uppercase tracking-wider text-[10px] bg-background">
-              ID: {locationId}
-            </Badge>
         </div>
       </div>
 
@@ -218,7 +213,7 @@ export default function LocationPropertyDetailsPage() {
                 </div>
                 <div>
                   <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">
-                    Metadata
+                    METADATA
                   </CardTitle>
                   <CardDescription className="text-primary-foreground/80 font-medium">
                     Technical Specifications
