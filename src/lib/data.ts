@@ -18,6 +18,10 @@ export type RecurringFrequency = (typeof RECURRING_FREQUENCIES)[number];
 export type CategoryColor = (typeof CATEGORY_COLORS)[number];
 export type LocationType = (typeof LOCATION_TYPES)[number];
 
+const timestampSchema = z.custom<Timestamp | Date>((data) => data instanceof Date || (data as Timestamp)?.toDate, {
+  message: "Invalid date or timestamp",
+});
+
 export const teamSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -50,18 +54,29 @@ export const categorySchema = z.object({
 });
 export type Category = z.infer<typeof categorySchema>;
 
+export const locationCoordsSchema = z.object({
+  latitude: z.number(),
+  longitude: z.number(),
+});
+
+export const locationMetadataSchema = z.object({
+  lastUpdated: timestampSchema,
+  lastUser: z.string(),
+  status: z.string(),
+  type: z.string(),
+  location: locationCoordsSchema,
+});
+
 export const locationSchema = z.object({
     id: z.string(),
     name: z.string(),
     type: z.enum(LOCATION_TYPES).optional(),
     numberOfFloors: z.number().optional(),
+    facilitySpecs: z.array(z.any()).optional(),
+    metadata: locationMetadataSchema.optional(),
 });
 export type Location = z.infer<typeof locationSchema>;
 
-
-const timestampSchema = z.custom<Timestamp | Date>((data) => data instanceof Date || (data as Timestamp)?.toDate, {
-  message: "Invalid date or timestamp",
-});
 
 export const photoSchema = z.object({
   url: z.string(),
@@ -138,7 +153,7 @@ export const toDate = (date: Date | Timestamp): Date => {
     if (date instanceof Date) {
         return date;
     }
-    return date.toDate();
+    return (date as Timestamp).toDate();
 }
 
 export const getCategoryColor = (
