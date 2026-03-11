@@ -148,10 +148,10 @@ export default function LocationPropertyDetailsPage() {
               </div>
               <div>
                 <CardTitle className="text-2xl font-bold leading-tight">
-                  {location?.name || 'Loading...'}
+                  METADATA
                 </CardTitle>
                 <CardDescription className="text-primary-foreground/80 font-medium">
-                  Site Management & Technical Specifications
+                  Technical Specifications
                 </CardDescription>
               </div>
             </div>
