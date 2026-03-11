@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, MapPin, ShieldCheck, Save, Car, Zap, Accessibility, UserCog, LifeBuoy, HelpCircle, Milestone, Lightbulb, Info, CreditCard, ShieldAlert, ArrowRight, Monitor, Cpu, Wifi, Trees, Sprout, Droplets, Leaf, Gauge, Smartphone, HardHat, Construction, Scaling, DoorOpen } from 'lucide-react';
@@ -24,6 +24,7 @@ import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const metadataSchema = z.object({
   status: z.string().min(1, "Status is required"),
@@ -110,7 +111,6 @@ export default function LocationPropertyDetailsPage() {
   );
   const { data: location, isLoading } = useDoc<Location>(locationRef);
 
-  // Forms using reactive 'values' binding to keep in sync with Firestore data automatically
   const metadataForm = useForm<MetadataValues>({
     resolver: zodResolver(metadataSchema),
     values: {
@@ -406,14 +406,41 @@ export default function LocationPropertyDetailsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <FormField control={metadataForm.control} name="status" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Site Status</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        Site Status
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button type="button" className="inline-flex outline-none">
+                              <Info className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary transition-colors" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-80 p-4">
+                            <div className="space-y-3">
+                              <h4 className="font-bold text-sm leading-none">Site Status Definitions</h4>
+                              <div className="grid gap-3">
+                                <div className="space-y-1">
+                                  <p className="text-xs font-bold text-primary">Active</p>
+                                  <p className="text-xs text-muted-foreground">Facility is fully operational, open to the public/staff, and currently being serviced by the team.</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-xs font-bold text-yellow-600">Construction</p>
+                                  <p className="text-xs text-muted-foreground">Site is currently undergoing significant renovations or repairs. Access may be restricted, and routine maintenance might be suspended.</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-xs font-bold text-destructive">Divested</p>
+                                  <p className="text-xs text-muted-foreground">The city has sold or transferred ownership of this facility. It is kept in the system for historical ticket reference only.</p>
+                                </div>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </FormLabel>
                       <Select onValueChange={field.onChange} value={field.value || "Active"}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
                         <SelectContent>
                           <SelectItem value="Active">Active</SelectItem>
                           <SelectItem value="Construction">Construction</SelectItem>
                           <SelectItem value="Divested">Divested</SelectItem>
-                          {/* Ensure legacy data is visible */}
                           {field.value && !["Active", "Construction", "Divested"].includes(field.value) && (
                             <SelectItem value={field.value}>{field.value}</SelectItem>
                           )}
@@ -832,7 +859,7 @@ export default function LocationPropertyDetailsPage() {
           </Form>
         </Card>
 
-        {/* Landscaping Card */}
+        {/* Landscaping Feature Card */}
         <Card className="overflow-hidden border-primary/10 shadow-lg">
           <CardHeader className="bg-primary text-primary-foreground p-6">
             <div className="flex items-center gap-3">
