@@ -1,4 +1,3 @@
-
 import { addDays, addWeeks, addMonths, setDay, setDate, nextDay, startOfDay, isAfter, isSameDay, differenceInDays, subDays, toDate as fnsToDate } from "date-fns";
 import type { Timestamp } from 'firebase/firestore';
 import { z } from "zod";
@@ -63,9 +62,21 @@ export const locationMetadataSchema = z.object({
   lastUpdated: timestampSchema,
   lastUser: z.string(),
   status: z.string(),
-  type: z.string(),
+  type: z.string().optional(),
   location: locationCoordsSchema,
 });
+
+export const parkingCapacitySchema = z.object({
+  totalParking: z.object({
+    adaParking: z.number().int(),
+    cityStaffParking: z.number().int(),
+    evParking: z.number().int(),
+    generalParking: z.number().int(),
+    lifeguardParking: z.number().int(),
+    otherParking: z.number().int(),
+  }),
+});
+export type ParkingCapacity = z.infer<typeof parkingCapacitySchema>;
 
 export const locationSchema = z.object({
     id: z.string(),
@@ -74,6 +85,7 @@ export const locationSchema = z.object({
     numberOfFloors: z.number().optional(),
     facilitySpecs: z.array(z.any()).optional(),
     metadata: locationMetadataSchema.optional(),
+    parkingCapacity: parkingCapacitySchema.optional(),
 });
 export type Location = z.infer<typeof locationSchema>;
 

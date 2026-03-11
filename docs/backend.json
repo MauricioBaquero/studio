@@ -349,6 +349,35 @@
               }
             }
           }
+        },
+        "parkingCapacity": {
+          "type": "object",
+          "description": "Inventory of parking spaces by type.",
+          "properties": {
+            "totalParking": {
+              "type": "object",
+              "properties": {
+                "adaParking": {
+                  "type": "integer"
+                },
+                "cityStaffParking": {
+                  "type": "integer"
+                },
+                "evParking": {
+                  "type": "integer"
+                },
+                "generalParking": {
+                  "type": "integer"
+                },
+                "lifeguardParking": {
+                  "type": "integer"
+                },
+                "otherParking": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
         }
       },
       "required": [
