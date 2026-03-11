@@ -65,6 +65,7 @@ export default function LocationsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [isPurgeAlertOpen, setIsPurgeAlertOpen] = useState(false);
   const [deletingLocationId, setDeletingLocationId] = useState<string | null>(
     null
   );
@@ -168,21 +169,8 @@ export default function LocationsPage() {
     setReplacementLocationId('');
   };
 
-  const handlePurgeFacilitySpecs = () => {
-    if (!firestore) return;
-    
-    if (!locations || locations.length === 0) {
-      toast({
-        title: "No Locations Found",
-        description: "There are no locations to reset.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (!confirm("Are you sure you want to remove technical specifications from all locations? This cannot be undone.")) {
-        return;
-    }
+  const executePurgeFacilitySpecs = () => {
+    if (!firestore || !locations || locations.length === 0) return;
 
     let count = 0;
     locations.forEach(loc => {
@@ -192,9 +180,10 @@ export default function LocationsPage() {
     });
 
     toast({
-        title: "Cleanup Initiated",
-        description: `Resetting technical data for ${count} locations.`,
+        title: "Technical Data Reset",
+        description: `Successfully removed technical specifications from ${count} locations.`,
     });
+    setIsPurgeAlertOpen(false);
   };
 
   const isLoading = isLoadingLocations || isLoadingTickets;
@@ -236,7 +225,11 @@ export default function LocationsPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {currentUser?.role === 'Admin' && (
-                <Button variant="outline" onClick={handlePurgeFacilitySpecs} className="text-destructive hover:bg-destructive/10">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsPurgeAlertOpen(true)} 
+                  className="text-destructive hover:bg-destructive/10"
+                >
                     <Trash2 className="mr-2 h-4 w-4" />
                     Reset Technical Data
                 </Button>
@@ -369,6 +362,26 @@ export default function LocationsPage() {
                 className={usageCount > 0 ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
             >
               {usageCount > 0 ? "Re-map & Delete" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isPurgeAlertOpen} onOpenChange={setIsPurgeAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset All Technical Data?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove the <strong>facilitySpecs</strong> array from all {locations?.length} locations. This action cannot be undone and will reset technical details for all facility reports.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={executePurgeFacilitySpecs}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Reset Data
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
