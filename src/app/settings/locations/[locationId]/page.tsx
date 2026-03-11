@@ -424,6 +424,10 @@ export default function LocationPropertyDetailsPage() {
                           <SelectItem value="Active">Active</SelectItem>
                           <SelectItem value="Construction">Construction</SelectItem>
                           <SelectItem value="Divested">Divested</SelectItem>
+                          {/* Ensure legacy data is visible */}
+                          {field.value && !["Active", "Construction", "Divested"].includes(field.value) && (
+                            <SelectItem value={field.value}>{field.value}</SelectItem>
+                          )}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -747,6 +751,10 @@ export default function LocationPropertyDetailsPage() {
                           <SelectItem value="City Network">City Network</SelectItem>
                           <SelectItem value="No Network">No Network</SelectItem>
                           <SelectItem value="City + Business Network">City + Business Network</SelectItem>
+                          {/* Ensure legacy data is visible */}
+                          {field.value && !["City Network", "No Network", "City + Business Network"].includes(field.value) && (
+                            <SelectItem value={field.value}>{field.value}</SelectItem>
+                          )}
                         </SelectContent>
                       </Select>
                       <FormMessage />
