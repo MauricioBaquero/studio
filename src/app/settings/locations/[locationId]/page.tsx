@@ -124,7 +124,9 @@ export default function LocationPropertyDetailsPage() {
             </Link>
           </Button>
           <div className="space-y-0.5">
-            <h1 className="text-3xl font-bold font-headline tracking-tight">Property Details</h1>
+            <h1 className="text-3xl font-bold font-headline tracking-tight">
+              {location?.name ? `${location.name} Property Details` : 'Property Details'}
+            </h1>
             <p className="text-sm text-muted-foreground font-medium">
               Administrative Overrides & Site Metadata
             </p>
