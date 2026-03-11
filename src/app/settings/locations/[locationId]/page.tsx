@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, MapPin, ShieldCheck, Save, RefreshCw, Car, Zap, Accessibility, UserCog, LifeBuoy, HelpCircle, Milestone, Lightbulb, Info, CreditCard, ShieldAlert, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Loader2, MapPin, ShieldCheck, Save, Car, Zap, Accessibility, UserCog, LifeBuoy, HelpCircle, Milestone, Lightbulb, Info, CreditCard, ShieldAlert, ArrowRight, Monitor, Cpu, Network, Wifi } from 'lucide-react';
 import Link from 'next/link';
 import { useFirestore, useDoc, useMemoFirebase, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { doc, serverTimestamp } from 'firebase/firestore';
@@ -54,10 +55,18 @@ const lightingSchema = z.object({
   smallLights: z.coerce.number().int().min(0),
 });
 
+const technologySchema = z.object({
+  surfaceMounts: z.coerce.number().int().min(0),
+  flushMounts: z.coerce.number().int().min(0),
+  cameraTracking: z.coerce.number().int().min(0),
+  network: z.string(),
+});
+
 type MetadataValues = z.infer<typeof metadataSchema>;
 type ParkingValues = z.infer<typeof parkingSchema>;
 type SignageValues = z.infer<typeof signageSchema>;
 type LightingValues = z.infer<typeof lightingSchema>;
+type TechnologyValues = z.infer<typeof technologySchema>;
 
 export default function LocationPropertyDetailsPage() {
   const params = useParams();
@@ -70,6 +79,7 @@ export default function LocationPropertyDetailsPage() {
   const [isSavingParking, setIsSavingParking] = useState(false);
   const [isSavingSignage, setIsSavingSignage] = useState(false);
   const [isSavingLighting, setIsSavingLighting] = useState(false);
+  const [isSavingTechnology, setIsSavingTechnology] = useState(false);
 
   const locationRef = useMemoFirebase(
     () => (firestore ? doc(firestore, 'locations', locationId) : null),
@@ -119,6 +129,16 @@ export default function LocationPropertyDetailsPage() {
     },
   });
 
+  const technologyForm = useForm<TechnologyValues>({
+    resolver: zodResolver(technologySchema),
+    defaultValues: {
+      surfaceMounts: 0,
+      flushMounts: 0,
+      cameraTracking: 0,
+      network: '',
+    },
+  });
+
   useEffect(() => {
     if (location) {
       metadataForm.reset({
@@ -147,8 +167,14 @@ export default function LocationPropertyDetailsPage() {
         largeLights: location.propertyDetails?.lighting?.totalLighting?.largeLights || 0,
         smallLights: location.propertyDetails?.lighting?.totalLighting?.smallLights || 0,
       });
+      technologyForm.reset({
+        surfaceMounts: location.propertyDetails?.technology?.surfaceMounts || 0,
+        flushMounts: location.propertyDetails?.technology?.flushMounts || 0,
+        cameraTracking: location.propertyDetails?.technology?.cameraTracking || 0,
+        network: location.propertyDetails?.technology?.network || '',
+      });
     }
-  }, [location, metadataForm, parkingForm, signageForm, lightingForm]);
+  }, [location, metadataForm, parkingForm, signageForm, lightingForm, technologyForm]);
 
   const onSaveMetadata = async (data: MetadataValues) => {
     if (!firestore || !currentUser) return;
@@ -254,6 +280,30 @@ export default function LocationPropertyDetailsPage() {
       toast({ title: "Error", description: "Failed to update lighting.", variant: "destructive" });
     } finally {
       setIsSavingLighting(false);
+    }
+  };
+
+  const onSaveTechnology = async (data: TechnologyValues) => {
+    if (!firestore || !currentUser) return;
+    setIsSavingTechnology(true);
+
+    const updatedData = {
+      'propertyDetails.technology': {
+        ...data,
+        lastUpdated: serverTimestamp(),
+        lastUser: currentUser.name || currentUser.email || 'Unknown User',
+      }
+    };
+
+    try {
+      const ref = doc(firestore, 'locations', locationId);
+      updateDocumentNonBlocking(ref, updatedData);
+      toast({ title: "Technology Updated", description: "Technology inventory has been saved." });
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Error", description: "Failed to update technology inventory.", variant: "destructive" });
+    } finally {
+      setIsSavingTechnology(false);
     }
   };
 
@@ -707,6 +757,95 @@ export default function LocationPropertyDetailsPage() {
                 <Button type="submit" disabled={isSavingLighting} className="min-w-[140px]">
                   {isSavingLighting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                   Save Lighting
+                </Button>
+              </CardFooter>
+            </form>
+          </Form>
+        </Card>
+
+        {/* Technology Card */}
+        <Card className="overflow-hidden border-primary/10 shadow-lg">
+          <CardHeader className="bg-primary text-primary-foreground p-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary-foreground/20 p-2 rounded-lg">
+                <Monitor className="h-6 w-6" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">
+                  Technology Inventory
+                </CardTitle>
+                <CardDescription className="text-primary-foreground/80 font-medium">
+                  Hardware, Tracking & Connectivity
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <Form {...technologyForm}>
+            <form onSubmit={technologyForm.handleSubmit(onSaveTechnology)}>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
+                  <FormField
+                    control={technologyForm.control}
+                    name="surfaceMounts"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 font-semibold">
+                          <Cpu className="h-4 w-4 text-muted-foreground" /> Surface Mounts
+                        </FormLabel>
+                        <FormControl><Input type="number" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={technologyForm.control}
+                    name="flushMounts"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 font-semibold">
+                          <Cpu className="h-4 w-4 text-muted-foreground" /> Flush Mounts
+                        </FormLabel>
+                        <FormControl><Input type="number" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={technologyForm.control}
+                    name="cameraTracking"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 font-semibold">
+                          <Monitor className="h-4 w-4 text-muted-foreground" /> Camera Tracking
+                        </FormLabel>
+                        <FormControl><Input type="number" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={technologyForm.control}
+                    name="network"
+                    render={({ field }) => (
+                      <FormItem className="lg:col-span-2">
+                        <FormLabel className="flex items-center gap-2 font-semibold">
+                          <Wifi className="h-4 w-4 text-muted-foreground" /> Network Details
+                        </FormLabel>
+                        <FormControl><Input placeholder="e.g., Fiber Optic, 5G Backbone" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+              <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
+                <AuditInfo 
+                  lastUser={location?.propertyDetails?.technology?.lastUser} 
+                  lastUpdated={location?.propertyDetails?.technology?.lastUpdated} 
+                />
+                <Button type="submit" disabled={isSavingTechnology} className="min-w-[140px]">
+                  {isSavingTechnology ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                  Save Technology
                 </Button>
               </CardFooter>
             </form>

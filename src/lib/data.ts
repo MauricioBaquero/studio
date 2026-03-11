@@ -105,11 +105,22 @@ export const lightingSchema = z.object({
 });
 export type Lighting = z.infer<typeof lightingSchema>;
 
+export const technologySchema = z.object({
+  lastUpdated: timestampSchema.optional(),
+  lastUser: z.string().optional(),
+  surfaceMounts: z.number().int(),
+  flushMounts: z.number().int(),
+  cameraTracking: z.number().int(),
+  network: z.string(),
+});
+export type Technology = z.infer<typeof technologySchema>;
+
 export const propertyDetailsSchema = z.object({
   metadata: locationMetadataSchema.optional(),
   parkingCapacity: parkingCapacitySchema.optional(),
   signage: signageSchema.optional(),
   lighting: lightingSchema.optional(),
+  technology: technologySchema.optional(),
 });
 
 export const locationSchema = z.object({

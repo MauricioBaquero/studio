@@ -438,6 +438,30 @@
                   }
                 }
               }
+            },
+            "technology": {
+              "type": "object",
+              "properties": {
+                "lastUpdated": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "lastUser": {
+                  "type": "string"
+                },
+                "surfaceMounts": {
+                  "type": "integer"
+                },
+                "flushMounts": {
+                  "type": "integer"
+                },
+                "cameraTracking": {
+                  "type": "integer"
+                },
+                "network": {
+                  "type": "string"
+                }
+              }
             }
           }
         }
