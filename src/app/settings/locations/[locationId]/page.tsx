@@ -198,14 +198,13 @@ export default function LocationPropertyDetailsPage() {
     : format(new Date(), 'MMM d, yyyy');
 
   const AuditInfo = () => (
-    <div className="flex flex-col items-start gap-0.5">
-      <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground/80">
-        <User className="h-3 w-3 text-primary" />
-        <span>Last Edited by: {lastUser}</span>
-      </div>
-      <p className="text-[10px] text-muted-foreground">
+    <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground/80">
+      <User className="h-3 w-3 text-primary" />
+      <span className="whitespace-nowrap">Last Edited by: {lastUser}</span>
+      <span className="mx-1 opacity-20">|</span>
+      <span className="text-[10px] font-normal text-muted-foreground whitespace-nowrap">
         {displayDateString}
-      </p>
+      </span>
     </div>
   );
 
