@@ -211,7 +211,6 @@ export default function LocationPropertyDetailsPage() {
         </div>
 
         <div className="text-right hidden md:block border-l pl-6">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Site Audit Trail</p>
           <div className="flex items-center justify-end gap-2 text-sm font-semibold">
             <User className="h-3.5 w-3.5 text-primary" />
             <span>{lastUser}</span>
