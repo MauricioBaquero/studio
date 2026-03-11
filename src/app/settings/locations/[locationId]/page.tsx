@@ -379,7 +379,7 @@ export default function LocationPropertyDetailsPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="flex items-center gap-2 font-semibold">
-                          <Car className="h-4 w-4 text-blue-500" /> General Parking
+                          <Car className="h-4 w-4 text-muted-foreground" /> General Parking
                         </FormLabel>
                         <FormControl>
                           <Input type="number" {...field} />
@@ -394,7 +394,7 @@ export default function LocationPropertyDetailsPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="flex items-center gap-2 font-semibold">
-                          <Accessibility className="h-4 w-4 text-blue-500" /> ADA Accessible
+                          <Accessibility className="h-4 w-4 text-muted-foreground" /> ADA Accessible
                         </FormLabel>
                         <FormControl>
                           <Input type="number" {...field} />
@@ -409,7 +409,7 @@ export default function LocationPropertyDetailsPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="flex items-center gap-2 font-semibold">
-                          <Zap className="h-4 w-4 text-blue-500" /> EV Charging
+                          <Zap className="h-4 w-4 text-muted-foreground" /> EV Charging
                         </FormLabel>
                         <FormControl>
                           <Input type="number" {...field} />
@@ -424,7 +424,7 @@ export default function LocationPropertyDetailsPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="flex items-center gap-2 font-semibold">
-                          <UserCog className="h-4 w-4 text-blue-500" /> City Staff
+                          <UserCog className="h-4 w-4 text-muted-foreground" /> City Staff
                         </FormLabel>
                         <FormControl>
                           <Input type="number" {...field} />
@@ -439,7 +439,7 @@ export default function LocationPropertyDetailsPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="flex items-center gap-2 font-semibold">
-                          <LifeBuoy className="h-4 w-4 text-blue-500" /> Lifeguard Dept.
+                          <LifeBuoy className="h-4 w-4 text-muted-foreground" /> Lifeguard Dept.
                         </FormLabel>
                         <FormControl>
                           <Input type="number" {...field} />
@@ -454,7 +454,7 @@ export default function LocationPropertyDetailsPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="flex items-center gap-2 font-semibold">
-                          <HelpCircle className="h-4 w-4 text-blue-500" /> Other/Special
+                          <HelpCircle className="h-4 w-4 text-muted-foreground" /> Other/Special
                         </FormLabel>
                         <FormControl>
                           <Input type="number" {...field} />
