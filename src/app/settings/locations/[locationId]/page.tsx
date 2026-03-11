@@ -232,14 +232,6 @@ export default function LocationPropertyDetailsPage() {
                       <TableBody>
                         <TableRow className="hover:bg-transparent">
                           <TableCell className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-3">
-                            Type
-                          </TableCell>
-                          <TableCell className="text-sm font-medium py-3">
-                            {location?.type || 'Not Set'}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow className="hover:bg-transparent">
-                          <TableCell className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-3">
                             Last Editor
                           </TableCell>
                           <TableCell className="text-sm font-medium py-3">
