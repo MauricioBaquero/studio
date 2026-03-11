@@ -577,7 +577,7 @@ export default function LocationPropertyDetailsPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="flex items-center gap-2 font-semibold">
-                          <LifeBuoy className="h-4 w-4 text-muted-foreground" /> Lifeguard Dept.
+                          <LifeBuoy className="h-4 w-4 text-muted-foreground" /> Lifeguard
                         </FormLabel>
                         <FormControl>
                           <Input type="number" {...field} />
@@ -848,6 +848,15 @@ export default function LocationPropertyDetailsPage() {
           <Form {...technologyForm}>
             <form onSubmit={technologyForm.handleSubmit(onSaveTechnology)}>
               <CardContent className="p-6">
+                <div className="mb-6 p-4 bg-primary/5 rounded-lg border border-primary/10 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold uppercase tracking-wider text-primary/70">Calculated Inventory</p>
+                    <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">TOTAL COUNT</p>
+                  </div>
+                  <div className="text-4xl font-black font-headline text-primary">
+                    {Number(technologyForm.watch('surfaceMounts') || 0) + Number(technologyForm.watch('flushMounts') || 0) + Number(technologyForm.watch('cameraTracking') || 0)}
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
                   <FormField
                     control={technologyForm.control}
