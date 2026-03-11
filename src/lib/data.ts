@@ -1,3 +1,4 @@
+
 import { addDays, addWeeks, addMonths, setDay, setDate, nextDay, startOfDay, isAfter, isSameDay, differenceInDays, subDays, toDate as fnsToDate } from "date-fns";
 import type { Timestamp } from 'firebase/firestore';
 import { z } from "zod";
@@ -79,9 +80,36 @@ export const parkingCapacitySchema = z.object({
 });
 export type ParkingCapacity = z.infer<typeof parkingCapacitySchema>;
 
+export const signageSchema = z.object({
+  lastUpdated: timestampSchema.optional(),
+  lastUser: z.string().optional(),
+  totalSignage: z.object({
+    monumentSignage: z.number().int(),
+    otherSignage: z.number().int(),
+    parkingInfoSignage: z.number().int(),
+    paymentSystemSignage: z.number().int(),
+    trafficDirectionSignage: z.number().int(),
+    trafficRegulatorySignage: z.number().int(),
+    wayfindingSignage: z.number().int(),
+  }),
+});
+export type Signage = z.infer<typeof signageSchema>;
+
+export const lightingSchema = z.object({
+  lastUpdated: timestampSchema.optional(),
+  lastUser: z.string().optional(),
+  totalLighting: z.object({
+    largeLights: z.number().int(),
+    smallLights: z.number().int(),
+  }),
+});
+export type Lighting = z.infer<typeof lightingSchema>;
+
 export const propertyDetailsSchema = z.object({
   metadata: locationMetadataSchema.optional(),
   parkingCapacity: parkingCapacitySchema.optional(),
+  signage: signageSchema.optional(),
+  lighting: lightingSchema.optional(),
 });
 
 export const locationSchema = z.object({

@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Team": {
@@ -371,6 +372,67 @@
                       "type": "integer"
                     },
                     "otherParking": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            },
+            "signage": {
+              "type": "object",
+              "properties": {
+                "lastUpdated": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "lastUser": {
+                  "type": "string"
+                },
+                "totalSignage": {
+                  "type": "object",
+                  "properties": {
+                    "monumentSignage": {
+                      "type": "integer"
+                    },
+                    "otherSignage": {
+                      "type": "integer"
+                    },
+                    "parkingInfoSignage": {
+                      "type": "integer"
+                    },
+                    "paymentSystemSignage": {
+                      "type": "integer"
+                    },
+                    "trafficDirectionSignage": {
+                      "type": "integer"
+                    },
+                    "trafficRegulatorySignage": {
+                      "type": "integer"
+                    },
+                    "wayfindingSignage": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            },
+            "lighting": {
+              "type": "object",
+              "properties": {
+                "lastUpdated": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "lastUser": {
+                  "type": "string"
+                },
+                "totalLighting": {
+                  "type": "object",
+                  "properties": {
+                    "largeLights": {
+                      "type": "integer"
+                    },
+                    "smallLights": {
                       "type": "integer"
                     }
                   }
