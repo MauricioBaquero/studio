@@ -769,71 +769,48 @@ export default function LocationPropertyDetailsPage() {
             <form onSubmit={infrastructureForm.handleSubmit(onSaveInfrastructure)}>
               <CardContent className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                  <div className="space-y-6">
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2 border-b pb-2">
-                      <Construction className="h-3 w-3" /> Surface Details
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <FormField control={infrastructureForm.control} name="surfaceType" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Surface Type</FormLabel>
-                          <FormControl><Input placeholder="e.g., Concrete, Asphalt" {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                      <FormField control={infrastructureForm.control} name="surfaceCondition" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Current Condition</FormLabel>
-                          <FormControl><Input placeholder="e.g., Good, Fair, Cracked" {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                    </div>
-                  </div>
-
-                  <div className="space-y-6">
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2 border-b pb-2">
-                      <ArrowUpToLine className="h-3 w-3" /> Clearance Requirements
-                    </h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField control={infrastructureForm.control} name="ft" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Feet (ft)</FormLabel>
-                          <FormControl><Input type="number" {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                      <FormField control={infrastructureForm.control} name="in" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Inches (in)</FormLabel>
-                          <FormControl><Input type="number" max="11" {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-2 space-y-6">
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2 border-b pb-2">
-                      <DoorOpen className="h-3 w-3" /> Site Access Points
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                      <FormField control={infrastructureForm.control} name="entrances" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Total Entrances</FormLabel>
-                          <FormControl><Input type="number" {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                      <FormField control={infrastructureForm.control} name="exits" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Total Exits</FormLabel>
-                          <FormControl><Input type="number" {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                    </div>
-                  </div>
+                  <FormField control={infrastructureForm.control} name="surfaceType" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><Construction className="h-4 w-4 text-muted-foreground" /> Surface Type</FormLabel>
+                      <FormControl><Input placeholder="e.g., Concrete, Asphalt" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={infrastructureForm.control} name="surfaceCondition" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><Info className="h-4 w-4 text-muted-foreground" /> Current Condition</FormLabel>
+                      <FormControl><Input placeholder="e.g., Good, Fair, Cracked" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={infrastructureForm.control} name="ft" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><Scaling className="h-4 w-4 text-muted-foreground" /> Feet (ft)</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={infrastructureForm.control} name="in" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><Scaling className="h-4 w-4 text-muted-foreground" /> Inches (in)</FormLabel>
+                      <FormControl><Input type="number" max="11" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={infrastructureForm.control} name="entrances" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><DoorOpen className="h-4 w-4 text-muted-foreground" /> Total Entrances</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={infrastructureForm.control} name="exits" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><DoorOpen className="h-4 w-4 text-muted-foreground" /> Total Exits</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
               </CardContent>
               <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
