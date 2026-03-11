@@ -353,17 +353,17 @@ export default function LocationPropertyDetailsPage() {
         </Card>
 
         {/* Parking Capacity Card */}
-        <Card className="overflow-hidden border-blue-500/10 shadow-lg">
-          <CardHeader className="bg-slate-900 text-white p-6">
+        <Card className="overflow-hidden border-primary/10 shadow-lg">
+          <CardHeader className="bg-primary text-primary-foreground p-6">
             <div className="flex items-center gap-3">
-              <div className="bg-white/10 p-2 rounded-lg">
+              <div className="bg-primary-foreground/20 p-2 rounded-lg">
                 <Car className="h-6 w-6" />
               </div>
               <div>
                 <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">
                   Parking Capacity
                 </CardTitle>
-                <CardDescription className="text-slate-400 font-medium">
+                <CardDescription className="text-primary-foreground/80 font-medium">
                   Total Stall Inventory & Allocations
                 </CardDescription>
               </div>
