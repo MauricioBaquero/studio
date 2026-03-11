@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useParams } from 'next/navigation';
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, MapPin, ShieldCheck, Save, Car, Zap, Accessibility, UserCog, LifeBuoy, HelpCircle, Milestone, Lightbulb, Info, CreditCard, ShieldAlert, ArrowRight, Monitor, Cpu, Network, Wifi } from 'lucide-react';
+import { ArrowLeft, Loader2, MapPin, ShieldCheck, Save, Car, Zap, Accessibility, UserCog, LifeBuoy, HelpCircle, Milestone, Lightbulb, Info, CreditCard, ShieldAlert, ArrowRight, Monitor, Cpu, Wifi } from 'lucide-react';
 import Link from 'next/link';
 import { useFirestore, useDoc, useMemoFirebase, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { doc, serverTimestamp } from 'firebase/firestore';
@@ -504,7 +503,7 @@ export default function LocationPropertyDetailsPage() {
                 <div className="mb-6 p-4 bg-primary/5 rounded-lg border border-primary/10 flex items-center justify-between">
                   <div className="space-y-0.5">
                     <p className="text-xs font-bold uppercase tracking-wider text-primary/70">Calculated Inventory</p>
-                    <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">Total Stall Count</p>
+                    <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">TOTAL COUNT</p>
                   </div>
                   <div className="text-4xl font-black font-headline text-primary">
                     {totalParkingSpaces}
@@ -641,7 +640,7 @@ export default function LocationPropertyDetailsPage() {
                 <div className="mb-6 p-4 bg-primary/5 rounded-lg border border-primary/10 flex items-center justify-between">
                   <div className="space-y-0.5">
                     <p className="text-xs font-bold uppercase tracking-wider text-primary/70">Calculated Inventory</p>
-                    <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">Total Sign Count</p>
+                    <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">TOTAL COUNT</p>
                   </div>
                   <div className="text-4xl font-black font-headline text-primary">
                     {totalSignageCount}
@@ -779,7 +778,7 @@ export default function LocationPropertyDetailsPage() {
                 <div className="mb-6 p-4 bg-primary/5 rounded-lg border border-primary/10 flex items-center justify-between">
                   <div className="space-y-0.5">
                     <p className="text-xs font-bold uppercase tracking-wider text-primary/70">Calculated Inventory</p>
-                    <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">Total Fixture Count</p>
+                    <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">TOTAL COUNT</p>
                   </div>
                   <div className="text-4xl font-black font-headline text-primary">
                     {totalLightingCount}
