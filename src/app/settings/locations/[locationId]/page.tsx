@@ -180,9 +180,8 @@ export default function LocationPropertyDetailsPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Active">Active</SelectItem>
-                          <SelectItem value="Inactive">Inactive</SelectItem>
-                          <SelectItem value="Under Construction">Under Construction</SelectItem>
-                          <SelectItem value="Maintenance Only">Maintenance Only</SelectItem>
+                          <SelectItem value="Construction">Construction</SelectItem>
+                          <SelectItem value="Divested">Divested</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
