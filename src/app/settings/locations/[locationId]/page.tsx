@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, MapPin, User, ShieldCheck, Save, RefreshCw, Car, Zap, Accessibility, UserCog, LifeBuoy, HelpCircle, Milestone, Lightbulb, Info, CreditCard, ShieldAlert, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Loader2, MapPin, ShieldCheck, Save, RefreshCw, Car, Zap, Accessibility, UserCog, LifeBuoy, HelpCircle, Milestone, Lightbulb, Info, CreditCard, ShieldAlert, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useFirestore, useDoc, useMemoFirebase, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { doc, serverTimestamp } from 'firebase/firestore';
@@ -274,9 +274,8 @@ export default function LocationPropertyDetailsPage() {
     const dateString = format(date, 'MMM d, yyyy p');
 
     return (
-      <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-tight text-muted-foreground/60">
-        <User className="h-3 w-3" />
-        <span>Last Edited by {user} on {dateString}</span>
+      <div className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground/60">
+        Last Edited by {user} on {dateString}
       </div>
     );
   }
