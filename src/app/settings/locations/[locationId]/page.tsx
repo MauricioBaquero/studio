@@ -2,7 +2,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, MapPin, ShieldCheck, Save, Car, Zap, Accessibility, UserCog, LifeBuoy, HelpCircle, Milestone, Lightbulb, Info, CreditCard, ShieldAlert, ArrowRight, Monitor, Cpu, Network, Wifi } from 'lucide-react';
@@ -107,6 +107,19 @@ export default function LocationPropertyDetailsPage() {
       otherParking: 0,
     },
   });
+
+  // Calculate total parking spaces in real-time
+  const watchedParking = parkingForm.watch();
+  const totalParkingSpaces = useMemo(() => {
+    return (
+      (Number(watchedParking.generalParking) || 0) +
+      (Number(watchedParking.adaParking) || 0) +
+      (Number(watchedParking.evParking) || 0) +
+      (Number(watchedParking.cityStaffParking) || 0) +
+      (Number(watchedParking.lifeguardParking) || 0) +
+      (Number(watchedParking.otherParking) || 0)
+    );
+  }, [watchedParking]);
 
   const signageForm = useForm<SignageValues>({
     resolver: zodResolver(signageSchema),
@@ -465,6 +478,16 @@ export default function LocationPropertyDetailsPage() {
           <Form {...parkingForm}>
             <form onSubmit={parkingForm.handleSubmit(onSaveParking)}>
               <CardContent className="p-6">
+                <div className="mb-6 p-4 bg-primary/5 rounded-lg border border-primary/10 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold uppercase tracking-wider text-primary/70">Calculated Inventory</p>
+                    <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">Total Stall Count</p>
+                  </div>
+                  <div className="text-4xl font-black font-headline text-primary">
+                    {totalParkingSpaces}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
                   <FormField
                     control={parkingForm.control}
