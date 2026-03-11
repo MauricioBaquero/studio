@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useParams } from 'next/navigation';
@@ -9,7 +8,7 @@ import { ArrowLeft, Loader2, MapPin, User, Clock, ShieldCheck, Save, RefreshCw }
 import Link from 'next/link';
 import { useFirestore, useDoc, useMemoFirebase, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { doc, serverTimestamp } from 'firebase/firestore';
-import { Location, toDate, LOCATION_TYPES } from '@/lib/data';
+import { Location, toDate } from '@/lib/data';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -29,7 +28,6 @@ import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 
 const metadataSchema = z.object({
   status: z.string().min(1, "Status is required"),
-  type: z.string().min(1, "Type is required"),
   latitude: z.coerce.number(),
   longitude: z.coerce.number(),
 });
@@ -54,7 +52,6 @@ export default function LocationPropertyDetailsPage() {
     resolver: zodResolver(metadataSchema),
     defaultValues: {
       status: 'Active',
-      type: '',
       latitude: 0,
       longitude: 0,
     },
@@ -64,7 +61,6 @@ export default function LocationPropertyDetailsPage() {
     if (location) {
       form.reset({
         status: location.metadata?.status || 'Active',
-        type: location.metadata?.type || location.type || '',
         latitude: location.metadata?.location?.latitude || 0,
         longitude: location.metadata?.location?.longitude || 0,
       });
@@ -77,7 +73,6 @@ export default function LocationPropertyDetailsPage() {
 
     const updatedMetadata = {
       status: data.status,
-      type: data.type,
       location: {
         latitude: data.latitude,
         longitude: data.longitude,
@@ -89,8 +84,7 @@ export default function LocationPropertyDetailsPage() {
     try {
       const ref = doc(firestore, 'locations', locationId);
       updateDocumentNonBlocking(ref, { 
-        metadata: updatedMetadata,
-        type: data.type // Keep top-level type in sync
+        metadata: updatedMetadata
       });
       
       toast({
@@ -190,23 +184,6 @@ export default function LocationPropertyDetailsPage() {
                         </SelectContent>
                       </Select>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="type">Property Type</Label>
-                      <Select 
-                        value={form.watch('type')} 
-                        onValueChange={(val) => form.setValue('type', val)}
-                      >
-                        <SelectTrigger id="type">
-                          <SelectValue placeholder="Select Type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {LOCATION_TYPES.map(type => (
-                            <SelectItem key={type} value={type}>{type}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
                   </div>
                 </div>
 
@@ -251,6 +228,14 @@ export default function LocationPropertyDetailsPage() {
                   <div className="rounded-lg border bg-card overflow-hidden">
                     <Table>
                       <TableBody>
+                        <TableRow className="hover:bg-transparent">
+                          <TableCell className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-3">
+                            Type
+                          </TableCell>
+                          <TableCell className="text-sm font-medium py-3">
+                            {location?.type || 'Not Set'}
+                          </TableCell>
+                        </TableRow>
                         <TableRow className="hover:bg-transparent">
                           <TableCell className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-3">
                             Last Editor
