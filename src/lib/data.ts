@@ -111,6 +111,8 @@ export const technologySchema = z.object({
   surfaceMounts: z.number().int(),
   flushMounts: z.number().int(),
   cameraTracking: z.number().int(),
+  meters: z.number().int(),
+  mobileAppPayment: z.boolean(),
   network: z.string(),
 });
 export type Technology = z.infer<typeof technologySchema>;

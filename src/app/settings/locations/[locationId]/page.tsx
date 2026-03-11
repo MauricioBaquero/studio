@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, MapPin, ShieldCheck, Save, Car, Zap, Accessibility, UserCog, LifeBuoy, HelpCircle, Milestone, Lightbulb, Info, CreditCard, ShieldAlert, ArrowRight, Monitor, Cpu, Wifi, Trees, Sprout, Droplets, Leaf } from 'lucide-react';
+import { ArrowLeft, Loader2, MapPin, ShieldCheck, Save, Car, Zap, Accessibility, UserCog, LifeBuoy, HelpCircle, Milestone, Lightbulb, Info, CreditCard, ShieldAlert, ArrowRight, Monitor, Cpu, Wifi, Trees, Sprout, Droplets, Leaf, Gauge, Smartphone } from 'lucide-react';
 import Link from 'next/link';
 import { useFirestore, useDoc, useMemoFirebase, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { doc, serverTimestamp } from 'firebase/firestore';
@@ -60,6 +60,8 @@ const technologySchema = z.object({
   surfaceMounts: z.coerce.number().int().min(0),
   flushMounts: z.coerce.number().int().min(0),
   cameraTracking: z.coerce.number().int().min(0),
+  meters: z.coerce.number().int().min(0),
+  mobileAppPayment: z.boolean(),
   network: z.string(),
 });
 
@@ -120,7 +122,7 @@ export default function LocationPropertyDetailsPage() {
 
   const technologyForm = useForm<TechnologyValues>({
     resolver: zodResolver(technologySchema),
-    defaultValues: { surfaceMounts: 0, flushMounts: 0, cameraTracking: 0, network: '' },
+    defaultValues: { surfaceMounts: 0, flushMounts: 0, cameraTracking: 0, meters: 0, mobileAppPayment: false, network: '' },
   });
 
   const landscapingForm = useForm<LandscapingValues>({
@@ -160,6 +162,8 @@ export default function LocationPropertyDetailsPage() {
         surfaceMounts: location.propertyDetails?.technology?.surfaceMounts || 0,
         flushMounts: location.propertyDetails?.technology?.flushMounts || 0,
         cameraTracking: location.propertyDetails?.technology?.cameraTracking || 0,
+        meters: location.propertyDetails?.technology?.meters || 0,
+        mobileAppPayment: location.propertyDetails?.technology?.mobileAppPayment || false,
         network: location.propertyDetails?.technology?.network || '',
       });
       landscapingForm.reset({
@@ -642,7 +646,7 @@ export default function LocationPropertyDetailsPage() {
                     <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">TOTAL COUNT</p>
                   </div>
                   <div className="text-4xl font-black font-headline text-primary">
-                    {Number(technologyForm.watch('surfaceMounts') || 0) + Number(technologyForm.watch('flushMounts') || 0) + Number(technologyForm.watch('cameraTracking') || 0)}
+                    {Number(technologyForm.watch('surfaceMounts') || 0) + Number(technologyForm.watch('flushMounts') || 0) + Number(technologyForm.watch('cameraTracking') || 0) + Number(technologyForm.watch('meters') || 0)}
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
@@ -665,6 +669,21 @@ export default function LocationPropertyDetailsPage() {
                       <FormLabel className="flex items-center gap-2 font-semibold"><Monitor className="h-4 w-4 text-muted-foreground" /> Camera Tracking</FormLabel>
                       <FormControl><Input type="number" {...field} /></FormControl>
                       <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={technologyForm.control} name="meters" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><Gauge className="h-4 w-4 text-muted-foreground" /> Meters</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={technologyForm.control} name="mobileAppPayment" render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base flex items-center gap-2"><Smartphone className="h-4 w-4 text-muted-foreground" /> Mobile Payment</FormLabel>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                     </FormItem>
                   )} />
                   <FormField control={technologyForm.control} name="network" render={({ field }) => (
