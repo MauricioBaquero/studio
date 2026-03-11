@@ -3,12 +3,22 @@
 import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { Location } from '@/lib/data';
 
 export default function LocationPropertyDetailsPage() {
   const params = useParams();
   const locationId = params.locationId as string;
+  const firestore = useFirestore();
+
+  const locationRef = useMemoFirebase(
+    () => (firestore ? doc(firestore, 'locations', locationId) : null),
+    [firestore, locationId]
+  );
+  const { data: location, isLoading } = useDoc<Location>(locationRef);
 
   return (
     <div className="space-y-6">
@@ -23,9 +33,18 @@ export default function LocationPropertyDetailsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Edit Property Details</CardTitle>
+          <CardTitle>
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Loading Details...</span>
+              </div>
+            ) : (
+              `Edit Property Details: ${location?.name || locationId}`
+            )}
+          </CardTitle>
           <CardDescription>
-            Detailed technical specifications and facility data for location ID: {locationId}
+            Detailed technical specifications and facility data for site: {location?.name || locationId}
           </CardDescription>
         </CardHeader>
         <CardContent>
