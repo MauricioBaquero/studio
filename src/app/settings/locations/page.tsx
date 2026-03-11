@@ -10,7 +10,7 @@ import {
   updateDocumentNonBlocking,
   useUser,
 } from '@/firebase';
-import { collection, query, doc, deleteField } from 'firebase/firestore';
+import { collection, query, doc } from 'firebase/firestore';
 import { Location, Ticket, Team } from '@/lib/data';
 import {
   Card,
@@ -28,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { MoreHorizontal, PlusCircle, AlertTriangle, Trash2 } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, AlertTriangle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,7 +65,6 @@ export default function LocationsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
-  const [isPurgeAlertOpen, setIsPurgeAlertOpen] = useState(false);
   const [deletingLocationId, setDeletingLocationId] = useState<string | null>(
     null
   );
@@ -169,23 +168,6 @@ export default function LocationsPage() {
     setReplacementLocationId('');
   };
 
-  const executePurgeFacilitySpecs = () => {
-    if (!firestore || !locations || locations.length === 0) return;
-
-    let count = 0;
-    locations.forEach(loc => {
-        const docRef = doc(firestore, 'locations', loc.id);
-        updateDocumentNonBlocking(docRef, { facilitySpecs: deleteField() });
-        count++;
-    });
-
-    toast({
-        title: "Technical Data Reset",
-        description: `Successfully removed technical specifications from ${count} locations.`,
-    });
-    setIsPurgeAlertOpen(false);
-  };
-
   const isLoading = isLoadingLocations || isLoadingTickets;
 
   const usageCount = deletingLocationId ? ticketCounts[deletingLocationId] || 0 : 0;
@@ -224,16 +206,6 @@ export default function LocationsPage() {
             </CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {currentUser?.role === 'Admin' && (
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsPurgeAlertOpen(true)} 
-                  className="text-destructive hover:bg-destructive/10"
-                >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Reset Technical Data
-                </Button>
-            )}
             <Button onClick={() => handleOpenForm(null)}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Add Location
@@ -362,26 +334,6 @@ export default function LocationsPage() {
                 className={usageCount > 0 ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
             >
               {usageCount > 0 ? "Re-map & Delete" : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={isPurgeAlertOpen} onOpenChange={setIsPurgeAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reset All Technical Data?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently remove the <strong>facilitySpecs</strong> array from all {locations?.length} locations. This action cannot be undone and will reset technical details for all facility reports.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={executePurgeFacilitySpecs}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Reset Data
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
