@@ -313,6 +313,10 @@
         "numberOfFloors": {
           "type": "number",
           "description": "Number of floors at the location. Can be 0 or N/A."
+        },
+        "facilitySpecs": {
+          "type": "array",
+          "description": "A list of technical specifications for the facility."
         }
       },
       "required": [

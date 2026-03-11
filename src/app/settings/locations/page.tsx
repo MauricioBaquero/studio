@@ -169,20 +169,31 @@ export default function LocationsPage() {
   };
 
   const handlePurgeFacilitySpecs = () => {
-    if (!firestore || !locations || locations.length === 0) return;
+    if (!firestore) return;
+    
+    if (!locations || locations.length === 0) {
+      toast({
+        title: "No Locations Found",
+        description: "There are no locations to reset.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     if (!confirm("Are you sure you want to remove technical specifications from all locations? This cannot be undone.")) {
         return;
     }
 
+    let count = 0;
     locations.forEach(loc => {
         const docRef = doc(firestore, 'locations', loc.id);
         updateDocumentNonBlocking(docRef, { facilitySpecs: deleteField() });
+        count++;
     });
 
     toast({
         title: "Cleanup Initiated",
-        description: "Removing technical specifications from all location records.",
+        description: `Resetting technical data for ${count} locations.`,
     });
   };
 
