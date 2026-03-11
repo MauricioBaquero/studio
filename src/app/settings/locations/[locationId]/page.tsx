@@ -736,8 +736,19 @@ export default function LocationPropertyDetailsPage() {
                   )} />
                   <FormField control={technologyForm.control} name="network" render={({ field }) => (
                     <FormItem className="lg:col-span-2">
-                      <FormLabel className="flex items-center gap-2 font-semibold"><Wifi className="h-4 w-4 text-muted-foreground" /> Network Details</FormLabel>
-                      <FormControl><Input placeholder="e.g., Fiber, 5G" {...field} /></FormControl>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><Wifi className="h-4 w-4 text-muted-foreground" /> Network Infrastructure</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Network Type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="City Network">City Network</SelectItem>
+                          <SelectItem value="No Network">No Network</SelectItem>
+                          <SelectItem value="City + Business Network">City + Business Network</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )} />
