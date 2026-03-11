@@ -495,6 +495,46 @@
                   "type": "boolean"
                 }
               }
+            },
+            "infrastructure": {
+              "type": "object",
+              "properties": {
+                "lastUpdated": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "lastUser": {
+                  "type": "string"
+                },
+                "surfaceCondition": {
+                  "type": "string"
+                },
+                "surfaceType": {
+                  "type": "string"
+                },
+                "clearanceRequirements": {
+                  "type": "object",
+                  "properties": {
+                    "ft": {
+                      "type": "integer"
+                    },
+                    "in": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "accessPoints": {
+                  "type": "object",
+                  "properties": {
+                    "entrances": {
+                      "type": "integer"
+                    },
+                    "exits": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
             }
           }
         }

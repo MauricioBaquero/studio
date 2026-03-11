@@ -128,6 +128,22 @@ export const landscapingSchema = z.object({
 });
 export type Landscaping = z.infer<typeof landscapingSchema>;
 
+export const infrastructureSchema = z.object({
+  lastUpdated: timestampSchema.optional(),
+  lastUser: z.string().optional(),
+  surfaceCondition: z.string(),
+  surfaceType: z.string(),
+  clearanceRequirements: z.object({
+    ft: z.number().int(),
+    in: z.number().int(),
+  }),
+  accessPoints: z.object({
+    entrances: z.number().int(),
+    exits: z.number().int(),
+  }),
+});
+export type Infrastructure = z.infer<typeof infrastructureSchema>;
+
 export const propertyDetailsSchema = z.object({
   metadata: locationMetadataSchema.optional(),
   parkingCapacity: parkingCapacitySchema.optional(),
@@ -135,6 +151,7 @@ export const propertyDetailsSchema = z.object({
   lighting: lightingSchema.optional(),
   technology: technologySchema.optional(),
   landscaping: landscapingSchema.optional(),
+  infrastructure: infrastructureSchema.optional(),
 });
 
 export const locationSchema = z.object({

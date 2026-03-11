@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, MapPin, ShieldCheck, Save, Car, Zap, Accessibility, UserCog, LifeBuoy, HelpCircle, Milestone, Lightbulb, Info, CreditCard, ShieldAlert, ArrowRight, Monitor, Cpu, Wifi, Trees, Sprout, Droplets, Leaf, Gauge, Smartphone } from 'lucide-react';
+import { ArrowLeft, Loader2, MapPin, ShieldCheck, Save, Car, Zap, Accessibility, UserCog, LifeBuoy, HelpCircle, Milestone, Lightbulb, Info, CreditCard, ShieldAlert, ArrowRight, Monitor, Cpu, Wifi, Trees, Sprout, Droplets, Leaf, Gauge, Smartphone, HardHat, Construction, Scaling, ArrowUpToLine, DoorOpen } from 'lucide-react';
 import Link from 'next/link';
 import { useFirestore, useDoc, useMemoFirebase, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { doc, serverTimestamp } from 'firebase/firestore';
@@ -73,12 +73,22 @@ const landscapingSchema = z.object({
   trees: z.boolean(),
 });
 
+const infrastructureSchema = z.object({
+  surfaceCondition: z.string().min(1, "Surface condition is required"),
+  surfaceType: z.string().min(1, "Surface type is required"),
+  ft: z.coerce.number().int().min(0),
+  in: z.coerce.number().int().min(0).max(11),
+  entrances: z.coerce.number().int().min(0),
+  exits: z.coerce.number().int().min(0),
+});
+
 type MetadataValues = z.infer<typeof metadataSchema>;
 type ParkingValues = z.infer<typeof parkingSchema>;
 type SignageValues = z.infer<typeof signageSchema>;
 type LightingValues = z.infer<typeof lightingSchema>;
 type TechnologyValues = z.infer<typeof technologySchema>;
 type LandscapingValues = z.infer<typeof landscapingSchema>;
+type InfrastructureValues = z.infer<typeof infrastructureSchema>;
 
 export default function LocationPropertyDetailsPage() {
   const params = useParams();
@@ -93,6 +103,7 @@ export default function LocationPropertyDetailsPage() {
   const [isSavingLighting, setIsSavingLighting] = useState(false);
   const [isSavingTechnology, setIsSavingTechnology] = useState(false);
   const [isSavingLandscaping, setIsSavingLandscaping] = useState(false);
+  const [isSavingInfrastructure, setIsSavingInfrastructure] = useState(false);
 
   const locationRef = useMemoFirebase(
     () => (firestore ? doc(firestore, 'locations', locationId) : null),
@@ -128,6 +139,11 @@ export default function LocationPropertyDetailsPage() {
   const landscapingForm = useForm<LandscapingValues>({
     resolver: zodResolver(landscapingSchema),
     defaultValues: { bushes: false, flowerBeds: false, grassGroundCover: false, irrigation: false, trees: false },
+  });
+
+  const infrastructureForm = useForm<InfrastructureValues>({
+    resolver: zodResolver(infrastructureSchema),
+    defaultValues: { surfaceCondition: '', surfaceType: '', ft: 0, in: 0, entrances: 0, exits: 0 },
   });
 
   useEffect(() => {
@@ -173,8 +189,16 @@ export default function LocationPropertyDetailsPage() {
         irrigation: location.propertyDetails?.landscaping?.irrigation || false,
         trees: location.propertyDetails?.landscaping?.trees || false,
       });
+      infrastructureForm.reset({
+        surfaceCondition: location.propertyDetails?.infrastructure?.surfaceCondition || '',
+        surfaceType: location.propertyDetails?.infrastructure?.surfaceType || '',
+        ft: location.propertyDetails?.infrastructure?.clearanceRequirements?.ft || 0,
+        in: location.propertyDetails?.infrastructure?.clearanceRequirements?.in || 0,
+        entrances: location.propertyDetails?.infrastructure?.accessPoints?.entrances || 0,
+        exits: location.propertyDetails?.infrastructure?.accessPoints?.exits || 0,
+      });
     }
-  }, [location, metadataForm, parkingForm, signageForm, lightingForm, technologyForm, landscapingForm]);
+  }, [location, metadataForm, parkingForm, signageForm, lightingForm, technologyForm, landscapingForm, infrastructureForm]);
 
   const onSaveMetadata = async (data: MetadataValues) => {
     if (!firestore || !currentUser) return;
@@ -306,6 +330,31 @@ export default function LocationPropertyDetailsPage() {
       toast({ title: "Error", description: "Failed to update landscaping.", variant: "destructive" });
     } finally {
       setIsSavingLandscaping(false);
+    }
+  };
+
+  const onSaveInfrastructure = async (data: InfrastructureValues) => {
+    if (!firestore || !currentUser) return;
+    setIsSavingInfrastructure(true);
+    const updatedData = {
+      'propertyDetails.infrastructure': {
+        surfaceCondition: data.surfaceCondition,
+        surfaceType: data.surfaceType,
+        clearanceRequirements: { ft: data.ft, in: data.in },
+        accessPoints: { entrances: data.entrances, exits: data.exits },
+        lastUpdated: serverTimestamp(),
+        lastUser: currentUser.name || currentUser.email || 'Unknown User',
+      }
+    };
+    try {
+      const ref = doc(firestore, 'locations', locationId);
+      updateDocumentNonBlocking(ref, updatedData);
+      toast({ title: "Infrastructure Updated", description: "Infrastructure specifications have been saved." });
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Error", description: "Failed to update infrastructure.", variant: "destructive" });
+    } finally {
+      setIsSavingInfrastructure(false);
     }
   };
 
@@ -700,6 +749,108 @@ export default function LocationPropertyDetailsPage() {
                 <Button type="submit" disabled={isSavingTechnology} className="min-w-[140px]">
                   {isSavingTechnology ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                   Save Technology
+                </Button>
+              </CardFooter>
+            </form>
+          </Form>
+        </Card>
+
+        {/* Infrastructure Card */}
+        <Card className="overflow-hidden border-primary/10 shadow-lg">
+          <CardHeader className="bg-primary text-primary-foreground p-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary-foreground/20 p-2 rounded-lg"><HardHat className="h-6 w-6" /></div>
+              <div>
+                <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">Infrastructure & Accessibility</CardTitle>
+                <CardDescription className="text-primary-foreground/80 font-medium">Site Characteristics & Clearances</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <Form {...infrastructureForm}>
+            <form onSubmit={infrastructureForm.handleSubmit(onSaveInfrastructure)}>
+              <CardContent className="p-6">
+                <div className="mb-6 p-4 bg-primary/5 rounded-lg border border-primary/10 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold uppercase tracking-wider text-primary/70">Calculated Access Inventory</p>
+                    <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">TOTAL COUNT</p>
+                  </div>
+                  <div className="text-4xl font-black font-headline text-primary">
+                    {Number(infrastructureForm.watch('entrances') || 0) + Number(infrastructureForm.watch('exits') || 0)}
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                  <div className="space-y-6">
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2 border-b pb-2">
+                      <Construction className="h-3 w-3" /> Surface Details
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormField control={infrastructureForm.control} name="surfaceType" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Surface Type</FormLabel>
+                          <FormControl><Input placeholder="e.g., Concrete, Asphalt" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={infrastructureForm.control} name="surfaceCondition" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Current Condition</FormLabel>
+                          <FormControl><Input placeholder="e.g., Good, Fair, Cracked" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2 border-b pb-2">
+                      <ArrowUpToLine className="h-3 w-3" /> Clearance Requirements
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField control={infrastructureForm.control} name="ft" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Feet (ft)</FormLabel>
+                          <FormControl><Input type="number" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={infrastructureForm.control} name="in" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Inches (in)</FormLabel>
+                          <FormControl><Input type="number" max="11" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-2 space-y-6">
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2 border-b pb-2">
+                      <DoorOpen className="h-3 w-3" /> Site Access Points
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                      <FormField control={infrastructureForm.control} name="entrances" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Total Entrances</FormLabel>
+                          <FormControl><Input type="number" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={infrastructureForm.control} name="exits" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Total Exits</FormLabel>
+                          <FormControl><Input type="number" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
+                <AuditInfo lastUser={location?.propertyDetails?.infrastructure?.lastUser} lastUpdated={location?.propertyDetails?.infrastructure?.lastUpdated} />
+                <Button type="submit" disabled={isSavingInfrastructure} className="min-w-[140px]">
+                  {isSavingInfrastructure ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                  Save Infrastructure
                 </Button>
               </CardFooter>
             </form>
