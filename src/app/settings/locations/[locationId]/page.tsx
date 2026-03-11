@@ -243,106 +243,70 @@ export default function LocationPropertyDetailsPage() {
           </CardHeader>
           <Form {...metadataForm}>
             <form onSubmit={metadataForm.handleSubmit(onSaveMetadata)}>
-              <CardContent className="p-0">
-                <div className="grid grid-cols-1 md:grid-cols-2">
-                  <div className="p-6 space-y-6 border-r border-border/50">
-                    <div className="space-y-4">
-                      <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                        <RefreshCw className="h-4 w-4" />
-                        Status & Classification
-                      </h3>
-                      
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                      <RefreshCw className="h-4 w-4" />
+                      Status & Classification
+                    </h3>
+                    
+                    <FormField
+                      control={metadataForm.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Site Status</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select Status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Active">Active</SelectItem>
+                              <SelectItem value="Construction">Construction</SelectItem>
+                              <SelectItem value="Divested">Divested</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Geolocation
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={metadataForm.control}
-                        name="status"
+                        name="latitude"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Site Status</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select Status" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Active">Active</SelectItem>
-                                <SelectItem value="Construction">Construction</SelectItem>
-                                <SelectItem value="Divested">Divested</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <FormLabel>Latitude</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="any" {...field} />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                    </div>
-
-                    <div className="space-y-4 pt-4">
-                      <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        Geolocation
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={metadataForm.control}
-                          name="latitude"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Latitude</FormLabel>
-                              <FormControl>
-                                <Input type="number" step="any" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={metadataForm.control}
-                          name="longitude"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Longitude</FormLabel>
-                              <FormControl>
-                                <Input type="number" step="any" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-6 bg-muted/10 space-y-6">
-                    <div className="space-y-4">
-                      <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        System Audit
-                      </h3>
-                      
-                      <div className="rounded-lg border bg-card overflow-hidden">
-                        <Table>
-                          <TableBody>
-                            <TableRow className="hover:bg-transparent">
-                              <TableCell className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-3">
-                                Last Editor
-                              </TableCell>
-                              <TableCell className="text-sm font-medium py-3">
-                                {location?.metadata?.lastUser || 'System Seed'}
-                              </TableCell>
-                            </TableRow>
-                            <TableRow className="hover:bg-transparent border-b-0">
-                              <TableCell className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-3">
-                                Last Updated
-                              </TableCell>
-                              <TableCell className="text-sm font-medium py-3">
-                                {location?.metadata?.lastUpdated 
-                                  ? format(toDate(location.metadata.lastUpdated), 'MMM d, yyyy p')
-                                  : '---'}
-                              </TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
-                      </div>
+                      <FormField
+                        control={metadataForm.control}
+                        name="longitude"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Longitude</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="any" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
                   </div>
                 </div>
