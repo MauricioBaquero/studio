@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 function StatRow({ label, value, icon }: { label: string; value: string | number | undefined | null; icon?: React.ReactNode }) {
     if (value === undefined || value === null || value === '') return null;
     return (
-        <div className="flex items-center justify-between py-2 border-b last:border-0">
+        <div className="flex items-center justify-between py-2 border-b">
             <span className="text-sm text-muted-foreground flex items-center gap-2">{icon}{label}</span>
             <span className="text-sm font-semibold">{value}</span>
         </div>
@@ -88,10 +88,16 @@ export default function LocationDetailPage() {
         return (l.largeLights || 0) + (l.smallLights || 0);
     }, [pd]);
 
+    const totalSensors = useMemo(() => {
+        const t = pd?.technology;
+        if (!t) return null;
+        return (t.surfaceMounts || 0) + (t.flushMounts || 0) + (t.cameraTracking || 0);
+    }, [pd]);
+
     const totalMeters = useMemo(() => {
         const t = pd?.technology;
         if (!t) return null;
-        return (t.meters || 0) + (t.multiSpaceMeters || 0) + (t.singleSpaceMeters || 0);
+        return (t.multiSpaceMeters || 0) + (t.singleSpaceMeters || 0);
     }, [pd]);
 
     if (isLoading) {
@@ -141,8 +147,8 @@ export default function LocationDetailPage() {
                         <StatRow label="Lifeguard" value={pd.parkingCapacity.totalParking?.lifeguardParking} icon={<LifeBuoy className="h-4 w-4" />} />
                         <StatRow label="Other" value={pd.parkingCapacity.totalParking?.otherParking} icon={<HelpCircle className="h-4 w-4" />} />
                         {totalParking !== null && (
-                            <div className="flex items-center justify-between pt-3 mt-1">
-                                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Total</span>
+                            <div className="flex items-center justify-between mt-3 p-3 bg-primary/5 border border-primary/10 rounded-lg">
+                                <span className="text-xs font-bold uppercase tracking-wider text-primary/70">Total Parking</span>
                                 <span className="text-2xl font-black text-primary">{totalParking}</span>
                             </div>
                         )}
@@ -160,8 +166,8 @@ export default function LocationDetailPage() {
                         <StatRow label="Wayfinding" value={pd.signage.totalSignage?.wayfindingSignage} icon={<Milestone className="h-4 w-4" />} />
                         <StatRow label="Other" value={pd.signage.totalSignage?.otherSignage} icon={<HelpCircle className="h-4 w-4" />} />
                         {totalSignage !== null && (
-                            <div className="flex items-center justify-between pt-3 mt-1">
-                                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Total</span>
+                            <div className="flex items-center justify-between mt-3 p-3 bg-primary/5 border border-primary/10 rounded-lg">
+                                <span className="text-xs font-bold uppercase tracking-wider text-primary/70">Total Signs</span>
                                 <span className="text-2xl font-black text-primary">{totalSignage}</span>
                             </div>
                         )}
@@ -174,8 +180,8 @@ export default function LocationDetailPage() {
                         <StatRow label="Large Lights" value={pd.lighting.totalLighting?.largeLights} icon={<Lightbulb className="h-4 w-4" />} />
                         <StatRow label="Small Lights" value={pd.lighting.totalLighting?.smallLights} icon={<Lightbulb className="h-4 w-4" />} />
                         {totalLighting !== null && (
-                            <div className="flex items-center justify-between pt-3 mt-1">
-                                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Total</span>
+                            <div className="flex items-center justify-between mt-3 p-3 bg-primary/5 border border-primary/10 rounded-lg">
+                                <span className="text-xs font-bold uppercase tracking-wider text-primary/70">Total Lighting</span>
                                 <span className="text-2xl font-black text-primary">{totalLighting}</span>
                             </div>
                         )}
@@ -188,16 +194,26 @@ export default function LocationDetailPage() {
                         <StatRow label="Surface Mounts" value={pd.technology.surfaceMounts} icon={<Cpu className="h-4 w-4" />} />
                         <StatRow label="Flush Mounts" value={pd.technology.flushMounts} icon={<Cpu className="h-4 w-4" />} />
                         <StatRow label="Camera Tracking" value={pd.technology.cameraTracking} icon={<Monitor className="h-4 w-4" />} />
+                        {totalSensors !== null && (
+                            <div className="flex items-center justify-between mt-3 p-3 bg-primary/5 border border-primary/10 rounded-lg">
+                                <span className="text-xs font-bold uppercase tracking-wider text-primary/70">Total Sensors</span>
+                                <span className="text-2xl font-black text-primary">{totalSensors}</span>
+                            </div>
+                        )}
+
                         <StatRow label="Multi-Space Meters" value={pd.technology.multiSpaceMeters} icon={<Gauge className="h-4 w-4" />} />
                         <StatRow label="Single-Space Meters" value={pd.technology.singleSpaceMeters} icon={<Gauge className="h-4 w-4" />} />
-                        <StatRow label="Network" value={pd.technology.network} icon={<Wifi className="h-4 w-4" />} />
-                        <BooleanRow label="Mobile App Payment" value={pd.technology.mobileAppPayment} icon={<Smartphone className="h-4 w-4" />} />
                         {totalMeters !== null && (
-                            <div className="flex items-center justify-between pt-3 mt-1">
-                                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Total Meters</span>
+                            <div className="flex items-center justify-between mt-3 p-3 bg-primary/5 border border-primary/10 rounded-lg">
+                                <span className="text-xs font-bold uppercase tracking-wider text-primary/70">Total Meters</span>
                                 <span className="text-2xl font-black text-primary">{totalMeters}</span>
                             </div>
                         )}
+
+                        <StatRow label="Network" value={pd.technology.network} icon={<Wifi className="h-4 w-4" />} />
+                        <BooleanRow label="Mobile App Payment" value={pd.technology.mobileAppPayment} icon={<Smartphone className="h-4 w-4" />} />
+
+
                     </SectionCard>
                 )}
 
