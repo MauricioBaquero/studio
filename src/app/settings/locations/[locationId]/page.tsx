@@ -803,8 +803,8 @@ export default function LocationPropertyDetailsPage() {
             <div className="flex items-center gap-3">
               <div className="bg-primary-foreground/20 p-2 rounded-lg"><HardHat className="h-6 w-6" /></div>
               <div>
-                <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">Infrastructure &amp; Accessibility</CardTitle>
-                <CardDescription className="text-primary-foreground/80 font-medium">Site Characteristics & Clearances</CardDescription>
+                <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">Infrastructure</CardTitle>
+                <CardDescription className="text-primary-foreground/80 font-medium">Site Physcial Characteristics</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -814,14 +814,65 @@ export default function LocationPropertyDetailsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                   <FormField control={infrastructureForm.control} name="surfaceType" render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center gap-2 font-semibold"><Construction className="h-4 w-4 text-muted-foreground" /> Surface Type</FormLabel>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><Construction className="h-4 w-4 text-muted-foreground" /> Surface Type
+                      <Popover>
+                          <PopoverTrigger asChild>
+                            <button type="button" className="inline-flex outline-none">
+                              <Info className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary transition-colors" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-80 p-4">
+                            <div className="space-y-3">
+                              <h4 className="font-bold text-sm leading-none">Surface Types Definitions</h4>
+                              <div className="grid gap-3">
+                                <div className="space-y-1">
+                                  <p className="text-xs font-bold text-primary">Asphalt</p>
+                                  <p className="text-xs text-muted-foreground">A dark, durable, and flexible material.</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-xs font-bold text-primary">Concrete</p>
+                                  <p className="text-xs text-muted-foreground">A rigid, strong, and long-lasting material.</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-xs font-bold text-primary">Mixed</p>
+                                  <p className="text-xs text-muted-foreground">A combination of both asphalt and concrete.</p>
+                                </div>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </FormLabel>
                       <FormControl><Input placeholder="e.g., Concrete, Asphalt" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={infrastructureForm.control} name="surfaceCondition" render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center gap-2 font-semibold"><Info className="h-4 w-4 text-muted-foreground" /> Current Condition</FormLabel>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><Info className="h-4 w-4 text-muted-foreground" /> Current Condition
+                      <Popover>
+                          <PopoverTrigger asChild>
+                            <button type="button" className="inline-flex outline-none">
+                              <Info className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary transition-colors" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-80 p-4">
+                            <div className="space-y-3">
+                              <h4 className="font-bold text-sm leading-none">Condition Definitions</h4>
+                              <div className="grid gap-3">
+                                <div className="space-y-1">
+                                  <p className="text-xs font-bold text-primary">Good</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-xs font-bold text-primary">Fair</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-xs font-bold text-primary">Bad</p>
+                                </div>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </FormLabel>
                       <FormControl><Input placeholder="e.g., Good, Fair, Cracked" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
