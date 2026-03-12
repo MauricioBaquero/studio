@@ -2,11 +2,25 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Clock, User, HardHat, Info, CheckCircle2, ChevronLeft, Package, Hammer, Ruler, Layers, HelpCircle } from "lucide-react";
+import {
+  MapPin,
+  Info,
+  CheckCircle2,
+  ChevronLeft,
+  Package,
+  Hammer,
+  Ruler,
+  Layers,
+  CircleHelp
+} from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import Link from "next/link";
 import { format } from "date-fns";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Mock data fetching - in a real app, this would be an API call or DB query
 async function getLocation(id: string) {
@@ -72,7 +86,7 @@ export default async function LocationDetailsPage({ params }: { params: Promise<
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Overview Card */}
-        <Card className="md:col-span-2">
+        <Card className="md:col-span-2 overflow-hidden">
           <CardHeader className="bg-muted/50 border-b">
             <CardTitle className="text-lg flex items-center gap-2">
               <Info className="h-5 w-5" />
@@ -105,7 +119,7 @@ export default async function LocationDetailsPage({ params }: { params: Promise<
         </Card>
 
         {/* Quick Stats */}
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader className="bg-muted/50 border-b">
             <CardTitle className="text-lg flex items-center gap-2">
               <Package className="h-5 w-5" />
@@ -131,7 +145,7 @@ export default async function LocationDetailsPage({ params }: { params: Promise<
         </Card>
 
         {/* Technical Specs */}
-        <Card className="md:col-span-3">
+        <Card className="md:col-span-3 overflow-hidden">
           <CardHeader className="bg-muted/50 border-b">
             <CardTitle className="text-lg flex items-center gap-2">
               <Hammer className="h-5 w-5" />
@@ -141,24 +155,20 @@ export default async function LocationDetailsPage({ params }: { params: Promise<
           <CardContent className="pt-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="space-y-1">
-                <div className="flex items-center gap-1.5">
-                  <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                    <Ruler className="h-4 w-4" />
-                    Surface Type
-                  </p>
+                <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                  <Ruler className="h-4 w-4" />
+                  Surface Type
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                        <CircleHelp className="h-3.5 w-3.5 cursor-help" />
                       </TooltipTrigger>
-                      <TooltipContent className="max-w-[300px]">
-                        <p><strong>Asphalt:</strong> Flexible, durable petroleum-based surface.</p>
-                        <p><strong>Concrete:</strong> Rigid, high-strength cement-based surface.</p>
-                        <p><strong>Mixed:</strong> Combination of both materials across the site.</p>
+                      <TooltipContent className="max-w-xs">
+                        <p><strong>Asphalt:</strong> A dark, durable, and flexible material.<br /><strong>Concrete:</strong> A rigid, strong, and long-lasting material.<br /><strong>Mixed:</strong> A combination of both asphalt and concrete.</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                </div>
+                </p>
                 <p className="font-medium">{location.infrastructure.surfaceType}</p>
               </div>
               <div className="space-y-1">
