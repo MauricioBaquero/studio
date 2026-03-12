@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Clock, User, HardHat, Info, CheckCircle2, ChevronLeft, Package, Hammer, HebrewWheel, Ruler, Layers, HelpCircle } from "lucide-react";
+import { MapPin, Calendar, Clock, User, HardHat, Info, CheckCircle2, ChevronLeft, Package, Hammer, Ruler, Layers, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -149,14 +149,12 @@ export default async function LocationDetailsPage({ params }: { params: Promise<
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                        <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
                       </TooltipTrigger>
-                      <TooltipContent className="max-w-[250px] p-3">
-                        <div className="space-y-2 text-xs">
-                          <p><strong>Asphalt:</strong> A flexible, dark-colored paving material made of bitumen and aggregates.</p>
-                          <p><strong>Concrete:</strong> A rigid, durable material made from cement, water, and aggregates.</p>
-                          <p><strong>Mixed:</strong> A combination of both asphalt and concrete surfaces.</p>
-                        </div>
+                      <TooltipContent className="max-w-[300px]">
+                        <p><strong>Asphalt:</strong> Flexible, durable petroleum-based surface.</p>
+                        <p><strong>Concrete:</strong> Rigid, high-strength cement-based surface.</p>
+                        <p><strong>Mixed:</strong> Combination of both materials across the site.</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
