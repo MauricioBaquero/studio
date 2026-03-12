@@ -113,23 +113,22 @@ export function LocationForm({
 
     toast({
       title: 'Success!',
-      description: `Location has been ${
-        isEditMode ? 'updated' : 'created'
-      }.`,
+      description: `Location has been ${isEditMode ? 'updated' : 'created'
+        }.`,
     });
     onOpenChange(false);
   };
-  
+
   const handleStep = (e: React.ChangeEvent<HTMLInputElement>) => {
     const currentValue = form.getValues('numberOfFloors') || 0;
     const nextValue = e.target.valueAsNumber;
-    
+
     if (currentValue === 0 && nextValue > 0) {
-        form.setValue('numberOfFloors', 2);
+      form.setValue('numberOfFloors', 2);
     } else if (currentValue === 2 && nextValue < 2) {
-        form.setValue('numberOfFloors', 0);
+      form.setValue('numberOfFloors', 0);
     } else {
-        form.setValue('numberOfFloors', nextValue);
+      form.setValue('numberOfFloors', nextValue);
     }
   };
 

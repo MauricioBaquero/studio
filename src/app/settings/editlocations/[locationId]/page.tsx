@@ -60,7 +60,8 @@ const technologySchema = z.object({
   surfaceMounts: z.coerce.number().int().min(0),
   flushMounts: z.coerce.number().int().min(0),
   cameraTracking: z.coerce.number().int().min(0),
-  meters: z.coerce.number().int().min(0),
+  multiSpaceMeters: z.coerce.number().int().min(0),
+  singleSpaceMeters: z.coerce.number().int().min(0),
   mobileAppPayment: z.boolean(),
   network: z.string(),
 });
@@ -80,6 +81,11 @@ const infrastructureSchema = z.object({
   in: z.coerce.number().int().min(0).max(11),
   entrances: z.coerce.number().int().min(0),
   exits: z.coerce.number().int().min(0),
+  trashCans: z.boolean(),
+  stairs: z.coerce.number().int().min(0),
+  elevators: z.coerce.number().int().min(0),
+  officeSpace: z.boolean(),
+  retailSpace: z.boolean(),
 });
 
 type MetadataValues = z.infer<typeof metadataSchema>;
@@ -96,7 +102,7 @@ export default function LocationPropertyDetailsPage() {
   const firestore = useFirestore();
   const { user: currentUser } = useUser();
   const { toast } = useToast();
-  
+
   const [isSavingMetadata, setIsSavingMetadata] = useState(false);
   const [isSavingParking, setIsSavingParking] = useState(false);
   const [isSavingSignage, setIsSavingSignage] = useState(false);
@@ -159,7 +165,8 @@ export default function LocationPropertyDetailsPage() {
       surfaceMounts: location?.propertyDetails?.technology?.surfaceMounts || 0,
       flushMounts: location?.propertyDetails?.technology?.flushMounts || 0,
       cameraTracking: location?.propertyDetails?.technology?.cameraTracking || 0,
-      meters: location?.propertyDetails?.technology?.meters || 0,
+      multiSpaceMeters: location?.propertyDetails?.technology?.multiSpaceMeters || 0,
+      singleSpaceMeters: location?.propertyDetails?.technology?.singleSpaceMeters || 0,
       mobileAppPayment: location?.propertyDetails?.technology?.mobileAppPayment || false,
       network: location?.propertyDetails?.technology?.network || '',
     },
@@ -185,6 +192,11 @@ export default function LocationPropertyDetailsPage() {
       in: location?.propertyDetails?.infrastructure?.clearanceRequirements?.in || 0,
       entrances: location?.propertyDetails?.infrastructure?.accessPoints?.entrances || 0,
       exits: location?.propertyDetails?.infrastructure?.accessPoints?.exits || 0,
+      trashCans: location?.propertyDetails?.infrastructure?.trashCans || false,
+      stairs: location?.propertyDetails?.infrastructure?.stairs || 0,
+      elevators: location?.propertyDetails?.infrastructure?.elevators || 0,
+      officeSpace: location?.propertyDetails?.infrastructure?.officeSpace || false,
+      retailSpace: location?.propertyDetails?.infrastructure?.retailSpace || false,
     },
   });
 
@@ -330,6 +342,11 @@ export default function LocationPropertyDetailsPage() {
         surfaceType: data.surfaceType,
         clearanceRequirements: { ft: data.ft, in: data.in },
         accessPoints: { entrances: data.entrances, exits: data.exits },
+        trashCans: data.trashCans,
+        stairs: data.stairs,
+        elevators: data.elevators,
+        officeSpace: data.officeSpace,
+        retailSpace: data.retailSpace,
         lastUpdated: serverTimestamp(),
         lastUser: currentUser.name || currentUser.email || 'Unknown User',
       }
@@ -373,19 +390,17 @@ export default function LocationPropertyDetailsPage() {
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild className="rounded-full">
-            <Link href="/settings/locations">
+            <Link href="/settings/editlocations">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <div className="space-y-0.5">
-            <h1 className="text-3xl font-bold font-headline tracking-tight">
-              {location?.name || 'Property Details'}
-            </h1>
-            <p className="text-sm text-muted-foreground font-medium font-mono">
-              ID: {locationId}
-            </p>
-          </div>
+          <h1 className="text-3xl font-bold font-headline tracking-tight">
+            {location?.name || 'Property Details'}
+          </h1>
         </div>
+        <p className="text-s text-muted-foreground font-medium font-mono">
+          ID: {locationId}
+        </p>
       </div>
 
       <div className="space-y-6 pb-12">
@@ -487,7 +502,7 @@ export default function LocationPropertyDetailsPage() {
                 <div className="mb-6 p-4 bg-primary/5 rounded-lg border border-primary/10 flex items-center justify-between">
                   <div className="space-y-0.5">
                     <p className="text-xs font-bold uppercase tracking-wider text-primary/70">Calculated Inventory</p>
-                    <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">TOTAL COUNT</p>
+                    <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">TOTAL SPACES</p>
                   </div>
                   <div className="text-4xl font-black font-headline text-primary">
                     {Number(parkingForm.watch('generalParking') || 0) + Number(parkingForm.watch('adaParking') || 0) + Number(parkingForm.watch('evParking') || 0) + Number(parkingForm.watch('cityStaffParking') || 0) + Number(parkingForm.watch('lifeguardParking') || 0) + Number(parkingForm.watch('otherParking') || 0)}
@@ -566,7 +581,7 @@ export default function LocationPropertyDetailsPage() {
                 <div className="mb-6 p-4 bg-primary/5 rounded-lg border border-primary/10 flex items-center justify-between">
                   <div className="space-y-0.5">
                     <p className="text-xs font-bold uppercase tracking-wider text-primary/70">Calculated Inventory</p>
-                    <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">TOTAL COUNT</p>
+                    <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">TOTAL SIGNS</p>
                   </div>
                   <div className="text-4xl font-black font-headline text-primary">
                     {Number(signageForm.watch('monumentSignage') || 0) + Number(signageForm.watch('parkingInfoSignage') || 0) + Number(signageForm.watch('paymentSystemSignage') || 0) + Number(signageForm.watch('trafficRegulatorySignage') || 0) + Number(signageForm.watch('trafficDirectionSignage') || 0) + Number(signageForm.watch('wayfindingSignage') || 0) + Number(signageForm.watch('otherSignage') || 0)}
@@ -652,7 +667,7 @@ export default function LocationPropertyDetailsPage() {
                 <div className="mb-6 p-4 bg-primary/5 rounded-lg border border-primary/10 flex items-center justify-between">
                   <div className="space-y-0.5">
                     <p className="text-xs font-bold uppercase tracking-wider text-primary/70">Calculated Inventory</p>
-                    <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">TOTAL COUNT</p>
+                    <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">TOTAL LIGHTS</p>
                   </div>
                   <div className="text-4xl font-black font-headline text-primary">
                     {Number(lightingForm.watch('largeLights') || 0) + Number(lightingForm.watch('smallLights') || 0)}
@@ -703,10 +718,10 @@ export default function LocationPropertyDetailsPage() {
                 <div className="mb-6 p-4 bg-primary/5 rounded-lg border border-primary/10 flex items-center justify-between">
                   <div className="space-y-0.5">
                     <p className="text-xs font-bold uppercase tracking-wider text-primary/70">Calculated Inventory</p>
-                    <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">TOTAL COUNT</p>
+                    <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">TOTAL SENSORS</p>
                   </div>
                   <div className="text-4xl font-black font-headline text-primary">
-                    {Number(technologyForm.watch('surfaceMounts') || 0) + Number(technologyForm.watch('flushMounts') || 0) + Number(technologyForm.watch('cameraTracking') || 0) + Number(technologyForm.watch('meters') || 0)}
+                    {Number(technologyForm.watch('surfaceMounts') || 0) + Number(technologyForm.watch('flushMounts') || 0) + Number(technologyForm.watch('cameraTracking') || 0)}
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
@@ -731,25 +746,10 @@ export default function LocationPropertyDetailsPage() {
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <FormField control={technologyForm.control} name="meters" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2 font-semibold"><Gauge className="h-4 w-4 text-muted-foreground" /> Meters</FormLabel>
-                      <FormControl><Input type="number" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={technologyForm.control} name="mobileAppPayment" render={({ field }) => (
-                    <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base flex items-center gap-2"><Smartphone className="h-4 w-4 text-muted-foreground" /> Mobile Payment</FormLabel>
-                      </div>
-                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                    </FormItem>
-                  )} />
                   <FormField control={technologyForm.control} name="network" render={({ field }) => (
                     <FormItem className="lg:col-span-2">
                       <FormLabel className="flex items-center gap-2 font-semibold">
-                        <Wifi className="h-4 w-4 text-muted-foreground" /> 
+                        <Wifi className="h-4 w-4 text-muted-foreground" />
                         Network Infrastructure
                         <Popover>
                           <PopoverTrigger asChild>
@@ -784,6 +784,38 @@ export default function LocationPropertyDetailsPage() {
                       <FormMessage />
                     </FormItem>
                   )} />
+                  <FormField control={technologyForm.control} name="mobileAppPayment" render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base flex items-center gap-2"><Smartphone className="h-4 w-4 text-muted-foreground" /> Mobile Payment</FormLabel>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                  )} />
+                  {/* Meters TOTAL COUNT calculation */}
+                  <div className="col-span-full p-4 bg-primary/5 rounded-lg border border-primary/10 flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold uppercase tracking-wider text-primary/70">Calculated Inventory</p>
+                      <p className="text-2xl font-black font-headline tracking-tight text-primary uppercase">TOTAL METERS</p>
+                    </div>
+                    <div className="text-4xl font-black font-headline text-primary">
+                      {Number(technologyForm.watch('meters') || 0) + Number(technologyForm.watch('multiSpaceMeters') || 0) + Number(technologyForm.watch('singleSpaceMeters') || 0)}
+                    </div>
+                  </div>
+                  <FormField control={technologyForm.control} name="multiSpaceMeters" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><Gauge className="h-4 w-4 text-muted-foreground" /> Multi-Space Meters</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={technologyForm.control} name="singleSpaceMeters" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><Gauge className="h-4 w-4 text-muted-foreground" /> Single-Space Meters</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
               </CardContent>
               <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
@@ -815,7 +847,7 @@ export default function LocationPropertyDetailsPage() {
                   <FormField control={infrastructureForm.control} name="surfaceType" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center gap-2 font-semibold"><Construction className="h-4 w-4 text-muted-foreground" /> Surface Type
-                      <Popover>
+                        <Popover>
                           <PopoverTrigger asChild>
                             <button type="button" className="inline-flex outline-none">
                               <Info className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary transition-colors" />
@@ -849,7 +881,7 @@ export default function LocationPropertyDetailsPage() {
                   <FormField control={infrastructureForm.control} name="surfaceCondition" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center gap-2 font-semibold"><Info className="h-4 w-4 text-muted-foreground" /> Current Condition
-                      <Popover>
+                        <Popover>
                           <PopoverTrigger asChild>
                             <button type="button" className="inline-flex outline-none">
                               <Info className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary transition-colors" />
@@ -877,6 +909,7 @@ export default function LocationPropertyDetailsPage() {
                       <FormMessage />
                     </FormItem>
                   )} />
+                  <h3 className="col-span-full text-sm font-bold uppercase tracking-wider text-muted-foreground">Height Restrictions</h3>
                   <FormField control={infrastructureForm.control} name="ft" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center gap-2 font-semibold"><Scaling className="h-4 w-4 text-muted-foreground" /> Feet (ft)</FormLabel>
@@ -903,6 +936,54 @@ export default function LocationPropertyDetailsPage() {
                       <FormLabel className="flex items-center gap-2 font-semibold"><DoorOpen className="h-4 w-4 text-muted-foreground" /> Total Exits</FormLabel>
                       <FormControl><Input type="number" {...field} /></FormControl>
                       <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  {/* Numeric fields */}
+                  <FormField control={infrastructureForm.control} name="stairs" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><ArrowRight className="h-4 w-4 text-muted-foreground" /> Stairs</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={infrastructureForm.control} name="elevators" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold"><ArrowRight className="h-4 w-4 text-muted-foreground" /> Elevators</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  {/* Boolean toggle fields - full width row */}
+                  <FormField control={infrastructureForm.control} name="officeSpace" render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base font-semibold">Office Space</FormLabel>
+                      </div>
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={infrastructureForm.control} name="retailSpace" render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base font-semibold">Retail Space</FormLabel>
+                      </div>
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={infrastructureForm.control} name="trashCans" render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base font-semibold">Trash Cans</FormLabel>
+                      </div>
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
                     </FormItem>
                   )} />
                 </div>

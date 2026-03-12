@@ -21,7 +21,7 @@ const ALL_TABS = [
   { value: "ticket-management", label: "Ticket Management", href: "/settings/ticket-management", roles: ['Admin', 'Coordinator'] },
   { value: "categories", label: "Categories", href: "/settings/categories", roles: ['Admin', 'Coordinator'] },
   { value: "scheduled-maintenance", label: "Scheduled Maintenance", href: "/settings/scheduled-maintenance", roles: ['Admin', 'Coordinator'] },
-  { value: "locations", label: "Locations", href: "/settings/locations", roles: ['Admin', 'Coordinator'] },
+  { value: "locations", label: "Locations", href: "/settings/editlocations", roles: ['Admin', 'Coordinator'] },
   { value: "teams", label: "Teams", href: "/settings/teams", roles: ['Admin'] },
   { value: "users", label: "Users", href: "/settings/users", roles: ['Admin'] },
 ];

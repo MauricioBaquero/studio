@@ -111,7 +111,8 @@ export const technologySchema = z.object({
   surfaceMounts: z.number().int(),
   flushMounts: z.number().int(),
   cameraTracking: z.number().int(),
-  meters: z.number().int(),
+  multiSpaceMeters: z.number().int().optional(),
+  singleSpaceMeters: z.number().int().optional(),
   mobileAppPayment: z.boolean(),
   network: z.string(),
 });
@@ -141,6 +142,11 @@ export const infrastructureSchema = z.object({
     entrances: z.number().int(),
     exits: z.number().int(),
   }),
+  trashCans: z.boolean(),
+  stairs: z.number().int(),
+  elevators: z.number().int(),
+  officeSpace: z.boolean(),
+  retailSpace: z.boolean(),
 });
 export type Infrastructure = z.infer<typeof infrastructureSchema>;
 

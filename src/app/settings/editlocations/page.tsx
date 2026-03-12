@@ -128,41 +128,41 @@ export default function LocationsPage() {
 
   const handleDelete = () => {
     if (!firestore || !deletingLocationId) return;
-    
+
     const count = ticketCounts[deletingLocationId] || 0;
-    
+
     if (count > 0 && !replacementLocationId) {
-        toast({
-            title: "Replacement Required",
-            description: "Please select a replacement location for existing tickets.",
-            variant: "destructive"
-        });
-        return;
+      toast({
+        title: "Replacement Required",
+        description: "Please select a replacement location for existing tickets.",
+        variant: "destructive"
+      });
+      return;
     }
 
     if (count > 0 && replacementLocationId && teamId && teamId !== 'allTeams') {
-        const replacementLoc = locations?.find(l => l.id === replacementLocationId);
-        const ticketsToMove = tickets?.filter(t => t.locationId === deletingLocationId) || [];
-        
-        ticketsToMove.forEach(ticket => {
-            const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticket.id);
-            updateDocumentNonBlocking(ticketRef, {
-                locationId: replacementLocationId,
-                location: replacementLoc?.name || 'Updated Location'
-            });
+      const replacementLoc = locations?.find(l => l.id === replacementLocationId);
+      const ticketsToMove = tickets?.filter(t => t.locationId === deletingLocationId) || [];
+
+      ticketsToMove.forEach(ticket => {
+        const ticketRef = doc(firestore, `teams/${teamId}/tasks`, ticket.id);
+        updateDocumentNonBlocking(ticketRef, {
+          locationId: replacementLocationId,
+          location: replacementLoc?.name || 'Updated Location'
         });
+      });
     }
 
     const locationRef = doc(firestore, `locations`, deletingLocationId);
     deleteDocumentNonBlocking(locationRef);
-    
+
     toast({
       title: 'Location Removed',
-      description: count > 0 
+      description: count > 0
         ? `Location deleted and ${count} tickets were re-mapped.`
         : 'The location has been successfully deleted.',
     });
-    
+
     setIsAlertOpen(false);
     setDeletingLocationId(null);
     setReplacementLocationId('');
@@ -261,7 +261,7 @@ export default function LocationsPage() {
                             Edit Basic Info
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link href={`/settings/locations/${location.id}`}>
+                            <Link href={`/settings/editlocations/${location.id}`}>
                               Edit Property Details
                             </Link>
                           </DropdownMenuItem>
@@ -281,7 +281,7 @@ export default function LocationsPage() {
           </Table>
         </CardContent>
       </Card>
-      
+
       <LocationForm
         open={isFormOpen}
         onOpenChange={handleCloseForm}
@@ -289,11 +289,11 @@ export default function LocationsPage() {
       />
 
       <AlertDialog open={isAlertOpen} onOpenChange={(open) => {
-          if (!open) {
-              setDeletingLocationId(null);
-              setReplacementLocationId('');
-          }
-          setIsAlertOpen(open);
+        if (!open) {
+          setDeletingLocationId(null);
+          setReplacementLocationId('');
+        }
+        setIsAlertOpen(open);
       }}>
         <AlertDialogContent className="sm:max-w-md">
           <AlertDialogHeader>
@@ -301,31 +301,31 @@ export default function LocationsPage() {
             <AlertDialogDescription asChild>
               <div className="space-y-4">
                 <div>This action cannot be undone. This will permanently delete the location.</div>
-                
+
                 {usageCount > 0 && (
                   <div className="bg-destructive/10 p-4 rounded-md border border-destructive/20 text-destructive">
-                      <div className="flex items-center gap-2 font-bold mb-2">
-                          <AlertTriangle className="h-4 w-4" />
-                          Usage Detected
-                      </div>
-                      <div className="text-sm">
-                          This location is tied to <strong>{usageCount}</strong> active tickets for the {currentTeam?.name} team. 
-                          You must select a replacement location to move these tickets to before deleting.
-                      </div>
-                      
-                      <div className="mt-4 space-y-2 text-foreground">
-                          <Label htmlFor="replacement-location" className="text-xs font-bold uppercase">Replacement Location</Label>
-                          <Select value={replacementLocationId} onValueChange={setReplacementLocationId}>
-                              <SelectTrigger id="replacement-location" className="bg-background">
-                                  <SelectValue placeholder="Select a location..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                  {otherLocations.map(loc => (
-                                      <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
-                                  ))}
-                              </SelectContent>
-                          </Select>
-                      </div>
+                    <div className="flex items-center gap-2 font-bold mb-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      Usage Detected
+                    </div>
+                    <div className="text-sm">
+                      This location is tied to <strong>{usageCount}</strong> active tickets for the {currentTeam?.name} team.
+                      You must select a replacement location to move these tickets to before deleting.
+                    </div>
+
+                    <div className="mt-4 space-y-2 text-foreground">
+                      <Label htmlFor="replacement-location" className="text-xs font-bold uppercase">Replacement Location</Label>
+                      <Select value={replacementLocationId} onValueChange={setReplacementLocationId}>
+                        <SelectTrigger id="replacement-location" className="bg-background">
+                          <SelectValue placeholder="Select a location..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {otherLocations.map(loc => (
+                            <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 )}
               </div>
@@ -333,10 +333,10 @@ export default function LocationsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-                onClick={handleDelete}
-                disabled={usageCount > 0 && !replacementLocationId}
-                className={usageCount > 0 ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={usageCount > 0 && !replacementLocationId}
+              className={usageCount > 0 ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
             >
               {usageCount > 0 ? "Re-map & Delete" : "Delete"}
             </AlertDialogAction>
