@@ -25,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Badge } from '@/components/ui/badge';
 
 const metadataSchema = z.object({
   status: z.string().min(1, "Status is required"),
@@ -386,8 +387,8 @@ export default function LocationPropertyDetailsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between gap-4">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild className="rounded-full">
             <Link href="/settings/editlocations">
@@ -398,20 +399,20 @@ export default function LocationPropertyDetailsPage() {
             {location?.name || 'Property Details'}
           </h1>
         </div>
-        <p className="text-s text-muted-foreground font-medium font-mono">
+        <Badge className="text-s text-primary-foreground bg-card-foreground font-medium font-mono font-semibold sm:text-right px-3 py-1 sm:pl-3 pl-14">
           ID: {locationId}
-        </p>
+        </Badge>
       </div>
 
       <div className="space-y-6 pb-12">
         {/* Metadata Card */}
         <Card className="overflow-hidden border-primary/10 shadow-lg">
-          <CardHeader className="bg-primary text-primary-foreground p-6">
+          <CardHeader className="bg-card text-card-foreground p-6">
             <div className="flex items-center gap-3">
-              <div className="bg-primary-foreground/20 p-2 rounded-lg"><ShieldCheck className="h-6 w-6" /></div>
+              <div className="bg-muted p-2 rounded-lg"><ShieldCheck className="h-6 w-6" /></div>
               <div>
                 <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">METADATA</CardTitle>
-                <CardDescription className="text-primary-foreground/80 font-medium">Technical Specifications</CardDescription>
+                <CardDescription className="text-card-foreground/80 font-medium">Technical Specifications</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -474,7 +475,7 @@ export default function LocationPropertyDetailsPage() {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
+              <CardFooter className="bg-muted/30 border-t p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <AuditInfo lastUser={location?.propertyDetails?.metadata?.lastUser} lastUpdated={location?.propertyDetails?.metadata?.lastUpdated} />
                 <Button type="submit" disabled={isSavingMetadata} className="min-w-[140px]">
                   {isSavingMetadata ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
@@ -487,12 +488,12 @@ export default function LocationPropertyDetailsPage() {
 
         {/* Parking Capacity Card */}
         <Card className="overflow-hidden border-primary/10 shadow-lg">
-          <CardHeader className="bg-primary text-primary-foreground p-6">
+          <CardHeader className="bg-card text-card-foreground p-6">
             <div className="flex items-center gap-3">
-              <div className="bg-primary-foreground/20 p-2 rounded-lg"><Car className="h-6 w-6" /></div>
+              <div className="bg-muted p-2 rounded-lg"><Car className="h-6 w-6" /></div>
               <div>
                 <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">Parking Capacity</CardTitle>
-                <CardDescription className="text-primary-foreground/80 font-medium">Total Stall Inventory & Allocations</CardDescription>
+                <CardDescription className="text-card-foreground/80 font-medium">Total Stall Inventory & Allocations</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -553,7 +554,7 @@ export default function LocationPropertyDetailsPage() {
                   )} />
                 </div>
               </CardContent>
-              <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
+              <CardFooter className="bg-muted/30 border-t p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <AuditInfo lastUser={location?.propertyDetails?.parkingCapacity?.lastUser} lastUpdated={location?.propertyDetails?.parkingCapacity?.lastUpdated} />
                 <Button type="submit" disabled={isSavingParking} className="min-w-[140px]">
                   {isSavingParking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
@@ -566,12 +567,12 @@ export default function LocationPropertyDetailsPage() {
 
         {/* Signage Card */}
         <Card className="overflow-hidden border-primary/10 shadow-lg">
-          <CardHeader className="bg-primary text-primary-foreground p-6">
+          <CardHeader className="bg-card text-card-foreground p-6">
             <div className="flex items-center gap-3">
-              <div className="bg-primary-foreground/20 p-2 rounded-lg"><Milestone className="h-6 w-6" /></div>
+              <div className="bg-muted p-2 rounded-lg"><Milestone className="h-6 w-6" /></div>
               <div>
                 <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">Signage Inventory</CardTitle>
-                <CardDescription className="text-primary-foreground/80 font-medium">Assets & Wayfinding</CardDescription>
+                <CardDescription className="text-card-foreground/80 font-medium">Assets & Wayfinding</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -639,7 +640,7 @@ export default function LocationPropertyDetailsPage() {
                   )} />
                 </div>
               </CardContent>
-              <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
+              <CardFooter className="bg-muted/30 border-t p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <AuditInfo lastUser={location?.propertyDetails?.signage?.lastUser} lastUpdated={location?.propertyDetails?.signage?.lastUpdated} />
                 <Button type="submit" disabled={isSavingSignage} className="min-w-[140px]">
                   {isSavingSignage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
@@ -652,12 +653,12 @@ export default function LocationPropertyDetailsPage() {
 
         {/* Lighting Card */}
         <Card className="overflow-hidden border-primary/10 shadow-lg">
-          <CardHeader className="bg-primary text-primary-foreground p-6">
+          <CardHeader className="bg-card text-card-foreground p-6">
             <div className="flex items-center gap-3">
-              <div className="bg-primary-foreground/20 p-2 rounded-lg"><Lightbulb className="h-6 w-6" /></div>
+              <div className="bg-muted p-2 rounded-lg"><Lightbulb className="h-6 w-6" /></div>
               <div>
                 <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">Lighting Infrastructure</CardTitle>
-                <CardDescription className="text-primary-foreground/80 font-medium">Illumination Assets</CardDescription>
+                <CardDescription className="text-card-foreground/80 font-medium">Illumination Assets</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -690,7 +691,7 @@ export default function LocationPropertyDetailsPage() {
                   )} />
                 </div>
               </CardContent>
-              <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
+              <CardFooter className="bg-muted/30 border-t p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <AuditInfo lastUser={location?.propertyDetails?.lighting?.lastUser} lastUpdated={location?.propertyDetails?.lighting?.lastUpdated} />
                 <Button type="submit" disabled={isSavingLighting} className="min-w-[140px]">
                   {isSavingLighting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
@@ -703,12 +704,12 @@ export default function LocationPropertyDetailsPage() {
 
         {/* Technology Card */}
         <Card className="overflow-hidden border-primary/10 shadow-lg">
-          <CardHeader className="bg-primary text-primary-foreground p-6">
+          <CardHeader className="bg-card text-card-foreground p-6">
             <div className="flex items-center gap-3">
-              <div className="bg-primary-foreground/20 p-2 rounded-lg"><Monitor className="h-6 w-6" /></div>
+              <div className="bg-muted p-2 rounded-lg"><Monitor className="h-6 w-6" /></div>
               <div>
                 <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">Technology Inventory</CardTitle>
-                <CardDescription className="text-primary-foreground/80 font-medium">Hardware & Network</CardDescription>
+                <CardDescription className="text-card-foreground/80 font-medium">Hardware & Network</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -818,7 +819,7 @@ export default function LocationPropertyDetailsPage() {
                   )} />
                 </div>
               </CardContent>
-              <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
+              <CardFooter className="bg-muted/30 border-t p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <AuditInfo lastUser={location?.propertyDetails?.technology?.lastUser} lastUpdated={location?.propertyDetails?.technology?.lastUpdated} />
                 <Button type="submit" disabled={isSavingTechnology} className="min-w-[140px]">
                   {isSavingTechnology ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
@@ -831,12 +832,12 @@ export default function LocationPropertyDetailsPage() {
 
         {/* Infrastructure Card */}
         <Card className="overflow-hidden border-primary/10 shadow-lg">
-          <CardHeader className="bg-primary text-primary-foreground p-6">
+          <CardHeader className="bg-card text-card-foreground p-6">
             <div className="flex items-center gap-3">
-              <div className="bg-primary-foreground/20 p-2 rounded-lg"><HardHat className="h-6 w-6" /></div>
+              <div className="bg-muted p-2 rounded-lg"><HardHat className="h-6 w-6" /></div>
               <div>
                 <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">Infrastructure</CardTitle>
-                <CardDescription className="text-primary-foreground/80 font-medium">Site Physcial Characteristics</CardDescription>
+                <CardDescription className="text-card-foreground/80 font-medium">Site Physcial Characteristics</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -988,7 +989,7 @@ export default function LocationPropertyDetailsPage() {
                   )} />
                 </div>
               </CardContent>
-              <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
+              <CardFooter className="bg-muted/30 border-t p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <AuditInfo lastUser={location?.propertyDetails?.infrastructure?.lastUser} lastUpdated={location?.propertyDetails?.infrastructure?.lastUpdated} />
                 <Button type="submit" disabled={isSavingInfrastructure} className="min-w-[140px]">
                   {isSavingInfrastructure ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
@@ -1001,12 +1002,12 @@ export default function LocationPropertyDetailsPage() {
 
         {/* Landscaping Feature Card */}
         <Card className="overflow-hidden border-primary/10 shadow-lg">
-          <CardHeader className="bg-primary text-primary-foreground p-6">
+          <CardHeader className="bg-card text-card-foreground p-6">
             <div className="flex items-center gap-3">
-              <div className="bg-primary-foreground/20 p-2 rounded-lg"><Trees className="h-6 w-6" /></div>
+              <div className="bg-muted p-2 rounded-lg"><Trees className="h-6 w-6" /></div>
               <div>
                 <CardTitle className="text-2xl font-bold leading-tight uppercase tracking-tight">Landscaping Features</CardTitle>
-                <CardDescription className="text-primary-foreground/80 font-medium">Environmental Assets</CardDescription>
+                <CardDescription className="text-card-foreground/80 font-medium">Environmental Assets</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -1056,7 +1057,7 @@ export default function LocationPropertyDetailsPage() {
                   )} />
                 </div>
               </CardContent>
-              <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
+              <CardFooter className="bg-muted/30 border-t p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <AuditInfo lastUser={location?.propertyDetails?.landscaping?.lastUser} lastUpdated={location?.propertyDetails?.landscaping?.lastUpdated} />
                 <Button type="submit" disabled={isSavingLandscaping} className="min-w-[140px]">
                   {isSavingLandscaping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}

@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { AverageApprovalTimeCard } from '@/components/average-approval-time-card';
 
 export default function DashboardPage() {
   const firestore = useFirestore();
@@ -195,6 +196,7 @@ export default function DashboardPage() {
         </div>
         
         <RecurringTasksSummaryChart recurringTasks={chartRecurringTasks} />
+        <AverageApprovalTimeCard tickets={chartTickets} users={allAppUsers} />
         
         <div className="lg:row-span-2">
             <OpenTasksByLocationChart tickets={chartTickets} locations={chartLocations} />
