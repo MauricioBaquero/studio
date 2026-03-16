@@ -95,7 +95,7 @@ export function TicketDetailsDialog({
   const [newEmlFiles, setNewEmlFiles] = useState<File[]>([]);
 
 
-  const [selectedImage, setSelectedImage] = useState<Photo | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [multiSelectOpen, setMultiSelectOpen] = useState(false);
 
@@ -311,10 +311,10 @@ export function TicketDetailsDialog({
     setNewEmlFiles(files => files.filter((_, i) => i !== index));
   }
   
-  const handlePhotoClick = (photo: Photo) => {
-    setSelectedImage(photo);
-    setIsImageViewerOpen(true);
-  };
+  const handlePhotoClick = (index: number) => {
+        setSelectedImageIndex(index);
+        setIsImageViewerOpen(true);
+      };
 
   const assignedUsers = assignedToIds.map(id => getUserById(id)).filter(Boolean) as User[];
 
@@ -569,7 +569,7 @@ export function TicketDetailsDialog({
               )}
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                   {currentPhotos.map((photo, index) => (
-                      <div key={index} onClick={() => handlePhotoClick(photo)} className="cursor-pointer">
+                      <div key={index} onClick={() => handlePhotoClick(index)} className="cursor-pointer">
                           <div className="relative group aspect-square">
                               <Image src={photo.url} alt={`Ticket photo ${index + 1}`} fill className="object-cover rounded-md border" />
                               {isAdminOrCoordinator && !readOnly && (
@@ -804,11 +804,12 @@ export function TicketDetailsDialog({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <ImageViewerDialog
-        photo={selectedImage}
-        open={isImageViewerOpen}
-        onOpenChange={setIsImageViewerOpen}
-      />
+       <ImageViewerDialog
+          photos={currentPhotos}
+          initialIndex={selectedImageIndex}
+          open={isImageViewerOpen}
+          onOpenChange={setIsImageViewerOpen}
+        />
     </>
   );
 }

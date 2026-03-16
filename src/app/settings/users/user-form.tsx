@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -28,17 +28,20 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { User, USER_ROLES, Team } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, updateDocumentNonBlocking } from '@/firebase';
+import { useFirestore, updateDocumentNonBlocking, useAuth } from '@/firebase';
+import { sendPasswordResetEmail } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 import { z } from 'zod';
-
+import { KeyRound } from 'lucide-react';
 
 const formSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters."),
   role: z.enum(USER_ROLES),
   teamId: z.string().optional(),
+  status: z.enum(['active', 'disabled']),
 });
 
 type UserFormValues = z.infer<typeof formSchema>;
@@ -58,6 +61,8 @@ export function UserForm({
 }: UserFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const auth = useAuth();
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
   const form = useForm<UserFormValues>({
     resolver: zodResolver(formSchema),
@@ -65,9 +70,10 @@ export function UserForm({
       name: '',
       role: 'Viewer',
       teamId: '',
+      status: 'active',
     },
   });
-  
+
   const watchedRole = form.watch('role');
 
   useEffect(() => {
@@ -76,6 +82,7 @@ export function UserForm({
         name: user.name,
         role: user.role,
         teamId: user.teamId,
+        status: user.status ?? 'active',
       });
     }
   }, [user, form]);
@@ -84,24 +91,43 @@ export function UserForm({
     if (!firestore) return;
 
     const userRef = doc(firestore, 'users', user.uid);
-    
+
     const finalTeamId = data.role === 'Admin' || data.role === 'Coordinator'
-        ? 'allTeams'
-        : data.teamId || '';
-    
-    const finalData = {
-        name: data.name,
-        role: data.role,
-        teamId: finalTeamId,
-    };
-    
-    updateDocumentNonBlocking(userRef, finalData);
+      ? 'allTeams'
+      : data.teamId || '';
+
+    updateDocumentNonBlocking(userRef, {
+      name: data.name,
+      role: data.role,
+      teamId: finalTeamId,
+      status: data.status,
+    });
 
     toast({
       title: 'Success!',
       description: `${user.name}'s information has been updated.`,
     });
     onOpenChange(false);
+  };
+
+  const handleSendPasswordReset = async () => {
+    if (!auth || !user.email) return;
+    setIsSendingReset(true);
+    try {
+      await sendPasswordResetEmail(auth, user.email);
+      toast({
+        title: 'Password Reset Email Sent',
+        description: `A reset link has been sent to ${user.email}.`,
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Failed to Send Email',
+        description: 'Something went wrong. Please try again.',
+      });
+    } finally {
+      setIsSendingReset(false);
+    }
   };
 
   return (
@@ -129,62 +155,97 @@ export function UserForm({
               )}
             />
             <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Role</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select a role" />
-                        </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                        {USER_ROLES.map(role => (
-                            <SelectItem key={role} value={role}>
-                            {role}
-                            </SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
-                    <FormMessage />
-                    </FormItem>
-                )}
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Role</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a role" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {USER_ROLES.map(role => (
+                        <SelectItem key={role} value={role}>
+                          {role}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {watchedRole !== 'Admin' && watchedRole !== 'Coordinator' ? (
-                <FormField
+            {watchedRole !== 'Admin' && watchedRole !== 'Coordinator' && (
+              <FormField
                 control={form.control}
                 name="teamId"
                 render={({ field }) => (
-                    <FormItem>
+                  <FormItem>
                     <FormLabel>Team</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
+                      <FormControl>
                         <SelectTrigger>
-                            <SelectValue placeholder="Select a team" />
+                          <SelectValue placeholder="Select a team" />
                         </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
+                      </FormControl>
+                      <SelectContent>
                         {teams.map(team => (
-                            <SelectItem key={team.id} value={team.id}>
+                          <SelectItem key={team.id} value={team.id}>
                             {team.name}
-                            </SelectItem>
+                          </SelectItem>
                         ))}
-                        </SelectContent>
+                      </SelectContent>
                     </Select>
                     <FormMessage />
-                    </FormItem>
+                  </FormItem>
                 )}
-                />
-            ) : (
-                <FormItem>
-                    <FormLabel>Team</FormLabel>
-                    <div className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-card px-3 py-2 text-sm text-muted-foreground">
-                        Access to all teams
-                    </div>
-                </FormItem>
+              />
             )}
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Account Status</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="disabled">Disabled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Separator />
+
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Password Reset</p>
+              <p className="text-sm text-muted-foreground">
+                Send a password reset link to {user.email}.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                disabled={isSendingReset}
+                onClick={handleSendPasswordReset}
+              >
+                <KeyRound className="mr-2 h-4 w-4" />
+                {isSendingReset ? 'Sending...' : 'Send Password Reset Email'}
+              </Button>
+            </div>
+
             <DialogFooter>
               <Button
                 type="button"
@@ -193,7 +254,7 @@ export function UserForm({
               >
                 Cancel
               </Button>
-              <Button type="submit">Update User</Button>
+              <Button type="submit">Update</Button>
             </DialogFooter>
           </form>
         </Form>

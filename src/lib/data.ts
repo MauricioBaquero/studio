@@ -36,9 +36,9 @@ export const userSchema = z.object({
   email: z.string().email(),
   role: z.enum(USER_ROLES),
   teamId: z.string(),
+  status: z.enum(['active', 'disabled']).optional(),
 });
 export type User = z.infer<typeof userSchema>;
-
 
 export const subcategorySchema = z.object({
     id: z.string(),
