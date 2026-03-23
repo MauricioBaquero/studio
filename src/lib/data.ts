@@ -235,6 +235,13 @@ export const settingsSchema = z.object({
 });
 export type AppSettings = z.infer<typeof settingsSchema>;
 
+export const formLinkSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1, "Name is required"),
+  link: z.string().url("Must be a valid URL"),
+});
+export type FormLink = z.infer<typeof formLinkSchema>;
+
 export interface GlobalConfig {
   minAppVersion: number;
 }

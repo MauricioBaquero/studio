@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 function StatRow({ label, value, icon }: { label: string; value: string | number | undefined | null; icon?: React.ReactNode }) {
     if (value === undefined || value === null || value === '') return null;
     return (
-        <div className="flex items-center justify-between py-2 border-b">
+        <div className="flex items-center justify-between py-2 border-b last:border-0">
             <span className="text-sm text-muted-foreground flex items-center gap-2">{icon}{label}</span>
             <span className="text-sm font-semibold">{value}</span>
         </div>
@@ -140,12 +140,15 @@ export default function LocationDetailPage() {
                 {/* Parking */}
                 {pd?.parkingCapacity && (
                     <SectionCard icon={<Car className="h-5 w-5" />} title="Parking Capacity" subtitle="Stall Inventory">
-                        <StatRow label="General" value={pd.parkingCapacity.totalParking?.generalParking} icon={<Car className="h-4 w-4" />} />
-                        <StatRow label="ADA" value={pd.parkingCapacity.totalParking?.adaParking} icon={<Accessibility className="h-4 w-4" />} />
-                        <StatRow label="EV" value={pd.parkingCapacity.totalParking?.evParking} icon={<Zap className="h-4 w-4" />} />
-                        <StatRow label="City Staff" value={pd.parkingCapacity.totalParking?.cityStaffParking} icon={<UserCog className="h-4 w-4" />} />
-                        <StatRow label="Lifeguard" value={pd.parkingCapacity.totalParking?.lifeguardParking} icon={<LifeBuoy className="h-4 w-4" />} />
-                        <StatRow label="Other" value={pd.parkingCapacity.totalParking?.otherParking} icon={<HelpCircle className="h-4 w-4" />} />
+                        <div className="[&>*:last-child]:border-0">
+                            <StatRow label="General" value={pd.parkingCapacity.totalParking?.generalParking} icon={<Car className="h-4 w-4" />} />
+                            <StatRow label="ADA" value={pd.parkingCapacity.totalParking?.adaParking} icon={<Accessibility className="h-4 w-4" />} />
+                            <StatRow label="EV" value={pd.parkingCapacity.totalParking?.evParking} icon={<Zap className="h-4 w-4" />} />
+                            <StatRow label="City Staff" value={pd.parkingCapacity.totalParking?.cityStaffParking} icon={<UserCog className="h-4 w-4" />} />
+                            <StatRow label="Lifeguard" value={pd.parkingCapacity.totalParking?.lifeguardParking} icon={<LifeBuoy className="h-4 w-4" />} />
+                            <StatRow label="Other" value={pd.parkingCapacity.totalParking?.otherParking} icon={<HelpCircle className="h-4 w-4" />} />
+                        </div>
+
                         {totalParking !== null && (
                             <div className="flex items-center justify-between mt-3 p-3 bg-primary/5 border border-primary/10 rounded-lg">
                                 <span className="text-xs font-bold uppercase tracking-wider text-primary/70">Total Parking</span>
@@ -158,13 +161,15 @@ export default function LocationDetailPage() {
                 {/* Signage */}
                 {pd?.signage && (
                     <SectionCard icon={<Milestone className="h-5 w-5" />} title="Signage Inventory" subtitle="Assets & Wayfinding">
-                        <StatRow label="Monument" value={pd.signage.totalSignage?.monumentSignage} icon={<Milestone className="h-4 w-4" />} />
-                        <StatRow label="Parking Info" value={pd.signage.totalSignage?.parkingInfoSignage} icon={<Info className="h-4 w-4" />} />
-                        <StatRow label="Payment System" value={pd.signage.totalSignage?.paymentSystemSignage} icon={<CreditCard className="h-4 w-4" />} />
-                        <StatRow label="Traffic Direction" value={pd.signage.totalSignage?.trafficDirectionSignage} icon={<ArrowRight className="h-4 w-4" />} />
-                        <StatRow label="Traffic Regulatory" value={pd.signage.totalSignage?.trafficRegulatorySignage} icon={<ShieldAlert className="h-4 w-4" />} />
-                        <StatRow label="Wayfinding" value={pd.signage.totalSignage?.wayfindingSignage} icon={<Milestone className="h-4 w-4" />} />
-                        <StatRow label="Other" value={pd.signage.totalSignage?.otherSignage} icon={<HelpCircle className="h-4 w-4" />} />
+                        <div className="[&>*:last-child]:border-0">
+                            <StatRow label="Monument" value={pd.signage.totalSignage?.monumentSignage} icon={<Milestone className="h-4 w-4" />} />
+                            <StatRow label="Parking Info" value={pd.signage.totalSignage?.parkingInfoSignage} icon={<Info className="h-4 w-4" />} />
+                            <StatRow label="Payment System" value={pd.signage.totalSignage?.paymentSystemSignage} icon={<CreditCard className="h-4 w-4" />} />
+                            <StatRow label="Traffic Direction" value={pd.signage.totalSignage?.trafficDirectionSignage} icon={<ArrowRight className="h-4 w-4" />} />
+                            <StatRow label="Traffic Regulatory" value={pd.signage.totalSignage?.trafficRegulatorySignage} icon={<ShieldAlert className="h-4 w-4" />} />
+                            <StatRow label="Wayfinding" value={pd.signage.totalSignage?.wayfindingSignage} icon={<Milestone className="h-4 w-4" />} />
+                            <StatRow label="Other" value={pd.signage.totalSignage?.otherSignage} icon={<HelpCircle className="h-4 w-4" />} />
+                        </div>
                         {totalSignage !== null && (
                             <div className="flex items-center justify-between mt-3 p-3 bg-primary/5 border border-primary/10 rounded-lg">
                                 <span className="text-xs font-bold uppercase tracking-wider text-primary/70">Total Signs</span>
@@ -177,8 +182,10 @@ export default function LocationDetailPage() {
                 {/* Lighting */}
                 {pd?.lighting && (
                     <SectionCard icon={<Lightbulb className="h-5 w-5" />} title="Lighting" subtitle="Illumination Assets">
-                        <StatRow label="Large Lights" value={pd.lighting.totalLighting?.largeLights} icon={<Lightbulb className="h-4 w-4" />} />
-                        <StatRow label="Small Lights" value={pd.lighting.totalLighting?.smallLights} icon={<Lightbulb className="h-4 w-4" />} />
+                        <div className="[&>*:last-child]:border-0">
+                            <StatRow label="Large Lights" value={pd.lighting.totalLighting?.largeLights} icon={<Lightbulb className="h-4 w-4" />} />
+                            <StatRow label="Small Lights" value={pd.lighting.totalLighting?.smallLights} icon={<Lightbulb className="h-4 w-4" />} />
+                        </div>
                         {totalLighting !== null && (
                             <div className="flex items-center justify-between mt-3 p-3 bg-primary/5 border border-primary/10 rounded-lg">
                                 <span className="text-xs font-bold uppercase tracking-wider text-primary/70">Total Lighting</span>
@@ -191,9 +198,13 @@ export default function LocationDetailPage() {
                 {/* Technology */}
                 {pd?.technology && (
                     <SectionCard icon={<Monitor className="h-5 w-5" />} title="Technology" subtitle="Hardware & Network">
-                        <StatRow label="Surface Mounts" value={pd.technology.surfaceMounts} icon={<Cpu className="h-4 w-4" />} />
-                        <StatRow label="Flush Mounts" value={pd.technology.flushMounts} icon={<Cpu className="h-4 w-4" />} />
-                        <StatRow label="Camera Tracking" value={pd.technology.cameraTracking} icon={<Monitor className="h-4 w-4" />} />
+
+                        {/* Sensors group */}
+                        <div className="[&>*:last-child]:border-0">
+                            <StatRow label="Surface Mounts" value={pd.technology.surfaceMounts} icon={<Cpu className="h-4 w-4" />} />
+                            <StatRow label="Flush Mounts" value={pd.technology.flushMounts} icon={<Cpu className="h-4 w-4" />} />
+                            <StatRow label="Camera Tracking" value={pd.technology.cameraTracking} icon={<Monitor className="h-4 w-4" />} />
+                        </div>
                         {totalSensors !== null && (
                             <div className="flex items-center justify-between mt-3 p-3 bg-primary/5 border border-primary/10 rounded-lg">
                                 <span className="text-xs font-bold uppercase tracking-wider text-primary/70">Total Sensors</span>
@@ -201,8 +212,11 @@ export default function LocationDetailPage() {
                             </div>
                         )}
 
-                        <StatRow label="Multi-Space Meters" value={pd.technology.multiSpaceMeters} icon={<Gauge className="h-4 w-4" />} />
-                        <StatRow label="Single-Space Meters" value={pd.technology.singleSpaceMeters} icon={<Gauge className="h-4 w-4" />} />
+                        {/* Meters group */}
+                        <div className="[&>*:last-child]:border-0 mt-3">
+                            <StatRow label="Multi-Space Meters" value={pd.technology.multiSpaceMeters} icon={<Gauge className="h-4 w-4" />} />
+                            <StatRow label="Single-Space Meters" value={pd.technology.singleSpaceMeters} icon={<Gauge className="h-4 w-4" />} />
+                        </div>
                         {totalMeters !== null && (
                             <div className="flex items-center justify-between mt-3 p-3 bg-primary/5 border border-primary/10 rounded-lg">
                                 <span className="text-xs font-bold uppercase tracking-wider text-primary/70">Total Meters</span>
@@ -210,9 +224,11 @@ export default function LocationDetailPage() {
                             </div>
                         )}
 
-                        <StatRow label="Network" value={pd.technology.network} icon={<Wifi className="h-4 w-4" />} />
-                        <BooleanRow label="Mobile App Payment" value={pd.technology.mobileAppPayment} icon={<Smartphone className="h-4 w-4" />} />
-
+                        {/* Other */}
+                        <div className="mt-3">
+                            <StatRow label="Network" value={pd.technology.network} icon={<Wifi className="h-4 w-4" />} />
+                            <BooleanRow label="Mobile App Payment" value={pd.technology.mobileAppPayment} icon={<Smartphone className="h-4 w-4" />} />
+                        </div>
 
                     </SectionCard>
                 )}

@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -22,6 +21,7 @@ const ALL_TABS = [
   { value: "categories", label: "Categories", href: "/settings/categories", roles: ['Admin', 'Coordinator'] },
   { value: "scheduled-maintenance", label: "Scheduled Maintenance", href: "/settings/scheduled-maintenance", roles: ['Admin', 'Coordinator'] },
   { value: "locations", label: "Locations", href: "/settings/editlocations", roles: ['Admin', 'Coordinator'] },
+  { value: "forms", label: "Forms", href: "/settings/edit-forms", roles: ['Admin', 'Coordinator'] },
   { value: "teams", label: "Teams", href: "/settings/teams", roles: ['Admin'] },
   { value: "users", label: "Users", href: "/settings/users", roles: ['Admin'] },
 ];

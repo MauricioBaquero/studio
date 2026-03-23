@@ -16,6 +16,11 @@ service cloud.firestore {
       allow get, list: if isSignedIn();
       allow create, update, delete: if isSignedIn();
     }
+    
+    match /forms/{formId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
+    }
 
     match /teams/{teamId}/tasks/{taskId} {
       allow get, list: if isSignedIn();

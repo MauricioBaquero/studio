@@ -21,13 +21,14 @@ import { useMemo } from 'react';
 import { collection, query, where } from "firebase/firestore";
 import type { Ticket } from "@/lib/data";
 
-import { LayoutDashboard, GanttChartSquare, Repeat, Settings, MapPin } from "lucide-react";
+import { LayoutDashboard, GanttChartSquare, Repeat, Settings, MapPin, FileText } from "lucide-react";
 
 const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/", label: "Task Board", icon: GanttChartSquare },
   { href: "/recurring-tasks", label: "Recurring Tasks", icon: Repeat },
   { href: "/locations", label: "Locations", icon: MapPin },
+  { href: "/forms", label: "Forms", icon: FileText },
 ];
 
 const settingsItem = { href: "/settings", label: "Settings", icon: Settings };
