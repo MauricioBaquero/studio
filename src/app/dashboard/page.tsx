@@ -46,8 +46,8 @@ export default function DashboardPage() {
 
     if (tickets) {
       tickets.forEach(ticket => {
-        const date = ticket.actualCompletionDate 
-          ? toDate(ticket.actualCompletionDate) 
+        const date = ticket.actualCompletionDate
+          ? toDate(ticket.actualCompletionDate)
           : toDate(ticket.requestedCompletionDate);
         yearSet.add(date.getFullYear());
       });
@@ -81,15 +81,15 @@ export default function DashboardPage() {
   );
   const { data: recurringTasks, isLoading: isLoadingRecurringTasks } =
     useCollection<RecurringTask>(recurringTasksQuery);
-  
+
   const locationsQuery = useMemoFirebase(
     () => {
-        if (!firestore) return null;
-        // Locations are shared across all teams
-        return query(collection(firestore, 'locations'));
+      if (!firestore) return null;
+      // Locations are shared across all teams
+      return query(collection(firestore, 'locations'));
     },
     [firestore]
-    );
+  );
   const { data: locations, isLoading: isLoadingLocations } =
     useCollection<Location>(locationsQuery);
 
@@ -101,10 +101,10 @@ export default function DashboardPage() {
   const filteredTickets = useMemo(() => {
     if (!tickets) return [];
     return tickets.filter(ticket => {
-      const date = ticket.actualCompletionDate 
-        ? toDate(ticket.actualCompletionDate) 
+      const date = ticket.actualCompletionDate
+        ? toDate(ticket.actualCompletionDate)
         : toDate(ticket.requestedCompletionDate);
-      
+
       const ticketYear = date.getFullYear();
       const ticketMonth = date.getMonth();
 
@@ -143,7 +143,7 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold font-headline">Dashboard</h1>
-        
+
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-card p-3 rounded-lg border border-border shadow-sm">
           <div className="flex flex-col gap-1.5">
             <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Report View</Label>
@@ -191,21 +191,29 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 [grid-auto-flow:dense]">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:col-span-2 xl:col-span-1">
-            <TaskStatusChart tickets={chartTickets} />
-            <ApprovalStatusSummary tickets={chartTickets} users={allAppUsers} categories={chartCategories} />
+          <TaskStatusChart tickets={chartTickets} />
+          <ApprovalStatusSummary tickets={chartTickets} users={allAppUsers} categories={chartCategories} />
         </div>
-        
+
         <RecurringTasksSummaryChart recurringTasks={chartRecurringTasks} />
+
         <AverageApprovalTimeCard tickets={chartTickets} users={allAppUsers} />
-        
+
         <div className="lg:row-span-2">
-            <OpenTasksByLocationChart tickets={chartTickets} locations={chartLocations} />
+          <TaskTypeChart tickets={chartTickets} categories={chartCategories} />
         </div>
         <div className="lg:row-span-2">
-            <TaskTypeChart tickets={chartTickets} categories={chartCategories} />
+          <TasksByAssigneeChart
+            tickets={chartTickets}
+            users={chartUsers}
+            recurringTasks={chartRecurringTasks}
+            reportType={reportType}
+            selectedYear={selectedYear}
+            selectedMonth={selectedMonth}
+          />
         </div>
         <div className="lg:row-span-2">
-            <TasksByAssigneeChart tickets={chartTickets} users={chartUsers} />
+          <OpenTasksByLocationChart tickets={chartTickets} locations={chartLocations} />
         </div>
       </div>
     </div>

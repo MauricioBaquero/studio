@@ -23,15 +23,15 @@ export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
   const findSubCategory = (subcategoryId: string) => {
     if (!categories) return null;
     for (const parent of categories) {
-        const sub = parent.subcategories?.find(s => s.id === subcategoryId);
-        if (sub) {
-            return { 
-              ...sub, 
-              parentName: parent.name, 
-              color: parent.color || 'blue', 
-              parentId: parent.id 
-            };
-        }
+      const sub = parent.subcategories?.find(s => s.id === subcategoryId);
+      if (sub) {
+        return {
+          ...sub,
+          parentName: parent.name,
+          color: parent.color || 'blue',
+          parentId: parent.id
+        };
+      }
     }
     return null;
   }
@@ -39,7 +39,7 @@ export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
   const tasksByGroup = tickets.reduce(
     (acc, ticket) => {
       const subInfo = findSubCategory(ticket.categoryId);
-      
+
       if (subInfo) {
         if (!acc[subInfo.parentId]) {
           acc[subInfo.parentId] = {
@@ -50,9 +50,9 @@ export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
             subcategories: {}
           };
         }
-        
+
         acc[subInfo.parentId].totalCount += 1;
-        
+
         if (!acc[subInfo.parentId].subcategories[subInfo.id]) {
           acc[subInfo.parentId].subcategories[subInfo.id] = {
             name: subInfo.name,
@@ -63,12 +63,12 @@ export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
       }
       return acc;
     },
-    {} as Record<string, { 
-      id: string; 
-      name: string; 
-      color: string; 
-      totalCount: number; 
-      subcategories: Record<string, { name: string; count: number }> 
+    {} as Record<string, {
+      id: string;
+      name: string;
+      color: string;
+      totalCount: number;
+      subcategories: Record<string, { name: string; count: number }>
     }>
   );
 
@@ -83,7 +83,7 @@ export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 overflow-hidden">
-        <ScrollArea className="h-[550px] pr-4">
+        <ScrollArea className="h-full pr-4">
           <div className="space-y-6">
             {sortedGroups.length > 0 ? (
               sortedGroups.map((group) => (
@@ -97,7 +97,7 @@ export function TaskTypeChart({ tickets, categories }: TaskTypeChartProps) {
                       {group.totalCount} {group.totalCount === 1 ? 'Task' : 'Tasks'}
                     </Badge>
                   </div>
-                  
+
                   <div className="space-y-2 pl-5 border-l-2 border-muted ml-1.5">
                     {Object.entries(group.subcategories)
                       .sort(([, a], [, b]) => b.count - a.count)

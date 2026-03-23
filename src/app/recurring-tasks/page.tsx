@@ -13,7 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { format, isToday, isPast, startOfDay, isSameDay, differenceInDays, subDays, isTomorrow } from 'date-fns';
+import { format, isToday, isPast, startOfDay, endOfDay, isSameDay, differenceInDays, subDays, isTomorrow } from 'date-fns';
 import {
   useCollection,
   useFirestore,
@@ -33,21 +33,21 @@ import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { RecurringTaskFilters, FilterValues } from '@/components/recurring-task-filters';
-import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 type CompletedTask = {
-    id: string;
-    title: string;
-    completedAt: Date;
-    completedBy: User;
-    locationName: string;
-    categoryId: string;
-    locationId: string;
-    frequency: RecurringFrequency;
+  id: string;
+  title: string;
+  completedAt: Date;
+  completedBy: User;
+  locationName: string;
+  categoryId: string;
+  locationId: string;
+  frequency: RecurringFrequency;
 };
 
 export default function RecurringTasksPage() {
@@ -66,9 +66,9 @@ export default function RecurringTasksPage() {
 
   // Sorting state
   const [maintenanceSort, setMaintenanceSort] = useState<{ field: string; direction: 'asc' | 'desc' } | null>(null);
-  const [completedSort, setCompletedSort] = useState<{ field: keyof CompletedTask; direction: 'asc' | 'desc' }>({ 
-    field: 'completedAt', 
-    direction: 'desc' 
+  const [completedSort, setCompletedSort] = useState<{ field: keyof CompletedTask; direction: 'asc' | 'desc' }>({
+    field: 'completedAt',
+    direction: 'desc'
   });
 
 
@@ -94,8 +94,8 @@ export default function RecurringTasksPage() {
 
   const usersQuery = useMemoFirebase(
     () => {
-        if (!firestore || !teamId) return null;
-        return query(collection(firestore, 'users'), where('teamId', 'in', [teamId, 'allTeams']));
+      if (!firestore || !teamId) return null;
+      return query(collection(firestore, 'users'), where('teamId', 'in', [teamId, 'allTeams']));
     },
     [firestore, teamId]
   );
@@ -104,9 +104,9 @@ export default function RecurringTasksPage() {
 
   const locationsQuery = useMemoFirebase(
     () => {
-        if (!firestore) return null;
-        // Locations are shared across all teams
-        return query(collection(firestore, 'locations'));
+      if (!firestore) return null;
+      // Locations are shared across all teams
+      return query(collection(firestore, 'locations'));
     },
     [firestore]
   );
@@ -117,7 +117,7 @@ export default function RecurringTasksPage() {
     if (!locations) return [];
     return [...locations].sort((a, b) => a.name.localeCompare(b.name));
   }, [locations]);
-  
+
   const getUserById = (id: string | null) => users?.find(u => u.uid === id);
   const getLocationById = (id: string | null) => locations?.find(l => l.id === id);
 
@@ -126,7 +126,7 @@ export default function RecurringTasksPage() {
       const isAdminOrCoordinator = currentUser.role === 'Admin' || currentUser.role === 'Coordinator';
       const visibleTasks = recurringTasks.filter(task => {
         if (isAdminOrCoordinator) return true; // Admins/Coordinators see all
-        
+
         // Check Assigned To list (multi-assignee)
         if (task.assignedToIds && task.assignedToIds.includes(currentUser.uid)) return true;
 
@@ -142,39 +142,39 @@ export default function RecurringTasksPage() {
       const allCompleted: CompletedTask[] = [];
       visibleTasks.forEach(task => {
         if (task.lastCompleted && task.lastCompleted.length > 0) {
-            task.lastCompleted.forEach(completion => {
-                if (!completion) return;
-                const completionDate = toDate(completion.completedAt);
-                const completedByUser = getUserById(completion.completedBy);
-                const location = getLocationById(task.locationId);
+          task.lastCompleted.forEach(completion => {
+            if (!completion) return;
+            const completionDate = toDate(completion.completedAt);
+            const completedByUser = getUserById(completion.completedBy);
+            const location = getLocationById(task.locationId);
 
-                // Only add to completed log if we know who completed it.
-                if (completedByUser) {
-                    allCompleted.push({
-                        id: task.id,
-                        title: task.title,
-                        completedAt: completionDate,
-                        completedBy: completedByUser,
-                        locationName: location?.name || 'N/A',
-                        categoryId: task.categoryId,
-                        locationId: task.locationId,
-                        frequency: task.frequency,
-                    });
-                }
-            })
+            // Only add to completed log if we know who completed it.
+            if (completedByUser) {
+              allCompleted.push({
+                id: task.id,
+                title: task.title,
+                completedAt: completionDate,
+                completedBy: completedByUser,
+                locationName: location?.name || 'N/A',
+                categoryId: task.categoryId,
+                locationId: task.locationId,
+                frequency: task.frequency,
+              });
+            }
+          })
         }
       });
       setCompletedTasks(allCompleted);
     }
   }, [recurringTasks, users, locations, currentUser]);
-  
+
   const findSubCategory = (subcategoryId: string) => {
     if (!categories) return null;
     for (const parent of categories) {
-        const sub = parent.subcategories?.find(s => s.id === subcategoryId);
-        if (sub) {
-            return { ...sub, parentName: parent.name, color: parent.color, parentId: parent.id };
-        }
+      const sub = parent.subcategories?.find(s => s.id === subcategoryId);
+      if (sub) {
+        return { ...sub, parentName: parent.name, color: parent.color, parentId: parent.id };
+      }
     }
     return null;
   }
@@ -186,24 +186,24 @@ export default function RecurringTasksPage() {
     const advanceCompletionDays = settings?.recurringTaskCompletionDays ?? 2;
 
     const filtered = allTasks.filter(task => {
-        if (filters.location !== 'all' && task.locationId !== filters.location) return false;
-        if (filters.frequency !== 'all' && task.frequency !== filters.frequency) return false;
-        
-        if (filters.category !== 'all') {
-            const subCatInfo = findSubCategory(task.categoryId);
-            if (subCatInfo?.parentId !== filters.category) return false;
-        }
+      if (filters.location !== 'all' && task.locationId !== filters.location) return false;
+      if (filters.frequency !== 'all' && task.frequency !== filters.frequency) return false;
 
-        if (filters.dateRange.from || filters.dateRange.to) {
-            const nextDueDate = getNextDueDate(task, advanceCompletionDays);
-            const start = filters.dateRange.from ? startOfDay(filters.dateRange.from) : new Date(0);
-            const end = filters.dateRange.to ? endOfDay(filters.dateRange.to) : new Date(8640000000000000);
-            
-            if (nextDueDate < start || nextDueDate > end) {
-                return false;
-            }
+      if (filters.category !== 'all') {
+        const subCatInfo = findSubCategory(task.categoryId);
+        if (subCatInfo?.parentId !== filters.category) return false;
+      }
+
+      if (filters.dateRange.from || filters.dateRange.to) {
+        const nextDueDate = getNextDueDate(task, advanceCompletionDays);
+        const start = filters.dateRange.from ? startOfDay(filters.dateRange.from) : new Date(0);
+        const end = filters.dateRange.to ? endOfDay(filters.dateRange.to) : new Date(8640000000000000);
+
+        if (nextDueDate < start || nextDueDate > end) {
+          return false;
         }
-        return true;
+      }
+      return true;
     });
 
     const sortedTasks = [...filtered].sort((a, b) => {
@@ -243,7 +243,7 @@ export default function RecurringTasksPage() {
         if (valA < valB) return maintenanceSort.direction === 'asc' ? -1 : 1;
         if (valA > valB) return maintenanceSort.direction === 'asc' ? 1 : -1;
       }
-      
+
       // Secondary sort by date
       return getNextDueDate(a, advanceCompletionDays).getTime() - getNextDueDate(b, advanceCompletionDays).getTime();
     });
@@ -261,7 +261,7 @@ export default function RecurringTasksPage() {
 
       const nextDueDate = getNextDueDate(task, advanceCompletionDays);
       const daysUntilDue = differenceInDays(nextDueDate, new Date());
-      
+
       // A task is "Satisfied Early" if it has been completed within the advance window
       // causing the getNextDueDate logic to skip the current occurrence.
       const nominalNext = getNextDueDate(task, 0);
@@ -287,26 +287,26 @@ export default function RecurringTasksPage() {
 
     return { dueTasks: due, recentlyCompletedTasks: completed, upcomingTasks: upcoming };
   }, [allTasks, filters, categories, settings, maintenanceSort]);
-  
+
   const filteredCompletedTasks = useMemo(() => {
     const filtered = completedTasks.filter(task => {
-        if (filters.location !== 'all' && task.locationId !== filters.location) return false;
-        if (filters.frequency !== 'all' && task.frequency !== filters.frequency) return false;
-        
-        if (filters.category !== 'all') {
-            const subCatInfo = findSubCategory(task.categoryId);
-            if (subCatInfo?.parentId !== filters.category) return false;
-        }
+      if (filters.location !== 'all' && task.locationId !== filters.location) return false;
+      if (filters.frequency !== 'all' && task.frequency !== filters.frequency) return false;
 
-        if (filters.dateRange.from || filters.dateRange.to) {
-            const start = filters.dateRange.from ? startOfDay(filters.dateRange.from) : new Date(0);
-            const end = filters.dateRange.to ? endOfDay(filters.dateRange.to) : new Date(8640000000000000);
-            
-            if (task.completedAt < start || task.completedAt > end) {
-                return false;
-            }
+      if (filters.category !== 'all') {
+        const subCatInfo = findSubCategory(task.categoryId);
+        if (subCatInfo?.parentId !== filters.category) return false;
+      }
+
+      if (filters.dateRange.from || filters.dateRange.to) {
+        const start = filters.dateRange.from ? startOfDay(filters.dateRange.from) : new Date(0);
+        const end = filters.dateRange.to ? endOfDay(filters.dateRange.to) : new Date(8640000000000000);
+
+        if (task.completedAt < start || task.completedAt > end) {
+          return false;
         }
-        return true;
+      }
+      return true;
     });
 
     return [...filtered].sort((a, b) => {
@@ -331,7 +331,7 @@ export default function RecurringTasksPage() {
   }, [completedTasks, filters, categories, completedSort]);
 
 
-  
+
   const handleTaskCheck = (task: RecurringTask) => {
     if (!firestore || !currentUser || !users || !teamId || teamId === 'allTeams') return;
 
@@ -340,29 +340,29 @@ export default function RecurringTasksPage() {
     const location = getLocationById(task.locationId);
 
     if (user) {
-        const recurringTaskRef = doc(firestore, `teams/${teamId}/recurringTasks`, task.id);
-        const newCompletionLog = { completedAt: now, completedBy: currentUser.uid };
-        
-        updateDocumentNonBlocking(recurringTaskRef, {
-            lastCompleted: arrayUnion(newCompletionLog),
-        });
+      const recurringTaskRef = doc(firestore, `teams/${teamId}/recurringTasks`, task.id);
+      const newCompletionLog = { completedAt: now, completedBy: currentUser.uid };
 
-        const updatedLastCompleted = [...(task.lastCompleted || []), newCompletionLog];
+      updateDocumentNonBlocking(recurringTaskRef, {
+        lastCompleted: arrayUnion(newCompletionLog),
+      });
 
-        const optimisticCompletedTask: CompletedTask = {
-            id: task.id,
-            title: task.title,
-            completedBy: user,
-            completedAt: now,
-            locationName: location?.name || 'N/A',
-            categoryId: task.categoryId,
-            locationId: task.locationId,
-            frequency: task.frequency,
-        };
-        setCompletedTasks(prev => [optimisticCompletedTask, ...prev]);
+      const updatedLastCompleted = [...(task.lastCompleted || []), newCompletionLog];
 
-        const updatedOptimisticTask = { ...task, lastCompleted: updatedLastCompleted };
-        setAllTasks(prev => prev.map(t => t.id === task.id ? updatedOptimisticTask : t));
+      const optimisticCompletedTask: CompletedTask = {
+        id: task.id,
+        title: task.title,
+        completedBy: user,
+        completedAt: now,
+        locationName: location?.name || 'N/A',
+        categoryId: task.categoryId,
+        locationId: task.locationId,
+        frequency: task.frequency,
+      };
+      setCompletedTasks(prev => [optimisticCompletedTask, ...prev]);
+
+      const updatedOptimisticTask = { ...task, lastCompleted: updatedLastCompleted };
+      setAllTasks(prev => prev.map(t => t.id === task.id ? updatedOptimisticTask : t));
     }
   };
 
@@ -380,6 +380,34 @@ export default function RecurringTasksPage() {
     }));
   };
 
+  const handleExportCSV = () => {
+    const headers = ['Task Name', 'Location', 'Category', 'Sub-Category', 'Frequency', 'Completed By', 'Completed Date'];
+
+    const rows = filteredCompletedTasks.map(task => {
+      const subCatInfo = findSubCategory(task.categoryId);
+      return [
+        task.title,
+        task.locationName,
+        subCatInfo?.parentName || '',
+        subCatInfo?.name || '',
+        task.frequency,
+        task.completedBy?.name || 'N/A',
+        format(task.completedAt, 'MM/dd/yyyy'),
+      ];
+    });
+
+    const escape = (val: string) => `"${val.replace(/"/g, '""')}"`;
+    const csvContent = [headers, ...rows].map(row => row.map(escape).join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `recurring-tasks-history-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const SortIcon = ({ field, currentSort }: { field: string, currentSort: { field: string, direction: 'asc' | 'desc' } | null }) => {
     if (currentSort?.field !== field) return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
     return currentSort.direction === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
@@ -392,7 +420,7 @@ export default function RecurringTasksPage() {
     const advanceCompletionDays = settings?.recurringTaskCompletionDays ?? 2;
     const nextDueDate = getNextDueDate(task, advanceCompletionDays);
     const assignedUsers = (task.assignedToIds || []).map(id => getUserById(id)).filter(Boolean) as User[];
-    
+
     // Overdue logic only for Weekly and Monthly
     const isTaskOverdue = (task.frequency !== 'Daily') &&
       isPast(nextDueDate) && !isSameDay(startOfDay(nextDueDate), startOfDay(new Date()));
@@ -403,49 +431,60 @@ export default function RecurringTasksPage() {
 
 
     const daysUntilDue = differenceInDays(nextDueDate, new Date());
-    
+
     let isEarly = false;
     if (task.frequency === 'Daily') {
-        isEarly = isTomorrow(nextDueDate);
+      isEarly = isTomorrow(nextDueDate);
     } else if (task.frequency !== 'Daily') {
-        isEarly = daysUntilDue > advanceCompletionDays;
+      isEarly = daysUntilDue > advanceCompletionDays;
     }
     const isCompletable = !isCompleted && !isEarly;
 
     const checkbox = (
-        <Checkbox
-            id={`task-${task.id}`}
-            aria-label={`Complete ${task.title}`}
-            onCheckedChange={() => handleTaskCheck(task)}
-            checked={isCompleted ? true : false}
-            disabled={!isCompletable || isCompleted}
-          />
+      <Checkbox
+        id={`task-${task.id}`}
+        aria-label={`Complete ${task.title}`}
+        onCheckedChange={() => handleTaskCheck(task)}
+        checked={isCompleted ? true : false}
+        disabled={!isCompletable || isCompleted}
+      />
     );
 
     return (
       <TableRow key={task.id} className={cn((isCompleted || isUpcoming) && "text-muted-foreground opacity-50")}>
         <TableCell className="text-center">
-            {isEarly && !isCompleted ? (
-                 <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <span>{checkbox}</span>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>
-                                {task.frequency === 'Daily' 
-                                    ? "Too early to complete. Daily tasks can only be completed on their due date."
-                                    : `Too early to complete. Must be within ${advanceCompletionDays} days.`}
-                            </p>
-                        </TooltipContent>
-                    </Tooltip>
-                 </TooltipProvider>
-            ) : (
-                checkbox
-            )}
+          {isEarly && !isCompleted ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>{checkbox}</span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    {task.frequency === 'Daily'
+                      ? "Too early to complete. Daily tasks can only be completed on their due date."
+                      : `Too early to complete. Must be within ${advanceCompletionDays} days.`}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            checkbox
+          )}
         </TableCell>
         <TableCell className="font-medium">
           {task.title}
+        </TableCell>
+        <TableCell>
+          {(() => {
+            const subCatInfo = findSubCategory(task.categoryId);
+            return subCatInfo ? (
+              <div className="flex flex-wrap gap-1">
+                <Badge variant="secondary" className="text-[10px] px-1 py-0">{subCatInfo.parentName}</Badge>
+                <Badge variant="outline" className="text-[10px] px-1 py-0">{subCatInfo.name}</Badge>
+              </div>
+            ) : <span className="text-muted-foreground text-xs">-</span>;
+          })()}
         </TableCell>
         <TableCell>
           <div className="flex flex-wrap gap-1">
@@ -470,7 +509,7 @@ export default function RecurringTasksPage() {
           {!isCompleted && isTaskOverdue && (
             <span className="ml-2">(Overdue)</span>
           )}
-           {!isCompleted && missedYesterday && (
+          {!isCompleted && missedYesterday && (
             <span className="ml-2 text-yellow-600 font-semibold">(Missed Yesterday)</span>
           )}
         </TableCell>
@@ -489,7 +528,7 @@ export default function RecurringTasksPage() {
       </div>
     );
   }
-  
+
   if (teamId === 'allTeams') {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center p-8 border-2 border-dashed rounded-lg">
@@ -507,8 +546,8 @@ export default function RecurringTasksPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold font-headline">Recurring Tasks</h1>
       </div>
-      
-      <RecurringTaskFilters 
+
+      <RecurringTaskFilters
         parentCategories={parentCategories}
         locations={sortedLocations}
         onFilterChange={setFilters}
@@ -533,6 +572,7 @@ export default function RecurringTasksPage() {
                     <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleMaintenanceSort('title')}>
                       <div className="flex items-center">Task <SortIcon field="title" currentSort={maintenanceSort} /></div>
                     </TableHead>
+                    <TableHead>Category</TableHead>
                     <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleMaintenanceSort('assignedTo')}>
                       <div className="flex items-center">Assigned To <SortIcon field="assignedTo" currentSort={maintenanceSort} /></div>
                     </TableHead>
@@ -554,7 +594,7 @@ export default function RecurringTasksPage() {
                   ) : (
                     <>
                       {dueTasks.map(task => renderTaskRow(task, false, false))}
-                      
+
                       {dueTasks.length > 0 && recentlyCompletedTasks.length > 0 && (
                         <TableRow>
                           <TableCell colSpan={5} className="!p-0">
@@ -568,7 +608,7 @@ export default function RecurringTasksPage() {
                       )}
 
                       {recentlyCompletedTasks.map(task => renderTaskRow(task, true, false))}
-                      
+
                       {upcomingTasks.length > 0 && (dueTasks.length > 0 || recentlyCompletedTasks.length > 0) && (
                         <TableRow>
                           <TableCell colSpan={5} className="!p-0">
@@ -580,7 +620,7 @@ export default function RecurringTasksPage() {
                           </TableCell>
                         </TableRow>
                       )}
-                      
+
                       {upcomingTasks.map(task => renderTaskRow(task, false, true))}
                     </>
                   )}
@@ -605,6 +645,8 @@ export default function RecurringTasksPage() {
                     <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleCompletedSort('locationName')}>
                       <div className="flex items-center">Location <SortIcon field="locationName" currentSort={completedSort} /></div>
                     </TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Sub-Category</TableHead>
                     <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleCompletedSort('frequency')}>
                       <div className="flex items-center">Frequency <SortIcon field="frequency" currentSort={completedSort} /></div>
                     </TableHead>
@@ -627,10 +669,24 @@ export default function RecurringTasksPage() {
                             {task.title}
                           </TableCell>
                           <TableCell>{task.locationName}</TableCell>
+                          <TableCell>
+                            {(() => {
+                              const subCatInfo = findSubCategory(task.categoryId);
+                              return subCatInfo?.parentName || '-';
+                            })()}
+                          </TableCell>
+                          <TableCell>
+                            {(() => {
+                              const subCatInfo = findSubCategory(task.categoryId);
+                              return subCatInfo ? (
+                                <Badge variant="secondary" className="text-[10px] px-1 py-0">{subCatInfo.name}</Badge>
+                              ) : <span>-</span>;
+                            })()}
+                          </TableCell>
                           <TableCell>{task.frequency}</TableCell>
                           <TableCell>{task.completedBy?.name || 'N/A'}</TableCell>
                           <TableCell>
-                              {format(task.completedAt, 'MM/dd/yyyy')}
+                            {format(task.completedAt, 'MM/dd/yyyy')}
                           </TableCell>
                         </TableRow>
                       );
